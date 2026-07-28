@@ -1,0 +1,17 @@
+# Local Claude Code state and plugin caches
+.claude/
+.claude-plugin/cache/
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Operating-system and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Test artifacts
+coverage/
+test-results/

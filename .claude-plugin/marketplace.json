@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "skills-library",
+  "description": "A marketplace for an extensible Claude Code skills library.",
+  "owner": {"name": "Repository maintainer"},
+  "plugins": [
+    {
+      "name": "skills-library",
+      "source": "./",
+      "description": "A curated, extensible library of Claude Code skills and agent capabilities.",
+      "license": "UNLICENSED",
+      "keywords": ["claude-code", "skills", "agents"]
+    }
+  ]
+}
