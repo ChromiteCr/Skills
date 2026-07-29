@@ -12,6 +12,9 @@
 .idea/
 .vscode/
 
+# Local Claude Code instructions (not for publishing)
+CLAUDE.md
+
 # Test artifacts
 coverage/
 test-results/
