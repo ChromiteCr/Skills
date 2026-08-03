@@ -51,7 +51,7 @@ Library Version: `0.2.0`
 | `weekly-study-review` | P0 | planned | — | 每周复盘与计划修正 |
 | `activity-profile-builder` | P0 | planned | — | 整理活动经历档案 |
 | `reflection-interviewer` | P0 | planned | — | 以访谈方式引导反思 |
-| `admissions-reader` | P0 | draft | 0.1.0 | 以招生官视角点评现有档案与经历 |
+| `admissions-reader` | P0 | draft | 0.1.1 | 以招生官视角点评现有档案与经历 |
 
 ## reading-notes — P1
 

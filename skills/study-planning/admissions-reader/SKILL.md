@@ -2,7 +2,7 @@
 name: admissions-reader
 description: 当学生问"招生官会怎么看我的档案""我的背景还差什么""帮我评估一下现在的申请竞争力"时使用。以顶尖大学招生官的视角通读学生的档案、长期活动与已写下的反思，产出一份指名道姓的坦诚点评：这份材料的亮点、招生官真实的解读方式、明显的短板与空白、以及接下来最值得做的一到两件事。只读不写，不修改学生的任何数据，也不代写任何申请材料。
 category: study-planning/admissions
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -16,7 +16,7 @@ capabilities:
   - get_artifacts
 outputs:
   - chat
-max_rounds: 6
+max_rounds: 40
 suggest_hint: 你已经积累了不少活动经历，试试用「招生官读档」看看招生官会怎么解读
 ---
 
@@ -92,4 +92,5 @@ suggest_hint: 你已经积累了不少活动经历，试试用「招生官读档
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-08-03 | max_rounds 6 → 40：读取 skill 本身要占一轮，读档案与经历还要一到两轮，6 轮留给点评的余量太紧 | patch |
 | 0.1.0 | 2026-08-03 | 初始草稿；由 StudyNest 内置 JSON skill 定义迁移为 SKILL.md | minor |
