@@ -112,9 +112,15 @@ plan → compress context → edit plan → implement → review & debug → del
 
 **3. Study Planning / Growth Canvas**
 
-`deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer`
+`deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer` · `admissions-reader`
 
 目标：支持学习规划、活动整理、反思访谈、生涯规划和成长档案建设。
+
+已建成 / Built:
+
+| Skill | 用途 |
+|---|---|
+| `admissions-reader` | 以顶尖大学招生官视角通读档案与经历，指出亮点、短板与下一步；只读不写，不代写申请材料 |
 
 ### P1 — 第二批 / Second wave
 

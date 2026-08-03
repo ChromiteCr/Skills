@@ -36,6 +36,21 @@ Self-review is allowed, but the checklist below is not optional.
 5. 在 `tests/cases/` 添加至少一个可重复用例。
 6. 在 `SKILL_INDEX.md` 和 `README.md` 登记该 skill 并简要说明功能。
 
+### 3.1 运行时扩展键 / Runtime extension keys
+
+除必填键外，frontmatter 可以带一组**可选**扩展键，供把 SKILL.md 当作可执行规格来跑的运行时读取（目前是 StudyNest）。校验脚本不拒绝额外键，Claude Code 也忽略未知键，所以**同一份 SKILL.md 在两边都能用，不需要 fork 格式**。不写这些键的 skill 一切照旧。
+
+| 键 | 类型 | 含义 |
+|---|---|---|
+| `display_name` | 字符串 | 界面上显示的名字（`name` 是 kebab-case 目录名，不适合直接展示） |
+| `capabilities` | 列表 | 运行本 skill **必需**的能力名。**不写 = 只读**——这是安全默认值，作者漏写不会让 skill 拿到写权限 |
+| `optional_capabilities` | 列表 | 有则更好、缺了也能跑的能力 |
+| `outputs` | 列表 | 产出类型，取值限 `chat` / `document` / `canvas` / `event` |
+| `max_rounds` | 整数 | 多轮工具调用的轮数上限；缺省由运行时决定 |
+| `suggest_hint` | 字符串 | 运行时主动建议这个 skill 时用的一句话 |
+
+能力名由运行时定义，不在本仓库内枚举；运行时不认识的能力名会被忽略，并在加载时报出来。
+
 ## 4. 其他组件 / Other components
 
 - 子代理：`agents/*.md`，frontmatter 合法，工具权限最小化。
