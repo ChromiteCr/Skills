@@ -112,7 +112,7 @@ plan → compress context → edit plan → implement → review & debug → del
 
 **3. Study Planning / Growth Canvas**
 
-`deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer` · `admissions-reader`
+`deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer` · `admissions-reader` · `activity-list-optimizer` · `application-timeline-builder`
 
 目标：支持学习规划、活动整理、反思访谈、生涯规划和成长档案建设。
 
@@ -120,7 +120,16 @@ plan → compress context → edit plan → implement → review & debug → del
 
 | Skill | 用途 |
 |---|---|
+| `deadline-to-study-plan` | 从截止日倒推出有交付物的阶段性节点并落进日程；不排满、不编造截止日 |
+| `weekly-study-review` | 基于实际完成情况做周复盘，产出复盘文档与下周的调整动作；判据是「下周会做什么不一样的事」 |
+| `activity-profile-builder` | 通过追问把口述的活动经历整理成结构化档案；只记录学生说出口的内容，级别按事实判定 |
+| `reflection-interviewer` | 一次一个问题的 STAR 反思访谈，产出保留原话的反思资产与经历之间的关联；不替学生总结 |
 | `admissions-reader` | 以顶尖大学招生官视角通读档案与经历，指出亮点、短板与下一步；只读不写，不代写申请材料 |
+| `activity-list-optimizer` | 把已写好的活动描述压进 Common App 字符限额，每版都用工具复核字符数；只压缩，不代写空白 |
+| `application-timeline-builder` | 从各校截止日倒推申请季节点并换算北京时间；未核实的截止日一律要求先去官网确认 |
+
+这一组的共同边界 / Shared boundaries：**只整理与追问学生已有的内容，不代写应由学生本人产出的申请材料**；
+所有写入都以提案形式交由学生确认；不给录取概率，不虚构未提供的经历、成果或日期。
 
 ### P1 — 第二批 / Second wave
 

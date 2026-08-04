@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.2.0`
+Library Version: `0.3.0`
 
 ---
 
@@ -47,11 +47,13 @@ Library Version: `0.2.0`
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
-| `deadline-to-study-plan` | P0 | planned | — | 从截止日期倒推学习计划 |
-| `weekly-study-review` | P0 | planned | — | 每周复盘与计划修正 |
-| `activity-profile-builder` | P0 | planned | — | 整理活动经历档案 |
-| `reflection-interviewer` | P0 | planned | — | 以访谈方式引导反思 |
+| `deadline-to-study-plan` | P0 | draft | 0.1.0 | 从截止日期倒推学习计划 |
+| `weekly-study-review` | P0 | draft | 0.1.0 | 每周复盘与计划修正 |
+| `activity-profile-builder` | P0 | draft | 0.1.0 | 整理活动经历档案 |
+| `reflection-interviewer` | P0 | draft | 0.1.0 | 以访谈方式引导反思 |
 | `admissions-reader` | P0 | draft | 0.1.1 | 以招生官视角点评现有档案与经历 |
+| `activity-list-optimizer` | P0 | draft | 0.1.0 | 把活动描述压进 Common App 字符限额 |
+| `application-timeline-builder` | P0 | draft | 0.1.0 | 从各校截止日倒推申请季节点 |
 
 ## reading-notes — P1
 
