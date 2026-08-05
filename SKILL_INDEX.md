@@ -61,7 +61,7 @@ Library Version: `0.5.0`
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
-| `skill-creator` | P0 | draft | 0.2.0 | 先写出草稿再问关键分歧，产出一份能跑的 SKILL.md |
+| `skill-creator` | P0 | draft | 0.3.0 | 先定位使用者在哪一步，写出草稿再问关键分歧，产出一份能跑的 SKILL.md |
 
 ## reading-notes — P1
 
