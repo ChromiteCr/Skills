@@ -5,6 +5,16 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.4.0 — 2026-08-04
+
+新增集合 `skill-authoring`（写 skill 的 skill），首个成员：
+
+- `skill-creator`（`0.1.0` / draft）— 访谈式产出一份能跑的 `SKILL.md`。三条设计要点：
+  **先查能力再动笔**（能力名由运行时定义，凭印象写必然声明出不存在的名字，那个 skill 装上去就是坏的）；
+  **「什么时候用它」要到使用者的原话**（description 是 agent 判断该不该触发的唯一依据，写空了技能就永远不会被想起来）；
+  **「绝对不做什么」是必问项**——好技能与坏技能的差别多半在边界上，而作者一开始想不到要写边界。
+  要的能力运行时没有就直说，不写"看起来能跑、实际调不到工具"的壳。
+
 ## 0.3.0 — 2026-08-04
 
 `study-planning` 第一批建成，新增 6 个 skill（均 `0.1.0` / draft），该集合从 1 个补齐到 7 个：

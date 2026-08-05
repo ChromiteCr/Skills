@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.3.0`
+Library Version: `0.4.0`
 
 ---
 
@@ -54,6 +54,14 @@ Library Version: `0.3.0`
 | `admissions-reader` | P0 | draft | 0.1.1 | 以招生官视角点评现有档案与经历 |
 | `activity-list-optimizer` | P0 | draft | 0.1.0 | 把活动描述压进 Common App 字符限额 |
 | `application-timeline-builder` | P0 | draft | 0.1.0 | 从各校截止日倒推申请季节点 |
+
+## skill-authoring — P0
+
+写 skill 的 skill。把使用者反复用到的做法固定成可执行的 SKILL.md。Meta: authoring skills themselves.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `skill-creator` | P0 | draft | 0.1.0 | 访谈式产出一份能跑的 SKILL.md |
 
 ## reading-notes — P1
 

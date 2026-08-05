@@ -131,6 +131,20 @@ plan → compress context → edit plan → implement → review & debug → del
 这一组的共同边界 / Shared boundaries：**只整理与追问学生已有的内容，不代写应由学生本人产出的申请材料**；
 所有写入都以提案形式交由学生确认；不给录取概率，不虚构未提供的经历、成果或日期。
 
+**4. Skill Authoring**
+
+`skill-creator`
+
+写 skill 的 skill。把使用者反复交代的那套做法，访谈成一份能真正跑起来的 `SKILL.md`。
+
+已建成 / Built:
+
+| Skill | 用途 |
+|---|---|
+| `skill-creator` | 先查清运行时有哪些能力可声明，再问「什么时候用 / 读什么 / 绝对不做什么」，产出完整 SKILL.md 交使用者确认 |
+
+边界 / Boundaries：不编造运行时不存在的能力名；要的能力做不到就直说，不写"看起来能跑、实际调不到工具"的壳。
+
 ### P1 — 第二批 / Second wave
 
 **4. Reading and Notes** — `chapter-note-starter` · `literary-analysis-coach` · `quote-to-thought` · `note-polisher`
