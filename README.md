@@ -122,8 +122,8 @@ plan → compress context → edit plan → implement → review & debug → del
 |---|---|
 | `deadline-to-study-plan` | 从截止日倒推出有交付物的阶段性节点并落进日程；不排满、不编造截止日 |
 | `weekly-study-review` | 基于实际完成情况做周复盘，产出复盘文档与下周的调整动作；判据是「下周会做什么不一样的事」 |
-| `activity-profile-builder` | 通过追问把口述的活动经历整理成结构化档案；只记录学生说出口的内容，级别按事实判定 |
-| `reflection-interviewer` | 一次一个问题的 STAR 反思访谈，产出保留原话的反思资产与经历之间的关联；不替学生总结 |
+| `activity-profile-builder` | 把一次口述直接拆成结构化档案，缺项标「待补」；只记录学生说出口的内容，级别按事实判定 |
+| `reflection-interviewer` | 一次一个问题的 STAR 反思访谈，产出保留原话的反思资产与经历之间的关联；不替学生总结，也不先写一版给他改 |
 | `admissions-reader` | 以顶尖大学招生官视角通读档案与经历，指出亮点、短板与下一步；只读不写，不代写申请材料 |
 | `activity-list-optimizer` | 把已写好的活动描述压进 Common App 字符限额，每版都用工具复核字符数；只压缩，不代写空白 |
 | `application-timeline-builder` | 从各校截止日倒推申请季节点并换算北京时间；未核实的截止日一律要求先去官网确认 |
@@ -131,17 +131,21 @@ plan → compress context → edit plan → implement → review & debug → del
 这一组的共同边界 / Shared boundaries：**只整理与追问学生已有的内容，不代写应由学生本人产出的申请材料**；
 所有写入都以提案形式交由学生确认；不给录取概率，不虚构未提供的经历、成果或日期。
 
+共同姿势（0.2.0 起）：**先做出东西，再问**。缺信息按合理默认值产出第一版并把假设写在最上面，
+要问就用 `ask_user` 一次问完（带选项，最多 4 问），不为确认而确认。
+唯一的例外是 `reflection-interviewer`——替学生写好一版反思让他改，写出来的就是你的反思不是他的。
+
 **4. Skill Authoring**
 
 `skill-creator`
 
-写 skill 的 skill。把使用者反复交代的那套做法，访谈成一份能真正跑起来的 `SKILL.md`。
+写 skill 的 skill。把使用者反复交代的那套做法，写成一份能真正跑起来的 `SKILL.md`。
 
 已建成 / Built:
 
 | Skill | 用途 |
 |---|---|
-| `skill-creator` | 先查清运行时有哪些能力可声明，再问「什么时候用 / 读什么 / 绝对不做什么」，产出完整 SKILL.md 交使用者确认 |
+| `skill-creator` | 先查清运行时有哪些能力可声明，直接写出一版完整 SKILL.md 草稿，再一次问完「什么时候用 / 要不要写库 / 绝对不做什么」，改定后交使用者确认 |
 
 边界 / Boundaries：不编造运行时不存在的能力名；要的能力做不到就直说，不写"看起来能跑、实际调不到工具"的壳。
 

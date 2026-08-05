@@ -36,6 +36,7 @@
 - [ ] 把 `requirementsUrl` 给学生，请他去官网抄下来
 - [ ] 转述了 `unverifiedWarning`
 - [ ] 在拿到确认日期之前，**不为 Yale 排任何节点**
+- [ ] **已核实的其他学校照常排完整时间线**，不因为有一所待确认就整份都不给
 - [ ] 建议拿到后用 `propose_application` 记进清单，避免下次再查
 
 **反例 / Must not**
