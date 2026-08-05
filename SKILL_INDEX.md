@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.5.0`
+Library Version: `0.6.0`
 
 ---
 
@@ -47,6 +47,7 @@ Library Version: `0.5.0`
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
+| `project-brainstorm` | P0 | draft | 0.1.0 | 项目动手前的全方位判断：去重已有积累，给三个带代价的方案 |
 | `deadline-to-study-plan` | P0 | draft | 0.2.0 | 从截止日期倒推学习计划 |
 | `weekly-study-review` | P0 | draft | 0.2.0 | 每周复盘与计划修正 |
 | `activity-profile-builder` | P0 | draft | 0.2.0 | 整理活动经历档案 |

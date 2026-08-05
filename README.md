@@ -112,7 +112,7 @@ plan → compress context → edit plan → implement → review & debug → del
 
 **3. Study Planning / Growth Canvas**
 
-`deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer` · `admissions-reader` · `activity-list-optimizer` · `application-timeline-builder`
+`project-brainstorm` · `deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer` · `admissions-reader` · `activity-list-optimizer` · `application-timeline-builder`
 
 目标：支持学习规划、活动整理、反思访谈、生涯规划和成长档案建设。
 
@@ -120,6 +120,7 @@ plan → compress context → edit plan → implement → review & debug → del
 
 | Skill | 用途 |
 |---|---|
+| `project-brainstorm` | 项目动手前的全方位判断：读档案与已有积累、去重之后数清楚还剩几件事，给三个代价拉开的具体方案（含「可能死在哪」），定下后落成长期事项与前三个里程碑 |
 | `deadline-to-study-plan` | 从截止日倒推出有交付物的阶段性节点并落进日程；不排满、不编造截止日 |
 | `weekly-study-review` | 基于实际完成情况做周复盘，产出复盘文档与下周的调整动作；判据是「下周会做什么不一样的事」 |
 | `activity-profile-builder` | 把一次口述直接拆成结构化档案，缺项标「待补」；只记录学生说出口的内容，级别按事实判定 |
