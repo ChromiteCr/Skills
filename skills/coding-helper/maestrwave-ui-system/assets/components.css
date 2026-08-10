@@ -1,0 +1,451 @@
+/*
+  MaestrWave 视觉系统 —— 组件层。
+  这里的每一条都只用 global.css 里的 token，没有一处硬编码颜色。
+
+  用法二选一：
+  - 直接引入当普通类用（`import "./styles/components.css"`），适合快速铺开
+  - 或按组件拆进各自的 *.module.css，类名照抄（MaestrWave 本体是这么组织的）
+
+  改这里之前先想清楚：需要的东西多半已经在了，加新类之前先找一遍。
+*/
+
+/* ============ 按钮 ============ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 11px 20px;
+  min-height: 42px; /* 触摸目标下限，不要再压小 */
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  color: var(--ink);
+  white-space: nowrap;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 按下时轻微内缩 —— 全站唯一的"手感"动效 */
+.btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent) 88%, white);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line-strong);
+}
+
+.btn-ghost:not(:disabled):hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: color-mix(in srgb, var(--wine) 80%, var(--ink));
+}
+
+.btn-danger:not(:disabled):hover {
+  border-color: var(--wine);
+  background: color-mix(in srgb, var(--wine) 12%, transparent);
+}
+
+/* 圆形主操作（播放 / 录制这类单一动作） */
+.btn-round {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+/* ============ 页面骨架 ============ */
+
+/* 页头：eyebrow + display-1 在左，元信息与操作在右，底部一条分隔线 */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 40px 40px 24px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.page-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.page-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+}
+
+.page-body {
+  padding: 32px 40px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============ 卡片 ============ */
+
+/*
+  层级靠明度台阶，不靠阴影 —— 深色界面里阴影几乎看不见。
+  例外只有浮层（.popover），那里需要把自己从页面上"抬起来"。
+*/
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.card-tight {
+  padding: 20px 24px 12px;
+}
+
+.popover {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  z-index: 20;
+}
+
+/* ============ 分段控件与标签页 ============ */
+
+/*
+  层级换手法，不要同一手法调强度：
+  主切换用实心底（.segmented），次一级用无底小按钮（.subtoggle）。
+  两级都用实心块的话，视线分不出主次。
+*/
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.segmented__btn {
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 58%, transparent);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 7px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.segmented__btn--active {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.subtoggle {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.subtoggle__btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 52%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  padding: 5px 14px;
+  border-radius: 7px;
+}
+
+.subtoggle__btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tab:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.tab--active {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+/* 虚线描边 = "这里可以加一个"，和实心的既有项区分开 */
+.add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ============ 侧栏（两级导航） ============ */
+
+.rail {
+  width: 196px;
+  flex: 0 0 196px;
+  height: 100%;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px;
+  overflow-y: auto;
+}
+
+/* 一级展开态：浅色描边 + 微亮底 */
+.rail__section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.rail__section:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.rail__section--open {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* 二级选中态：实心高亮、色彩反转 */
+.rail__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+  font-size: 13px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.rail__item:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.rail__item--active,
+.rail__item--active:hover {
+  color: var(--bg);
+  background: var(--accent);
+}
+
+.rail__divider {
+  height: 1px;
+  background: var(--line-strong);
+  margin: 10px 6px;
+  flex: 0 0 auto;
+}
+
+/* ============ 状态 ============ */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* 正常态带一圈光晕，异常态不带 —— 光晕在扫视时比颜色更快被认出来 */
+.status-dot--ok {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.status-dot--off {
+  background: var(--wine);
+}
+
+.status-dot--pending {
+  background: var(--wine);
+  animation: mw-pulse 1.1s ease-in-out infinite;
+}
+
+.status-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 44%, transparent);
+}
+
+/* 进行中：呼吸的明暗变化，表示"还在跑，没卡住"。这是全站唯一的循环动画。 */
+.pulsing {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  animation: mw-pulse 1.4s ease-in-out infinite;
+}
+
+.timer {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--ink) 58%, transparent);
+}
+
+@keyframes mw-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.empty-state {
+  color: color-mix(in srgb, var(--ink) 40%, transparent);
+  font-size: 14px;
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* ============ 表单行 ============ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.row__end {
+  margin-left: auto;
+}
+
+/* 断点按内容定，不套通用栅格 */
+@media (max-width: 480px) {
+  .row__end {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .page-header,
+  .page-body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* ============ 手机端外壳 ============ */
+
+.mobile-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px
+    calc(env(safe-area-inset-bottom, 0px) + 28px);
+  gap: 20px;
+  background: var(--bg);
+  /* 全屏交互页禁掉下拉刷新与长按选中，避免误触 */
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}

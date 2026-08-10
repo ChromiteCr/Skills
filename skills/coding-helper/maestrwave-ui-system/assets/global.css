@@ -1,0 +1,201 @@
+/*
+  MaestrWave 视觉系统 —— 全局层。
+  直接复制到 <项目>/src/styles/global.css，在入口文件里 import 一次即可。
+
+  依赖：
+    npm i @fontsource/source-serif-4 @fontsource/noto-serif-sc
+
+  这一层只放三种东西：字体引入、:root token、跨页复用的排版类。
+  页面和组件自己的布局写在同目录的 *.module.css 里，不要往这里堆。
+*/
+
+/*
+  界面以中文为主时，拉丁与 CJK 必须成对引入 —— 只换拉丁字体的话中文会掉到系统默认
+  （macOS 上是黑体系），一衬线一无衬线，界面立刻割裂。
+  @fontsource 的 CJK 包按 unicode-range 分片，浏览器只下载实际用到的区段。
+*/
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/500.css";
+@import "@fontsource/source-serif-4/600.css";
+/*
+  CJK 只引 400/600 两档。中文包按 unicode-range 切成一百多个分片，每多一档字重，
+  产物 CSS 就多几十 KB（gzip 后）—— 而 CSS 阻塞渲染。500 的场合（.mono-chip /
+  .field-label / .eyebrow）中文极少，交给浏览器回退到 400 看不出差别。
+*/
+@import "@fontsource/noto-serif-sc/400.css";
+@import "@fontsource/noto-serif-sc/600.css";
+
+/*
+  调色板 —— 暖炭黑基底 + 浅水蓝主色，像月光下的水面。
+  wine（酒红）是唯一的第二状态色（录制 / 删除 / 异常），与蓝形成一冷一暖。
+
+  换主色时只动 --accent / --accent-dim / --wave-*，其余不要碰：
+  底色的暖调是和 --ink 的暖白配套的，单独换会脏。
+*/
+:root {
+  --bg: #15130f;
+  --surface: #211c15;
+  --surface-2: #2c2519;
+  --surface-3: #382f1f;
+  --accent: #7cb2e8;
+  --accent-dim: #4d6f96;
+  --wine: #b8453a;
+  --ink: #f3eddd;
+  --line: rgba(243, 237, 221, 0.1);
+  --line-strong: rgba(243, 237, 221, 0.18);
+
+  /* 装饰性叠层用的四支蓝，深浅冷暖略有差异，叠加时才有层次。用不到就整段删掉。 */
+  --wave-1: #8fc1f0;
+  --wave-2: #5f9bd6;
+  --wave-3: #3a6ea8;
+  --wave-4: #bcdcf7;
+
+  /*
+    三个字体 token 全部走衬线，CJK 排在拉丁之后（浏览器按字形覆盖逐字回退）。
+    --font-mono 也是衬线：代价是数字不再等宽，DOM 里靠 font-variant-numeric:
+    tabular-nums 补救（见 .mono-chip），canvas 里补救不了。
+    要真等宽就把 --font-mono 改回 "IBM Plex Mono", ui-monospace, monospace，
+    其余代码全都引用 token，一行都不用动。
+  */
+  --font-display: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+  --font-body: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+  --font-mono: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  标题与正文的尺度对比是这套系统的核心：巨大的展示字号 vs 克制的小号正文/标签。
+  中间不要再加档 —— 加了就把这个对比磨平了。
+*/
+.display-1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.display-2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+/* 大标题上方的小标，用主色。中文没有小型大写，uppercase 只对拉丁生效。 */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+/* 文字层级一律用 color-mix 压透明度，不另起一堆灰色 token。 */
+.label {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  letter-spacing: 0.01em;
+}
+
+.mono-chip {
+  font-family: var(--font-mono);
+  /* 衬线体的数字默认是比例宽度，chip 里常放时长/数量，等宽才不跳 */
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+/* 表单字段的小标签，各页面统一用这一个类，不要各自重复定义。 */
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 48%, transparent);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+textarea,
+input,
+select {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  outline: none;
+}
+
+textarea::placeholder,
+input::placeholder {
+  color: color-mix(in srgb, var(--ink) 38%, transparent);
+}
+
+/* 焦点态全站统一：主色描边 + 3px 半透明 ring。不要用 outline: none 了事。 */
+textarea:focus,
+input:focus,
+select:focus,
+button:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 6px;
+}

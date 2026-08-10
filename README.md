@@ -98,6 +98,7 @@ All eight collections are created together and maintained in this single reposit
 | Skill | 用途 |
 |---|---|
 | `ui-design-system-builder` | 从项目意象推出一套 CSS token 与排版尺度，再用它拼组件；方法总结自 MaestrWave 前端 |
+| `maestrwave-ui-system` | 直接套用 MaestrWave 那套深色衬线视觉系统，附可粘贴的 `global.css` 与组件层 CSS |
 
 目标 / Goals：用自定义版本号系统管理开发；降低 token 消耗；明确项目规划、编辑计划、修改计划、代码实现、测试验证、成果转化流程；支持多 Agent 分别做规划、编写、审查、测试、文档；控制 Agent 小步修改，不乱改、不跑偏。
 
