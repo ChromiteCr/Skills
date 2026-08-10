@@ -93,6 +93,12 @@ All eight collections are created together and maintained in this single reposit
 | `multi-agent-task-router` | 多 Agent 分工调度 |
 | `test-debug-loop` | 测试—调试闭环 |
 
+已建成 / Built:
+
+| Skill | 用途 |
+|---|---|
+| `ui-design-system-builder` | 从项目意象推出一套 CSS token 与排版尺度，再用它拼组件；方法总结自 MaestrWave 前端 |
+
 目标 / Goals：用自定义版本号系统管理开发；降低 token 消耗；明确项目规划、编辑计划、修改计划、代码实现、测试验证、成果转化流程；支持多 Agent 分别做规划、编写、审查、测试、文档；控制 Agent 小步修改，不乱改、不跑偏。
 
 核心流程 / Core flow：

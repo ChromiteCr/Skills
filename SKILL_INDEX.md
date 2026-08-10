@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.6.0`
+Library Version: `0.7.0`
 
 ---
 
@@ -16,6 +16,7 @@ Library Version: `0.6.0`
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
+| `ui-design-system-builder` | P0 | draft | 0.1.0 | 从项目意象推出一套 token 与排版尺度，让界面不像模板 |
 | `coding-project-brief-builder` | P0 | planned | — | 收敛需求，产出项目 brief |
 | `architecture-planner` | P0 | planned | — | 规划架构与模块边界 |
 | `repo-map-compressor` | P0 | planned | — | 生成 repo map，压缩上下文 |
