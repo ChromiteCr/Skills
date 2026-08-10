@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "skills-library",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A curated, extensible library of Claude Code skills and agent capabilities.",
   "license": "UNLICENSED",
   "keywords": ["claude-code", "skills", "agents", "hooks", "mcp"]

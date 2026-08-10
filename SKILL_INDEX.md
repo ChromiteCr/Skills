@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.8.0`
+Library Version: `0.9.0`
 
 ---
 
@@ -65,6 +65,14 @@ Library Version: `0.8.0`
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
 | `skill-creator` | P0 | draft | 0.3.1 | 先定位使用者在哪一步，写出草稿再问关键分歧，产出一份能跑的 SKILL.md |
+
+## writing — P1
+
+中文写作风格约束。只在使用者点名时启用。Chinese prose style rules, opt-in only.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `writing-rules` | P1 | draft | 0.1.0 | 十条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、必须有立场、禁虚构细节 |
 
 ## reading-notes — P1
 

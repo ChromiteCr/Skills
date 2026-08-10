@@ -49,6 +49,8 @@ Skills/
 │   ├── coding-helper/
 │   ├── modeling/
 │   ├── study-planning/
+│   ├── skill-authoring/
+│   ├── writing/
 │   ├── reading-notes/
 │   ├── research-coaching/
 │   ├── competition-literacy/
@@ -73,6 +75,9 @@ Topic folders live under `skills/` so the layout stays topic-based while remaini
 > 我会一次创建 `coding-helper`、`modeling`、`study-planning`、`reading-notes`、`research-coaching`、`competition-literacy`、`vocabulary-learning` 和 `social-practice` 这几个 skills 集合，并将它们都放在这个仓库里。现阶段所有相关 skills 都在同一个仓库中按主题分类维护；如果未来某个集合发展成独立大型项目，再考虑拆分为单独仓库。
 
 All eight collections are created together and maintained in this single repository, organized by topic; a collection is split out only if it later becomes a large standalone project.
+
+在这八个之外，后来按同样方式加了两个集合：`skill-authoring`（写 skill 的 skill）和 `writing`（中文写作风格约束）。新集合按主题另起一个目录，规则不变。
+Two more collections were added later under the same rules: `skill-authoring` and `writing`.
 
 ---
 
@@ -159,21 +164,33 @@ plan → compress context → edit plan → implement → review & debug → del
 
 ### P1 — 第二批 / Second wave
 
-**4. Reading and Notes** — `chapter-note-starter` · `literary-analysis-coach` · `quote-to-thought` · `note-polisher`
+**4. Writing** — `writing-rules`
+
+中文写作的风格约束。**只在使用者点名时启用**，日常对话和代码工作里不生效。
+
+已建成 / Built:
+
+| Skill | 用途 |
+|---|---|
+| `writing-rules` | 十条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、删句首冗余连接词、杜绝强行升华、长短句交替、只在文末收束、保留适当不确定性、必须有明确立场、禁虚构细节和假精确数字；附写前自检清单与写完复查步骤 |
+
+边界 / Boundaries：不主动启用；不代写申请文书、课程论文这类由本人署名的作品，只帮他改自己写的稿子；素材不足时先问，不编。
+
+**5. Reading and Notes** — `chapter-note-starter` · `literary-analysis-coach` · `quote-to-thought` · `note-polisher`
 目标：帮助学生从剧情概括走向真正的阅读理解、文本分析和笔记表达。
 
-**5. Research Coaching** — `research-question-coach` · `literature-reading-coach` · `experiment-design-guide` · `assumption-checker`
+**6. Research Coaching** — `research-question-coach` · `literature-reading-coach` · `experiment-design-guide` · `assumption-checker`
 目标：从老师/教练角度辅助学生提出研究问题、阅读文献、设计实验、检查假设。
 
-**6. Competition Literacy** — `competition-ethics-checker` · `opponent-question-practice`
+**7. Competition Literacy** — `competition-ethics-checker` · `opponent-question-practice`
 目标：训练答辩、对手提问、竞赛表达，并检查 AI 使用是否越界。
 
 ### P2 — 后续扩展 / Later
 
-**7. Vocabulary Learning** — `vocab-error-diagnoser` · `personalized-review-scheduler` · `example-sentence-builder`
+**8. Vocabulary Learning** — `vocab-error-diagnoser` · `personalized-review-scheduler` · `example-sentence-builder`
 目标：服务个性化词汇学习、错因诊断、复习计划和例句生成。
 
-**8. Social Practice** — `community-needs-interviewer` · `service-project-planner` · `impact-report-builder`
+**9. Social Practice** — `community-needs-interviewer` · `service-project-planner` · `impact-report-builder`
 目标：支持社会实践、社区需求访谈、服务项目规划和影响力报告整理。
 
 ---
