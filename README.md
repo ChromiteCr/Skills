@@ -50,6 +50,7 @@ Skills/
 │   ├── modeling/
 │   ├── study-planning/
 │   ├── skill-authoring/
+│   ├── songwriting/
 │   ├── writing/
 │   ├── reading-notes/
 │   ├── research-coaching/
@@ -76,8 +77,8 @@ Topic folders live under `skills/` so the layout stays topic-based while remaini
 
 All eight collections are created together and maintained in this single repository, organized by topic; a collection is split out only if it later becomes a large standalone project.
 
-在这八个之外，后来按同样方式加了两个集合：`skill-authoring`（写 skill 的 skill）和 `writing`（中文写作风格约束）。新集合按主题另起一个目录，规则不变。
-Two more collections were added later under the same rules: `skill-authoring` and `writing`.
+在这八个之外，后来按同样方式加了三个集合：`skill-authoring`（写 skill 的 skill）、`songwriting`（中文作词工作流）和 `writing`（中文写作风格约束）。新集合按主题另起一个目录，规则不变。
+Three more collections were added later under the same rules: `skill-authoring`, `songwriting`, and `writing`.
 
 ---
 
@@ -164,7 +165,24 @@ plan → compress context → edit plan → implement → review & debug → del
 
 ### P1 — 第二批 / Second wave
 
-**4. Writing** — `writing-rules`
+**5. Songwriting** — `lyric-concept-builder` · `lyric-structure-mapper` · `adversarial-lyric-writer` · `lyric-doctor`
+
+中文作词工作流：概念 → 骨架 → 对抗式填词 → 体检。填词一步派三个 sonnet 子代理按不同路子并行独立起草，再派红队逐句挑，主 Agent 按句裁决拼稿。
+
+已建成 / Built:
+
+| Skill | 用途 |
+|---|---|
+| `lyric-concept-builder` | 动笔前定四样：具体处境（不是"疗愈"这类效果词）、同一个世界的意象系统、情绪弧线、五条 hook 候选；派 sonnet 子代理并行提三个切入角 |
+| `lyric-structure-mapper` | 把 `xxxxx` 字数模板逐行解析成骨架表（字数、停顿、韵位、段落功能），或在没有模板时给两三个常用骨架；确定性工作，不派子代理 |
+| `adversarial-lyric-writer` | 三个 sonnet 子代理并行独立起草（场景派 / 口语派 / 意象派），红队子代理逐句挑毛病且不许出第四稿，主 Agent 按句裁决，收敛判据卡死字数与辙口 |
+| `lyric-doctor` | 成稿体检：无依赖脚本查字数、断句、陈词命中与模板比对，模型判韵辙、画面感、主歌推进，可派子代理做陌生听众初听测试；出定点修改清单不重写整稿 |
+
+共用手艺参考 `skills/songwriting/_shared/craft-reference.md`：十三辙表、疗愈题材陈词黑名单、可唱性规则、`xxx` 模板读法。
+
+边界 / Boundaries：不抄现有歌词，不复述受版权保护的原句；不替使用者编造真实经历；不替他决定这首歌要说什么；只产出词，不产出旋律、编曲或 demo。
+
+**6. Writing** — `writing-rules`
 
 中文写作的风格约束。**只在使用者点名时启用**，日常对话和代码工作里不生效。
 
@@ -176,21 +194,21 @@ plan → compress context → edit plan → implement → review & debug → del
 
 边界 / Boundaries：不主动启用；不代写申请文书、课程论文这类由本人署名的作品，只帮他改自己写的稿子；素材不足时先问，不编。
 
-**5. Reading and Notes** — `chapter-note-starter` · `literary-analysis-coach` · `quote-to-thought` · `note-polisher`
+**7. Reading and Notes** — `chapter-note-starter` · `literary-analysis-coach` · `quote-to-thought` · `note-polisher`
 目标：帮助学生从剧情概括走向真正的阅读理解、文本分析和笔记表达。
 
-**6. Research Coaching** — `research-question-coach` · `literature-reading-coach` · `experiment-design-guide` · `assumption-checker`
+**8. Research Coaching** — `research-question-coach` · `literature-reading-coach` · `experiment-design-guide` · `assumption-checker`
 目标：从老师/教练角度辅助学生提出研究问题、阅读文献、设计实验、检查假设。
 
-**7. Competition Literacy** — `competition-ethics-checker` · `opponent-question-practice`
+**9. Competition Literacy** — `competition-ethics-checker` · `opponent-question-practice`
 目标：训练答辩、对手提问、竞赛表达，并检查 AI 使用是否越界。
 
 ### P2 — 后续扩展 / Later
 
-**8. Vocabulary Learning** — `vocab-error-diagnoser` · `personalized-review-scheduler` · `example-sentence-builder`
+**10. Vocabulary Learning** — `vocab-error-diagnoser` · `personalized-review-scheduler` · `example-sentence-builder`
 目标：服务个性化词汇学习、错因诊断、复习计划和例句生成。
 
-**9. Social Practice** — `community-needs-interviewer` · `service-project-planner` · `impact-report-builder`
+**11. Social Practice** — `community-needs-interviewer` · `service-project-planner` · `impact-report-builder`
 目标：支持社会实践、社区需求访谈、服务项目规划和影响力报告整理。
 
 ---

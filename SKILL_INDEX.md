@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.9.0`
+Library Version: `0.10.0`
 
 ---
 
@@ -65,6 +65,20 @@ Library Version: `0.9.0`
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
 | `skill-creator` | P0 | draft | 0.3.1 | 先定位使用者在哪一步，写出草稿再问关键分歧，产出一份能跑的 SKILL.md |
+
+## songwriting — P1
+
+中文作词工作流：概念 → 骨架 → 对抗式填词 → 体检。填词一步派 sonnet 子代理并行起草。
+Chinese lyric writing, adversarial multi-agent drafting.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `lyric-concept-builder` | P1 | draft | 0.1.0 | 动笔前定处境、意象系统、情绪弧线与 hook 候选 |
+| `lyric-structure-mapper` | P1 | draft | 0.1.0 | 把 `xxxxx` 字数模板解析成骨架表，或给常用骨架 |
+| `adversarial-lyric-writer` | P1 | draft | 0.1.0 | 三个 sonnet 子代理并行独立起草，红队逐句挑，主 Agent 按句裁决 |
+| `lyric-doctor` | P1 | draft | 0.1.0 | 成稿体检：脚本查字数与陈词，模型判韵辙、画面感与 hook，出定点修改清单 |
+
+共用手艺参考在 `skills/songwriting/_shared/craft-reference.md`（十三辙表、陈词黑名单、可唱性、模板读法）。
 
 ## writing — P1
 
