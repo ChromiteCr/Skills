@@ -1,324 +1,96 @@
-# Agent Skills Library
+# Skills
 
-个人可复用 Agent 技能库 · A personal, reusable Agent skills library.
+[![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
+[![skills](https://img.shields.io/badge/skills-16-2f81f7?style=flat-square)](SKILL_INDEX.md)
+[![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
+[![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20studynest-555555?style=flat-square)](#compatibility)
 
----
+My own set of agent skills. They exist so that when I write code, lyrics, application materials or an essay, the agent stops reaching for the default.
 
-## 1. 项目定位 / What this is
+Judging whether a choice was any good is harder than making the choice. What these skills do is write down the criteria I had already explained too many times, so the agent usually arrives there on the first try instead of the fourth.
 
-**中文**
+They are a byproduct of doing the work. AI amplifies what you already know rather than standing in for it. So go learn to code, or design, or get good at whatever field you are actually in. That value has only gone up.
 
-这是我的个人 **Agent Skills Library**，用于维护一组可复用的 Agent skills，供不同 AI Agents 调用，而不只服务某一个平台。它不是普通代码项目，而是一个持续增长的 Agent 工作流技能库。
+## Install
 
-核心目标：
+Claude Code:
 
-- 集中维护可复用的 Agent skills
-- 尽量让 skills 跨不同 Agents 使用
-- 按主题分类，按优先级建设
-- 每个 skill 使用统一结构
-- 管理仓库、单个 skill、核心 workflow 三层版本
-- 帮助 Agent 更清晰、更省 token、更可控地产出结果
-- 避免替代学生思考，避免生成不诚信的学术成果
-
-**English**
-
-A personal Agent Skills Library: a growing collection of reusable agent workflow skills meant to be callable by multiple AI agents, not tied to one platform. Goals: one place for reusable skills, cross-agent portability, topic-based organization with explicit priorities, a uniform per-skill structure, three-layer versioning, and clearer / cheaper / more controllable agent output — without replacing student thinking or producing academically dishonest work.
-
----
-
-## 2. 仓库组织方式 / Repository organization
-
-现阶段使用 **一个总仓库** 管理所有 skills，按主题建立目录。只有当某个集合需要独立工具链、CI、包发布或社区维护时，才考虑拆分为独立仓库。
-
-Single repository for now, organized by topic. Split out only if a collection outgrows it (own toolchain, CI, package release, community maintenance).
-
-```text
-Skills/
-├── README.md
-├── SKILL_INDEX.md              # 全部 skills 索引 / index of all skills
-├── VERSIONING.md               # 三层版本规则 / versioning rules
-├── CONTRIBUTING.md
-├── templates/
-│   ├── skill-template.md
-│   ├── handoff-template.md
-│   ├── edit-plan-template.md
-│   ├── project-brief-template.md
-│   └── release-note-template.md
-│
-├── skills/                     # 插件加载入口 / plugin skill root
-│   ├── coding-helper/
-│   ├── modeling/
-│   ├── study-planning/
-│   ├── skill-authoring/
-│   ├── songwriting/
-│   ├── writing/
-│   ├── reading-notes/
-│   ├── research-coaching/
-│   ├── competition-literacy/
-│   ├── vocabulary-learning/
-│   └── social-practice/
-│
-├── .claude-plugin/             # 插件与 Marketplace 清单 / manifests
-├── agents/                     # 专用子代理 / specialized subagents
-├── hooks/                      # 生命周期钩子 (hooks.json)
-├── scripts/                    # 校验与确定性脚本 / validation & deterministic utils
-└── tests/                      # cases/ 与 fixtures/
-```
-
-主题目录放在 `skills/` 下，这样既保留按主题分类，也能被 Claude Code 作为插件直接加载（每个 skill 一个 `SKILL.md`）。MCP / LSP 配置放在插件根目录：`.mcp.json`、`.lsp.json`。不要把组件目录放进 `.claude-plugin/`，那里只放清单。
-
-Topic folders live under `skills/` so the layout stays topic-based while remaining loadable as a Claude Code plugin (one `SKILL.md` per skill). `.mcp.json` / `.lsp.json` belong at the plugin root; `.claude-plugin/` holds manifests only.
-
----
-
-## 3. 本仓库将创建的 skills 集合 / Skill collections in this repo
-
-> 我会一次创建 `coding-helper`、`modeling`、`study-planning`、`reading-notes`、`research-coaching`、`competition-literacy`、`vocabulary-learning` 和 `social-practice` 这几个 skills 集合，并将它们都放在这个仓库里。现阶段所有相关 skills 都在同一个仓库中按主题分类维护；如果未来某个集合发展成独立大型项目，再考虑拆分为单独仓库。
-
-All eight collections are created together and maintained in this single repository, organized by topic; a collection is split out only if it later becomes a large standalone project.
-
-在这八个之外，后来按同样方式加了三个集合：`skill-authoring`（写 skill 的 skill）、`songwriting`（中文作词工作流）和 `writing`（中文写作风格约束）。新集合按主题另起一个目录，规则不变。
-Three more collections were added later under the same rules: `skill-authoring`, `songwriting`, and `writing`.
-
----
-
-## 4. 优先级规划 / Build priorities
-
-### P0 — 第一批 / First wave
-
-**1. Coding Helper** — 优先建设，因为它反过来帮助开发和维护其他 skills。Built first because it helps build everything else.
-
-| Skill | 用途 |
-|---|---|
-| `coding-project-brief-builder` | 项目立项与需求收敛 |
-| `architecture-planner` | 架构与模块规划 |
-| `repo-map-compressor` | 生成 repo map，压缩上下文 |
-| `context-budget-planner` | 规划 token 预算 |
-| `edit-plan-builder` | 改代码前先写编辑计划 |
-| `patch-scope-controller` | 控制 patch 范围，小步修改 |
-| `multi-agent-task-router` | 多 Agent 分工调度 |
-| `test-debug-loop` | 测试—调试闭环 |
-
-已建成 / Built:
-
-| Skill | 用途 |
-|---|---|
-| `ui-design-system-builder` | 从项目意象推出一套 CSS token 与排版尺度，再用它拼组件；方法总结自 MaestrWave 前端 |
-| `maestrwave-ui-system` | 直接套用 MaestrWave 那套深色衬线视觉系统，附可粘贴的 `global.css` 与组件层 CSS |
-
-目标 / Goals：用自定义版本号系统管理开发；降低 token 消耗；明确项目规划、编辑计划、修改计划、代码实现、测试验证、成果转化流程；支持多 Agent 分别做规划、编写、审查、测试、文档；控制 Agent 小步修改，不乱改、不跑偏。
-
-核心流程 / Core flow：
-
-```text
-项目规划 → 上下文压缩 → 编辑计划 → 代码实现 → 审查与调试 → 成果产出与转化
-plan → compress context → edit plan → implement → review & debug → deliver
-```
-
-**2. Modeling**
-
-`modeling-problem-reading-coach` · `model-selection-tutor` · `modeling-assumption-builder` · `model-critique-coach` · `paper-structure-coach` · `paper-enhancement-builder` · `latex-paper-formatter` · `modeling-code-builder` · `team-role-coach`
-
-目标：帮助学生理解建模题目、构建假设、比较模型、批判方案、优化论文结构、整理 LaTeX、基于学生已有思路辅助写代码。
-
-边界 / Boundaries：只做指导、解释、批判、格式化和优化；不替学生虚构模型、数据、实验或结果；不替代学生思考。
-
-**3. Study Planning / Growth Canvas**
-
-`project-brainstorm` · `deadline-to-study-plan` · `weekly-study-review` · `activity-profile-builder` · `reflection-interviewer` · `admissions-reader` · `activity-list-optimizer` · `application-timeline-builder`
-
-目标：支持学习规划、活动整理、反思访谈、生涯规划和成长档案建设。
-
-已建成 / Built:
-
-| Skill | 用途 |
-|---|---|
-| `project-brainstorm` | 项目动手前的全方位判断：读档案与已有积累、去重之后数清楚还剩几件事，给三个代价拉开的具体方案（含「可能死在哪」），定下后落成长期事项与前三个里程碑 |
-| `deadline-to-study-plan` | 从截止日倒推出有交付物的阶段性节点并落进日程；不排满、不编造截止日 |
-| `weekly-study-review` | 基于实际完成情况做周复盘，产出复盘文档与下周的调整动作；判据是「下周会做什么不一样的事」 |
-| `activity-profile-builder` | 把一次口述直接拆成结构化档案，缺项标「待补」；只记录学生说出口的内容，级别按事实判定 |
-| `reflection-interviewer` | 一次一个问题的 STAR 反思访谈，产出保留原话的反思资产与经历之间的关联；不替学生总结，也不先写一版给他改 |
-| `admissions-reader` | 以顶尖大学招生官视角通读档案与经历，指出亮点、短板与下一步；只读不写，不代写申请材料 |
-| `activity-list-optimizer` | 把已写好的活动描述压进 Common App 字符限额，每版都用工具复核字符数；只压缩，不代写空白 |
-| `application-timeline-builder` | 从各校截止日倒推申请季节点并换算北京时间；未核实的截止日一律要求先去官网确认 |
-
-这一组的共同边界 / Shared boundaries：**只整理与追问学生已有的内容，不代写应由学生本人产出的申请材料**；
-所有写入都以提案形式交由学生确认；不给录取概率，不虚构未提供的经历、成果或日期。
-
-共同姿势（0.2.0 起）：**先做出东西，再问**。缺信息按合理默认值产出第一版并把假设写在最上面，
-要问就用 `ask_user` 一次问完（带选项，最多 4 问），不为确认而确认。
-唯一的例外是 `reflection-interviewer`——替学生写好一版反思让他改，写出来的就是你的反思不是他的。
-
-**4. Skill Authoring**
-
-`skill-creator`
-
-写 skill 的 skill。把使用者反复交代的那套做法，写成一份能真正跑起来的 `SKILL.md`。
-
-已建成 / Built:
-
-| Skill | 用途 |
-|---|---|
-| `skill-creator` | 先判断使用者在哪一步（一句想法 / 刚聊完的流程 / 一份草稿 / 改已有技能），能从上文抠出的答案就不再问；查清可声明的能力后直接写出完整 SKILL.md 草稿，再一次问完剩下的分歧，改定后交使用者确认 |
-
-边界 / Boundaries：不编造运行时不存在的能力名；要的能力做不到就直说，不写"看起来能跑、实际调不到工具"的壳。
-
-### P1 — 第二批 / Second wave
-
-**5. Songwriting** — `lyric-concept-builder` · `lyric-structure-mapper` · `adversarial-lyric-writer` · `lyric-doctor`
-
-中文作词工作流：概念 → 骨架 → 对抗式填词 → 体检。填词一步派三个 sonnet 子代理按不同路子并行独立起草，再派红队逐句挑，主 Agent 按句裁决拼稿。
-
-已建成 / Built:
-
-| Skill | 用途 |
-|---|---|
-| `lyric-concept-builder` | 动笔前定四样：具体处境（不是"疗愈"这类效果词）、同一个世界的意象系统、情绪弧线、五条 hook 候选；派 sonnet 子代理并行提三个切入角 |
-| `lyric-structure-mapper` | 把 `xxxxx` 字数模板逐行解析成骨架表（字数、停顿、韵位、段落功能），或在没有模板时给两三个常用骨架；确定性工作，不派子代理 |
-| `adversarial-lyric-writer` | 三个 sonnet 子代理并行独立起草（场景派 / 口语派 / 意象派），红队子代理逐句挑毛病且不许出第四稿，主 Agent 按句裁决，收敛判据卡死字数与辙口 |
-| `lyric-doctor` | 成稿体检：无依赖脚本查字数、断句、陈词命中与模板比对，模型判韵辙、画面感、主歌推进，可派子代理做陌生听众初听测试；出定点修改清单不重写整稿 |
-
-共用手艺参考 `skills/songwriting/_shared/craft-reference.md`：十三辙表、疗愈题材陈词黑名单、可唱性规则、`xxx` 模板读法。
-
-边界 / Boundaries：不抄现有歌词，不复述受版权保护的原句；不替使用者编造真实经历；不替他决定这首歌要说什么；只产出词，不产出旋律、编曲或 demo。
-
-**6. Writing** — `writing-rules`
-
-中文写作的风格约束。**只在使用者点名时启用**，日常对话和代码工作里不生效。
-
-已建成 / Built:
-
-| Skill | 用途 |
-|---|---|
-| `writing-rules` | 十条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、删句首冗余连接词、杜绝强行升华、长短句交替、只在文末收束、保留适当不确定性、必须有明确立场、禁虚构细节和假精确数字；附写前自检清单与写完复查步骤 |
-
-边界 / Boundaries：不主动启用；不代写申请文书、课程论文这类由本人署名的作品，只帮他改自己写的稿子；素材不足时先问，不编。
-
-**7. Reading and Notes** — `chapter-note-starter` · `literary-analysis-coach` · `quote-to-thought` · `note-polisher`
-目标：帮助学生从剧情概括走向真正的阅读理解、文本分析和笔记表达。
-
-**8. Research Coaching** — `research-question-coach` · `literature-reading-coach` · `experiment-design-guide` · `assumption-checker`
-目标：从老师/教练角度辅助学生提出研究问题、阅读文献、设计实验、检查假设。
-
-**9. Competition Literacy** — `competition-ethics-checker` · `opponent-question-practice`
-目标：训练答辩、对手提问、竞赛表达，并检查 AI 使用是否越界。
-
-### P2 — 后续扩展 / Later
-
-**10. Vocabulary Learning** — `vocab-error-diagnoser` · `personalized-review-scheduler` · `example-sentence-builder`
-目标：服务个性化词汇学习、错因诊断、复习计划和例句生成。
-
-**11. Social Practice** — `community-needs-interviewer` · `service-project-planner` · `impact-report-builder`
-目标：支持社会实践、社区需求访谈、服务项目规划和影响力报告整理。
-
----
-
-## 5. Coding Helper 重点说明 / Focus notes
-
-`coding-helper` 是本仓库的优先核心之一，关注：
-
-- 自定义版本号系统
-- 低 token 编程工作流
-- 先规划项目，再编辑代码
-- 改代码前先写 edit plan
-- 计划变化时先写 revision plan
-- 小步 patch，控制修改范围
-- 多 Agent 分工完成规划、实现、审查、测试、文档
-- 将最终成果转为 README、demo script、release notes、部署说明或项目复盘
-
-降低 token 消耗的关键方法 / Token-reduction methods：
-
-**1. 上下文压缩 / Context compression**
-
-- 不默认读取整个仓库
-- 先生成 repo map
-- 只读取当前任务相关文件
-- 压缩长日志和长历史
-- 将项目状态写入文件，而不是一直放在聊天上下文中
-
-**2. Prompt caching / 稳定提示**
-
-- 固定长期不变的工作流规则、输出格式、风格规则和安全边界
-- 区分 stable context 和 dynamic task context
-- 每次任务只更新动态部分
-
-**3. 多 Agent 上下文隔离 / Context isolation**
-
-- 不同 Agent 分别负责规划、读项目、实现、审查、测试和文档
-- 每个 Agent 只接收自己需要的上下文
-- 子 Agent 返回短 handoff，而不是长推理日志
-
----
-
-## 6. 版本号系统 / Versioning
-
-三层版本 / Three layers：
-
-```text
-Library Version   整个 Skills 仓库版本 / whole repository
-Skill Version     单个 skill 版本 / individual skill
-Workflow Version  可复用工作流版本 / reusable workflow
-```
-
-规则 / Rules：
-
-```text
-0.x.x   实验 / 草稿阶段        experimental / draft
-1.0.0   稳定可用版本          first stable release
-MAJOR   破坏性结构变化        breaking structural change
-MINOR   新增 skill 或新增能力  new skill or new capability
-PATCH   措辞、示例、边界或文档修正  wording, examples, boundaries, docs
-```
-
-每个 skill 的 metadata 示例 / Per-skill metadata:
-
-```yaml
-name: repo-map-compressor
-category: coding-helper/token-efficiency
-version: 0.1.0
-status: draft
-priority: P0
-compatible_agents:
-  - openclaw
-  - claude-code
-  - cursor
-  - codebuddy
-  - generic-llm-agent
-```
-
-本仓库不使用全局 CLAUDE.md 中的项目版本号规则。This repo does not apply the global project versioning rules.
-
----
-
-## 7. 本地校验与安装 / Local validation & install
-
-```sh
-./scripts/validate.sh
-claude --plugin-dir "$(pwd)"
-```
-
-第一条是硬性门槛，检查：目录结构与必需文件、插件与 Marketplace 清单一致（含 Library Version 两处相同）、每个 `SKILL.md` 的 frontmatter 完整且合法（`name` 与目录同名、`category` 与所在目录一致、semver、`status` 与版本区间匹配、`priority` 合法）、每个 skill 在 `tests/cases/<name>.md` 有非空用例、且已在 `SKILL_INDEX.md` 与本 README 登记。第二条把仓库作为本地插件加载，用于在发布前测试每个组件。
-
-`validate.sh` checks layout, manifest consistency, per-skill frontmatter, a non-empty test case, and registration in both the index and this README.
-
-新增 skill 时从 [templates/skill-template.md](templates/skill-template.md) 起草，路径为 `skills/<category>/<skill-name>/SKILL.md`。版本规则见 [VERSIONING.md](VERSIONING.md)，全部 skills 见 [SKILL_INDEX.md](SKILL_INDEX.md)。
-
-公开发布前：替换 Marketplace 占位 owner、选择正式 license、必要时更新插件名。发布后可通过 Marketplace 安装：
-
-```text
-/plugin marketplace add <GitHub-owner>/<repository>
+```bash
+/plugin marketplace add ChromiteCr/Skills
 /plugin install skills-library@skills-library
 ```
 
----
+Any other agent, just pull it down and read it:
 
-## 8. 每个 skill 的基本要求 / Requirements per skill
+```bash
+git clone https://github.com/ChromiteCr/Skills.git
+```
 
-- 用途单一、边界明确 / narrow purpose, documented boundaries
-- 清晰的 `description`，便于 Agent 正确触发 / clear description for reliable triggering
-- 至少一个可重复的测试用例（`tests/cases/`）/ at least one repeatable test case
-- 确定性工作放进脚本；参考资料放在 skill 目录内，按需加载 / deterministic work in scripts, references loaded on demand
-- 最小权限的工具访问 / least-privilege tool access
-- 不提交任何凭据或私有端点 / never commit credentials or private endpoints
+## Why use it?
 
-贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。See CONTRIBUTING.md for the review workflow.
+**Agents have the capability. At every single step they still take the default.**
+
+Ask one for an interface and you get Inter, `#3b82f6`, 8px radius on everything, a `0 4px 12px rgba(0,0,0,.1)` shadow underneath. Ask for lyrics and you get every scar turning into starlight. Ask for Chinese prose and you get an em dash in every other sentence, three tidy bullet points, and a paragraph that lifts off into significance right at the end. Ask for a study plan and every single day is full.
+
+Every one of those is defensible on its own. Stacked together they produce the thing anyone can now spot in about two seconds.
+
+These skills close the defaults off one at a time. A color has to be justified against the project it belongs to. A lyric line has to be something you could point a camera at. An em dash in a finished essay counts as a violation, no exceptions. Once the criteria are written down, there is nothing left to pick from.
+
+The other half of this is token cost. Never read the whole repo by default. Compress before acting. Give a subagent only the context that subagent needs, and get a short handoff back instead of a reasoning log. That part lives in `coding-helper`.
+
+## Reference
+
+**Code**
+
+- **[`ui-design-system-builder`](skills/coding-helper/ui-design-system-builder/SKILL.md)**: Pulls a concrete image out of the project itself, derives a set of CSS tokens and a type scale from it, then builds components on top. Ships with an anti-default checklist.
+- **[`maestrwave-ui-system`](skills/coding-helper/maestrwave-ui-system/SKILL.md)**: Drops in my dark serif visual system. The `global.css` and the component layer are copy-paste ready.
+
+**Lyrics**
+
+- **[`lyric-concept-builder`](skills/songwriting/lyric-concept-builder/SKILL.md)**: Settles the situation, the image system and the hook candidates before a single line gets written. "Healing" is an effect, not a subject.
+- **[`lyric-structure-mapper`](skills/songwriting/lyric-structure-mapper/SKILL.md)**: Parses an `xxxxx` syllable template line by line into a skeleton table. Changing the count changes the melody.
+- **[`adversarial-lyric-writer`](skills/songwriting/adversarial-lyric-writer/SKILL.md)**: Three subagents draft in parallel and in isolation, each on a different track. A red team then picks the drafts apart line by line, and the main agent assembles a version by choosing line by line.
+- **[`lyric-doctor`](skills/songwriting/lyric-doctor/SKILL.md)**: Checks a finished draft. A script counts syllables and flags clichés, the model judges rhyme group and visual concreteness, and you get a targeted fix list rather than a rewrite.
+
+**Prose**
+
+- **[`writing-rules`](skills/writing/writing-rules/SKILL.md)**: Ten rules against the AI register in Chinese. Only active when I ask for it by name, dormant the rest of the time.
+
+**Applications and growth records**
+
+- **[`project-brainstorm`](skills/study-planning/project-brainstorm/SKILL.md)**: Deduplicates what you have already accumulated, then gives three options with genuinely different costs and tells you where each one is likely to die.
+- **[`admissions-reader`](skills/study-planning/admissions-reader/SKILL.md)**: Reads your record the way an admissions officer would and names the strengths and the gaps. Reads only, writes nothing.
+- **[`activity-profile-builder`](skills/study-planning/activity-profile-builder/SKILL.md)**: Turns one spoken account into a structured record and marks what is missing as pending, without filling it in for you.
+- **[`activity-list-optimizer`](skills/study-planning/activity-list-optimizer/SKILL.md)**: Compresses activity descriptions into the Common App character limits, verifying every draft with a tool.
+- **[`reflection-interviewer`](skills/study-planning/reflection-interviewer/SKILL.md)**: A STAR reflection interview, one question at a time, keeping your own words. It will not summarize on your behalf.
+- **[`deadline-to-study-plan`](skills/study-planning/deadline-to-study-plan/SKILL.md)**: Works backward from a deadline into checkpoints that each have a deliverable. It leaves slack and never invents a due date.
+- **[`weekly-study-review`](skills/study-planning/weekly-study-review/SKILL.md)**: A weekly review. The test it has to pass is whether you will do something differently next week.
+- **[`application-timeline-builder`](skills/study-planning/application-timeline-builder/SKILL.md)**: Works backward from each school's deadline into the milestones of an application season, converted to Beijing time.
+
+**Skills**
+
+- **[`skill-creator`](skills/skill-authoring/skill-creator/SKILL.md)**: Works out what you already have in hand, skips anything it can extract from the conversation, and writes out a `SKILL.md` that actually runs.
+
+Everything, including status, is in [SKILL_INDEX.md](SKILL_INDEX.md).
+
+## Boundaries
+
+Application essays, coursework, competition entries: for anything that goes out under your name, these skills help you revise a draft you wrote and will not produce one for you. Missing material gets a question rather than an invention. No fabricated experiences, no fabricated numbers, no fabricated sources.
+
+## Compatibility
+
+`claude-code`, `cursor`, `codebuddy`, `studynest`, and any agent that can read Markdown. Each `SKILL.md` declares its own list in the frontmatter.
+
+## Add your own
+
+Copy [templates/skill-template.md](templates/skill-template.md) to `skills/<category>/<skill-name>/SKILL.md`, write a `tests/cases/<skill-name>.md`, then run:
+
+```bash
+./scripts/validate.sh
+```
+
+It enforces the layout, the frontmatter, the test case and the index registration. Do not open a PR until it passes. Process is in [CONTRIBUTING.md](CONTRIBUTING.md), version rules in [VERSIONING.md](VERSIONING.md).
+
+## Not written yet
+
+`modeling` for competition modeling and paper critique, `reading-notes` for textual analysis instead of plot summary, `research-coaching` for research questions and experiment design, `competition-literacy` for defense practice and AI-use limits, plus `vocabulary-learning` and `social-practice`. Priorities and the initial skill lists are in [SKILL_INDEX.md](SKILL_INDEX.md).
