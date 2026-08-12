@@ -54,7 +54,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 
 **Prose**
 
-- **[`writing-rules`](skills/writing/writing-rules/SKILL.md)**: Ten rules against the AI register in Chinese. Only active when I ask for it by name, dormant the rest of the time.
+- **[`writing-rules`](skills/writing/writing-rules/SKILL.md)**: Fifteen rules against the AI register in Chinese, including a hard banned-word list and a tone spec. Only active when I ask for it by name, dormant the rest of the time.
 
 **Applications and growth records**
 

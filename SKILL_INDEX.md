@@ -86,7 +86,7 @@ Chinese lyric writing, adversarial multi-agent drafting.
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
-| `writing-rules` | P1 | draft | 0.1.0 | 十条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、必须有立场、禁虚构细节 |
+| `writing-rules` | P1 | draft | 0.2.0 | 十五条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、必须有立场、禁虚构细节、硬性禁用词表、写完即止 |
 
 ## reading-notes — P1
 
