@@ -1,0 +1,273 @@
+<!doctype html>
+<!--
+  示例产物：examples/example-brief.md 确认之后生成的 panel.html。
+  Halcyon 7 是虚构产品，全部数字为示例值。
+-->
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Halcyon 7 · 总结面板（示例）</title>
+<style>
+  :root {
+    --bg: #f4f4f6;
+    --card: #ffffff;
+    --card-2: #ebebef;
+    --ink: #16171a;
+    --muted: rgba(22, 23, 26, 0.55);
+    --faint: rgba(22, 23, 26, 0.35);
+    --line: rgba(22, 23, 26, 0.08);
+    --accent: #4739c9;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.06);
+    --radius: 22px;
+    --radius-sm: 14px;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0e0f12;
+    --card: #1a1c21;
+    --card-2: #23262c;
+    --ink: #f2f3f5;
+    --muted: rgba(242, 243, 245, 0.55);
+    --faint: rgba(242, 243, 245, 0.32);
+    --line: rgba(242, 243, 245, 0.09);
+    --accent: #a99bff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* 舞台：截图就截这一块。固定 1600x900，小屏时整体缩放，不改内部尺寸。 */
+  .stage-fit { transform-origin: top center; }
+  .stage {
+    width: 1600px;
+    height: 900px;
+    padding: 56px;
+    background: var(--bg);
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto 1fr 1fr 1fr auto auto;
+    grid-template-areas:
+      "hd hd hd hd hd hd hd hd hd hd hd hd"
+      "he he he he he bg bg bg bg l1 l1 l1"
+      "he he he he he bg bg bg bg l1 l1 l1"
+      "he he he he he l2 l2 l2 l3 l3 l3 l3"
+      "s1 s1 s2 s2 s3 s3 s4 s4 s5 s5 s6 s6"
+      "ft ft ft ft ft ft ft ft ft ft ft ft";
+    gap: 20px;
+    overflow: hidden;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+
+  /* ---------- 页头 ---------- */
+
+  .hd { grid-area: hd; display: flex; align-items: baseline; gap: 20px; padding: 0 6px 10px; }
+  .eyebrow {
+    font-size: 15px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .product { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; }
+  .tagline { font-size: 19px; color: var(--muted); margin-left: auto; }
+
+  /* ---------- Hero ---------- */
+
+  .he { grid-area: he; position: relative; align-items: center; justify-content: center; }
+  /* 占位图。替换时把 .hero-ph 整块换成 <img src="..." class="hero-img">，
+     并给 .hero-img 加 width:100%;height:100%;object-fit:cover;border-radius:inherit */
+  .hero-ph {
+    position: absolute; inset: 20px;
+    border: 2px dashed var(--line);
+    border-radius: 18px;
+    background: linear-gradient(145deg, var(--card-2), transparent 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; color: var(--faint);
+  }
+  .hero-ph strong { font-size: 17px; font-weight: 600; letter-spacing: 0.04em; }
+  .hero-ph span { font-size: 13px; }
+
+  /* ---------- 最大卖点 ---------- */
+
+  .bg { grid-area: bg; background: var(--card); }
+  .hero-num {
+    font-size: 116px; font-weight: 700; line-height: 0.9;
+    letter-spacing: -0.04em; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-num small { font-size: 40px; font-weight: 600; letter-spacing: -0.01em; }
+  .bg .title { font-size: 30px; font-weight: 650; margin-top: 16px; letter-spacing: -0.01em; }
+  .bg .sub { font-size: 17px; color: var(--muted); margin-top: 8px; }
+
+  /* ---------- 大卡 ---------- */
+
+  .l1 { grid-area: l1; }
+  .l2 { grid-area: l2; }
+  .l3 { grid-area: l3; }
+  .big-num {
+    font-size: 52px; font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .big-num small { font-size: 22px; font-weight: 600; }
+  .card .title { font-size: 21px; font-weight: 650; margin-top: 12px; }
+  .card .sub { font-size: 15px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+  .group {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: auto;
+  }
+
+  /* ---------- 小规格 ---------- */
+
+  .chip {
+    background: var(--card-2);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
+  .chip .k {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .chip .v { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .s1 { grid-area: s1; } .s2 { grid-area: s2; } .s3 { grid-area: s3; }
+  .s4 { grid-area: s4; } .s5 { grid-area: s5; } .s6 { grid-area: s6; }
+
+  /* ---------- 页脚与未确认标记 ---------- */
+
+  .ft {
+    grid-area: ft; padding: 12px 6px 0; display: flex; gap: 18px;
+    font-size: 13px; color: var(--faint); border-top: 1px solid var(--line); margin-top: 8px;
+  }
+  .ft .right { margin-left: auto; }
+  /* 未确认项在面板上必须可见，不能只写在 brief 里 */
+  .unverified {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    color: var(--muted); background: var(--card-2);
+    border: 1px solid var(--line);
+    border-radius: 6px; padding: 2px 7px; margin-left: 8px;
+    white-space: nowrap; vertical-align: 2px;
+  }
+
+  /* ---------- 舞台外的控件，截图不会带进去 ---------- */
+
+  .controls {
+    display: flex; gap: 10px; padding: 20px; font-size: 14px;
+  }
+  .controls button {
+    font: inherit; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage-fit">
+  <div class="stage" id="stage">
+
+    <header class="hd">
+      <span class="eyebrow">Smartphone</span>
+      <span class="product">Halcyon 7</span>
+      <span class="tagline">给经常在户外拍视频的人的一台手机</span>
+    </header>
+
+    <section class="card he">
+      <div class="hero-ph">
+        <strong>HERO</strong>
+        <span>替换成你有权使用的产品图</span>
+      </div>
+    </section>
+
+    <!-- 最大卖点：整张面板只有一个 -->
+    <section class="card bg">
+      <span class="group">Display</span>
+      <div class="hero-num">2000<small> nits</small></div>
+      <div class="title">全天候亮屏</div>
+      <div class="sub">峰值亮度，HDR 内容，非全屏持续</div>
+    </section>
+
+    <!-- 大卡 3-5 个 -->
+    <section class="card l1">
+      <span class="group">Camera</span>
+      <div class="big-num">48<small> MP</small></div>
+      <div class="title">主摄</div>
+      <div class="sub">像素合并后进光量更大</div>
+    </section>
+
+    <section class="card l2">
+      <span class="group">Camera</span>
+      <div class="big-num">4K<small>120</small></div>
+      <div class="title">高帧率录制</div>
+      <div class="sub">后期可做 5 倍慢动作</div>
+    </section>
+
+    <section class="card l3">
+      <span class="group">Battery</span>
+      <div class="big-num">22<small> 小时</small></div>
+      <div class="title">视频播放<span class="unverified">未确认场景</span></div>
+      <div class="sub">材料未写明测试条件</div>
+    </section>
+
+    <!-- 小规格：只放数字和单位，不写句子。用不到的整块删掉 -->
+    <div class="chip s1"><span class="k">变焦</span><span class="v">3x</span></div>
+    <div class="chip s2"><span class="k">芯片</span><span class="v">3nm</span></div>
+    <div class="chip s3"><span class="k">内存</span><span class="v">12GB</span></div>
+    <div class="chip s4"><span class="k">防护</span><span class="v">IP68</span></div>
+    <div class="chip s5"><span class="k">充电</span><span class="v">45W</span></div>
+    <div class="chip s6"><span class="k">安全</span><span class="v">卫星求救</span></div>
+
+    <footer class="ft">
+      <span>示例数据 · Halcyon 7 为虚构产品，数字不对应任何真实设备</span>
+      <span class="right">标「未确认」的条目未在所给材料中找到出处</span>
+    </footer>
+
+  </div>
+</div>
+
+<div class="controls">
+  <button id="theme">切换 light / dark</button>
+  <button id="fit">适配窗口 / 原始尺寸</button>
+</div>
+
+<script>
+  // 主题：默认 light，切到 dark 时改根元素的 data-theme
+  const root = document.documentElement;
+  document.getElementById('theme').onclick = () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  };
+
+  // 缩放只作用在外层包裹上，舞台本身始终是 1600x900，截图拿到的是原始像素
+  const wrap = document.querySelector('.stage-fit');
+  let fitting = true;
+  const apply = () => {
+    const s = fitting ? Math.min(1, (window.innerWidth - 40) / 1600) : 1;
+    wrap.style.transform = `scale(${s})`;
+    wrap.style.height = `${900 * s}px`;
+  };
+  document.getElementById('fit').onclick = () => { fitting = !fitting; apply(); };
+  window.addEventListener('resize', apply);
+  apply();
+</script>
+
+</body>
+</html>

@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.10.0`
+Library Version: `0.13.0`
 
 ---
 
@@ -18,6 +18,7 @@ Library Version: `0.10.0`
 |---|---|---|---|---|
 | `ui-design-system-builder` | P0 | draft | 0.1.0 | 从项目意象推出一套 token 与排版尺度，让界面不像模板 |
 | `maestrwave-ui-system` | P0 | draft | 0.1.0 | 直接套用 MaestrWave 那套深色衬线视觉，附可粘贴的 global.css 与组件层 |
+| `launch-summary-panel` | P1 | draft | 0.1.0 | 产品资料收成 16:9 bento 总结面板：先出策划稿再出单文件 HTML，数字必须有出处 |
 | `coding-project-brief-builder` | P0 | planned | — | 收敛需求，产出项目 brief |
 | `architecture-planner` | P0 | planned | — | 规划架构与模块边界 |
 | `repo-map-compressor` | P0 | planned | — | 生成 repo map，压缩上下文 |
@@ -68,11 +69,12 @@ Library Version: `0.10.0`
 
 ## songwriting — P1
 
-中文作词工作流：概念 → 骨架 → 对抗式填词 → 体检。填词一步派 sonnet 子代理并行起草。
-Chinese lyric writing, adversarial multi-agent drafting.
+中文作词工作流（概念 → 骨架 → 对抗式填词 → 体检），以及让 LLM 写谱生成 MIDI 的工程方法。
+Chinese lyric writing plus LLM-to-MIDI composition.
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
+| `llm-midi-composition` | P1 | draft | 0.1.0 | 两级调用让 LLM 写谱产 MIDI：蓝图 + 分谱、残稿抢救、确定性修复、降级如实标注 |
 | `lyric-concept-builder` | P1 | draft | 0.1.0 | 动笔前定处境、意象系统、情绪弧线与 hook 候选 |
 | `lyric-structure-mapper` | P1 | draft | 0.1.0 | 把 `xxxxx` 字数模板解析成骨架表，或给常用骨架 |
 | `adversarial-lyric-writer` | P1 | draft | 0.1.0 | 三个 sonnet 子代理并行独立起草，红队逐句挑，主 Agent 按句裁决 |
@@ -82,11 +84,15 @@ Chinese lyric writing, adversarial multi-agent drafting.
 
 ## writing — P1
 
-中文写作风格约束。只在使用者点名时启用。Chinese prose style rules, opt-in only.
+中文写作风格约束与文体模仿。只在使用者点名时启用。Chinese prose style rules and style mimicry, opt-in only.
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
+| `zlc` | P2 | draft | 0.1.0 | 四拍点评句式：表态、否定加事实、价值、呼吁；褒贬三开关一起翻 |
 | `writing-rules` | P1 | draft | 0.2.0 | 十五条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、必须有立场、禁虚构细节、硬性禁用词表、写完即止 |
+| `four-beat-comment` | P2 | draft | 0.1.0 | 四拍点评体：表态、否定加肯定、价值句、生根发芽收尾；褒贬只切量词与三个开关 |
+
+`four-beat-comment` 与 `writing-rules` 互斥，后者专门禁止这种升华腔。
 
 ## reading-notes — P1
 
