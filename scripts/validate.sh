@@ -235,6 +235,16 @@ elif m.group(1) != library_version:
         % (m.group(1), library_version)
     )
 
+# 反向检查：索引里状态不是 planned 的行，必须真有对应的 skill 目录。
+# 删掉一个 skill 却忘了删索引行，靠正向检查抓不到。
+for row in re.finditer(r"^\|\s*`([a-z0-9-]+)`\s*\|[^|]*\|\s*([a-z]+)\s*\|", index_text, re.M):
+    row_name, row_status = row.group(1), row.group(2)
+    if row_status != "planned" and row_name not in seen_names:
+        errors.append(
+            "SKILL_INDEX.md lists %r as %s but skills/**/%s/SKILL.md does not exist"
+            % (row_name, row_status, row_name)
+        )
+
 # ---------------------------------------------------------------- report
 
 for w in warnings:

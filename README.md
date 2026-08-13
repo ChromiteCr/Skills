@@ -1,7 +1,7 @@
 # Skills
 
 [![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
-[![skills](https://img.shields.io/badge/skills-19-2f81f7?style=flat-square)](SKILL_INDEX.md)
+[![skills](https://img.shields.io/badge/skills-20-2f81f7?style=flat-square)](SKILL_INDEX.md)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
 [![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20studynest-555555?style=flat-square)](#compatibility)
 
@@ -45,6 +45,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 - **[`ui-design-system-builder`](skills/coding-helper/ui-design-system-builder/SKILL.md)**: Pulls a concrete image out of the project itself, derives a set of CSS tokens and a type scale from it, then builds components on top. Ships with an anti-default checklist.
 - **[`maestrwave-ui-system`](skills/coding-helper/maestrwave-ui-system/SKILL.md)**: Drops in my dark serif visual system. The `global.css` and the component layer are copy-paste ready.
 - **[`launch-summary-panel`](skills/coding-helper/launch-summary-panel/SKILL.md)**: Turns scattered product material into one 16:9 bento summary panel. It writes a brief first and waits, and every number has to trace back to the source or get flagged.
+- **[`radio-quote-card`](skills/coding-helper/radio-quote-card/SKILL.md)**: Name, line, accent color in; one team-radio-style quote card out. Single file, no team badges, and it will not put invented words in a real person's mouth.
 
 **Music**
 
@@ -60,8 +61,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 **Prose**
 
 - **[`writing-rules`](skills/writing/writing-rules/SKILL.md)**: Fifteen rules against the AI register in Chinese, including a hard banned-word list and a tone spec. Only active when I ask for it by name, dormant the rest of the time.
-- **[`zlc`](skills/writing/zlc/SKILL.md)**: A four-beat Chinese comment cadence lifted from a classmate. The joke lives in beat two, where a ceremonial tone gets pinned to one very small concrete fact.
-- **[`four-beat-comment`](skills/writing/four-beat-comment/SKILL.md)**: A four-beat Chinese comment cadence lifted from a classmate of mine. Praise and mockery share one skeleton and differ by three switches. Mutually exclusive with `writing-rules`, which bans exactly this register.
+- **[`zlc`](skills/writing/zlc/SKILL.md)**: A four-beat Chinese comment cadence lifted from a classmate. The joke lives in beat two, where a ceremonial tone gets pinned to one very small concrete fact. Mutually exclusive with `writing-rules`, which bans exactly this register.
 
 **Applications and growth records**
 

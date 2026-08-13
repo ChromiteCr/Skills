@@ -1,0 +1,197 @@
+<!doctype html>
+<!--
+  车队无线电风格语录卡 / Radio Quote Card
+
+  改这三处就够了：
+  1) :root 里的 --accent            主色
+  2) .name 里的文字                 说话人名字
+  3) .quote 里的文字                 说话内容
+
+  版式要点（照参考图，别自己改）：
+  - 名字和 RADIO 是上下两行，不是一行
+  - 标题整块右对齐，语录也右对齐
+  - 波形和它下面的红线通栏，左右不留边距
+  - 上半块底色比下半块略亮，中间有一道可见的分界
+
+  图标：默认没有。使用者提供了图标才把 .logo 那一行的注释打开并填 src，
+        它放在第二行 RADIO 的左边。
+        不要自己画或内嵌任何车队、厂商的徽标，那是商标。
+
+  截图：截 .card 那一块，800x1000。
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{NAME}} RADIO</title>
+<style>
+  :root {
+    /* 使用者给的主色。名字、波形、语录、横线都用它 */
+    --accent: #e8112d;
+
+    /* 底色照参考图，与主色无关，不要跟着主色改 */
+    --panel-top: #141417;
+    --panel-bottom: #0b0b0d;
+    --edge: rgba(255, 255, 255, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #17181c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .card {
+    width: 800px;
+    height: 1000px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* 重字重 + 斜体 + 窄字面，这套组合是这个格式的签名 */
+    font-family: "Arial Narrow", "Helvetica Neue", Helvetica, Arial,
+      "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- 上半块：标题 + 波形 ---------- */
+
+  .top {
+    background:
+      radial-gradient(130% 70% at 50% 0%, #1c1d22 0%, transparent 62%),
+      var(--panel-top);
+    padding-top: 52px;
+    border-bottom: 1px solid var(--edge);
+  }
+
+  /* 标题两行，整块右对齐 */
+  .head {
+    padding: 0 52px;
+    text-align: right;
+  }
+  .line {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+  }
+  .name, .radio {
+    line-height: 1.0;
+    letter-spacing: 0.005em;
+    /* 字体本身的斜度不够，再切一点，贴近参考图的倾角 */
+    transform: skewX(-7deg);
+    display: inline-block;
+  }
+  /* 参考图里 RADIO 比名字大一号，不是同一个字号 */
+  .name { font-size: 116px; color: var(--accent); }
+  .radio { font-size: 138px; color: #f4f4f6; }
+  /* 使用者提供了图标才打开这一段。它在第二行 RADIO 左边
+  .logo { height: 104px; width: auto; transform: skewX(-7deg); }
+  */
+
+  /* 波形通栏，左右不留边距 */
+  .wave-wrap { margin-top: 76px; }
+  .wave {
+    height: 96px;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+  }
+  .wave i {
+    flex: 1 1 auto;
+    background: var(--accent);
+    /* 高度由脚本按文本种子生成，同样的输入得到同一条波形 */
+  }
+  .wave-rule { height: 5px; background: var(--accent); margin-top: 9px; }
+
+  /* 红线到分界之间留一小条上半块的底色，参考图就是这样 */
+  .top-tail { height: 44px; }
+
+  /* ---------- 下半块：语录 ---------- */
+
+  .bottom {
+    flex: 1;
+    background: var(--panel-bottom);
+    display: flex;
+    align-items: center;
+    padding: 0 48px 40px;
+  }
+  .quote {
+    /* 语录不占满整宽，右侧对齐、左边留一条空。给到 86% 是为了一行多放几个词，
+       行数少一点更好读；再宽就贴到边了 */
+    max-width: 86%;
+    margin-left: auto;
+    font-size: 66px;      /* 按字符数选档位，见 SKILL.md */
+    line-height: 1.2;
+    color: var(--accent);
+    text-align: right;    /* 参考图是右对齐，不是居中 */
+    letter-spacing: 0.002em;
+    transform: skewX(-7deg);
+  }
+
+  /* ---------- 底边 ---------- */
+
+  .foot-rule { height: 9px; background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <div class="top">
+    <div class="head">
+      <div class="line"><span class="name">{{NAME}}</span></div>
+      <div class="line">
+        <!-- 有图标时把下面这行的注释打开，并把 .logo 那段 CSS 也打开
+        <img class="logo" src="{{LOGO}}" alt="">
+        -->
+        <span class="radio">RADIO</span>
+      </div>
+    </div>
+
+    <div class="wave-wrap">
+      <div class="wave" id="wave"></div>
+      <div class="wave-rule"></div>
+    </div>
+
+    <div class="top-tail"></div>
+  </div>
+
+  <div class="bottom">
+    <div class="quote">&ldquo;{{QUOTE}}&rdquo;</div>
+  </div>
+
+  <div class="foot-rule"></div>
+
+</div>
+
+<script>
+  // 波形按文本做种子生成，同一句话每次渲染都是同一条，不会每次刷新都变
+  const wave = document.getElementById('wave');
+  const seedText = document.querySelector('.quote').textContent
+    + document.querySelector('.name').textContent;
+  let s = 0;
+  for (const ch of seedText) s = (s * 31 + ch.codePointAt(0)) >>> 0;
+  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+
+  const BARS = 148;
+  for (let i = 0; i < BARS; i++) {
+    // 中间高两头低的包络，叠一层小幅噪声。噪声压得住，才像电平表而不像随机柱状图
+    const t = i / (BARS - 1);
+    const envelope = 0.52 + 0.48 * Math.sin(Math.PI * t) ** 0.55;
+    const h = Math.max(14, Math.min(100, (envelope * (0.74 + 0.30 * rnd())) * 100));
+    const bar = document.createElement('i');
+    bar.style.height = h.toFixed(1) + '%';
+    wave.appendChild(bar);
+  }
+</script>
+
+</body>
+</html>

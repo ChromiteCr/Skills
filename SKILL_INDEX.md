@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.13.0`
+Library Version: `0.14.0`
 
 ---
 
@@ -18,6 +18,7 @@ Library Version: `0.13.0`
 |---|---|---|---|---|
 | `ui-design-system-builder` | P0 | draft | 0.1.0 | 从项目意象推出一套 token 与排版尺度，让界面不像模板 |
 | `maestrwave-ui-system` | P0 | draft | 0.1.0 | 直接套用 MaestrWave 那套深色衬线视觉，附可粘贴的 global.css 与组件层 |
+| `radio-quote-card` | P2 | draft | 0.1.0 | 名字＋内容＋主色生成车队无线电风格语录卡，单文件 800×1000，不带任何厂商徽标 |
 | `launch-summary-panel` | P1 | draft | 0.1.0 | 产品资料收成 16:9 bento 总结面板：先出策划稿再出单文件 HTML，数字必须有出处 |
 | `coding-project-brief-builder` | P0 | planned | — | 收敛需求，产出项目 brief |
 | `architecture-planner` | P0 | planned | — | 规划架构与模块边界 |
@@ -90,9 +91,8 @@ Chinese lyric writing plus LLM-to-MIDI composition.
 |---|---|---|---|---|
 | `zlc` | P2 | draft | 0.1.0 | 四拍点评句式：表态、否定加事实、价值、呼吁；褒贬三开关一起翻 |
 | `writing-rules` | P1 | draft | 0.2.0 | 十五条反 AI 腔规则：禁破折号、禁"不是A，是B"、打破三点式、必须有立场、禁虚构细节、硬性禁用词表、写完即止 |
-| `four-beat-comment` | P2 | draft | 0.1.0 | 四拍点评体：表态、否定加肯定、价值句、生根发芽收尾；褒贬只切量词与三个开关 |
 
-`four-beat-comment` 与 `writing-rules` 互斥，后者专门禁止这种升华腔。
+`zlc` 与 `writing-rules` 互斥，后者专门禁止这种升华腔。
 
 ## reading-notes — P1
 
