@@ -38,7 +38,7 @@ Self-review is allowed, but the checklist below is not optional.
 
 ### 3.1 运行时扩展键 / Runtime extension keys
 
-除必填键外，frontmatter 可以带一组**可选**扩展键，供把 SKILL.md 当作可执行规格来跑的运行时读取（目前是 StudyNest）。校验脚本不拒绝额外键，Claude Code 也忽略未知键，所以**同一份 SKILL.md 在两边都能用，不需要 fork 格式**。不写这些键的 skill 一切照旧。
+除必填键外，frontmatter 可以带一组**可选**扩展键，供把 SKILL.md 当作可执行规格来跑的运行时读取（目前是 nestudy）。校验脚本不拒绝额外键，Claude Code 也忽略未知键，所以**同一份 SKILL.md 在两边都能用，不需要 fork 格式**。不写这些键的 skill 一切照旧。
 
 | 键 | 类型 | 含义 |
 |---|---|---|

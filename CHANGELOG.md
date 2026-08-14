@@ -5,6 +5,14 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.14.1 — 2026-08-05
+
+运行时改名：`compatible_agents` 里的 `studynest` 全部改为 `nestudy`（与域名 nestudy.cn 对齐），
+README / CONTRIBUTING / 本文件里指向该运行时的说法一并更新。
+
+只是换个名字，没有行为变化：`compatible_agents` 从来只做必填校验、不做匹配，
+所以改名前写着 `studynest` 的 skill 装到哪儿都照跑。
+
 ## 0.6.0 — 2026-08-05
 
 `study-planning` 新增 `project-brainstorm`（`0.1.0` / draft），该集合补到 8 个。
@@ -22,11 +30,11 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
   需要学校批但没人牵头、需要连续三个月投入但下学期是大考季。说出来比列十个优点有用。
 - **先去重再数积累**。学生的反思、复盘、活动记录里同一件事会出现好几遍，
   不合并就会把"三条记录"读成"三件事"，据此劝他别做一个其实还很空的方向。
-  这一步用运行时新增的 `dedupe_findings`（StudyNest 侧）：链接规范化 + 字面重合度，
+  这一步用运行时新增的 `dedupe_findings`（nestudy 侧）：链接规范化 + 字面重合度，
   确定的部分由代码做，**语义上算不算一回事仍然是判断题**，工具只把中间地带的成对结果
   报出来交给模型看。
 
-网页检索的部分等 StudyNest S11 的 `web_search` 落地后接入——去重本身不需要改动，
+网页检索的部分等 nestudy S11 的 `web_search` 落地后接入——去重本身不需要改动，
 它只认 `{title, url, text}` 这个形状，不关心结果从哪来。
 
 ## 0.5.0 — 2026-08-04
@@ -59,7 +67,7 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 - `skill-creator` — 从访谈式改成"查完能力直接贴一份完整草稿"，自己拿的主意全部标出来，关键分歧（触发场景 / 要不要写库 / 边界）一次问完。
 - `reflection-interviewer` — **唯一保留慢慢问的 skill**。替学生写一版反思让他改，写出来的就是你的反思不是他的，这里先产出是错的。只把可穷举的两处（选哪段经历、连哪条边）改成选择题，开放访谈仍然一次一问；删掉"先贴全文再问对不对"那一轮——提案卡本身就是回读确认。
 
-`ask_user` 是 StudyNest 运行时新增的能力（`kind: ask`：不碰数据，出一张选择题卡然后停机等人）。
+`ask_user` 是 nestudy 运行时新增的能力（`kind: ask`：不碰数据，出一张选择题卡然后停机等人）。
 八个 skill 一律把它放在 **`optional_capabilities`** 而不是 `capabilities`——
 这不是保守，是新姿势的自洽：每个流程都必须在问不了的时候仍然走得完（按默认值做出来并写明假设），
 那它就不是必需能力。Claude Code 里没有这个工具，同一份 SKILL.md 照样跑得动。
@@ -90,4 +98,4 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 ## 0.2.0 — 2026-08-03
 
 - 新增 skill `admissions-reader`（`skills/study-planning/admissions-reader/`，`0.1.0` / draft）：以顶尖大学招生官视角通读学生档案与经历，只读不写。
-- frontmatter 增加一组**可选**的运行时扩展键，供 StudyNest 这类 SKILL.md 运行时读取：`display_name`、`capabilities`、`optional_capabilities`、`outputs`、`max_rounds`、`suggest_hint`。这些键不进必填集合，`scripts/validate.sh` 不拒绝额外键，Claude Code 也忽略未知键——同一份 SKILL.md 因此在两边都能用，不需要 fork 格式。
+- frontmatter 增加一组**可选**的运行时扩展键，供 nestudy 这类 SKILL.md 运行时读取：`display_name`、`capabilities`、`optional_capabilities`、`outputs`、`max_rounds`、`suggest_hint`。这些键不进必填集合，`scripts/validate.sh` 不拒绝额外键，Claude Code 也忽略未知键——同一份 SKILL.md 因此在两边都能用，不需要 fork 格式。

@@ -7,7 +7,7 @@ status: draft
 priority: P0
 compatible_agents:
   - claude-code
-  - studynest
+  - nestudy
   - generic-llm-agent
 display_name: 招生官读档
 capabilities:
@@ -105,4 +105,4 @@ suggest_hint: 你已经积累了不少活动经历，试试用「招生官读档
 |---|---|---|---|
 | 0.2.0 | 2026-08-04 | 明确开场不问问题、档案稀薄也先给点评；`ask_user` 只用在点评之后的"深挖哪一块" | minor |
 | 0.1.1 | 2026-08-03 | max_rounds 6 → 40：读取 skill 本身要占一轮，读档案与经历还要一到两轮，6 轮留给点评的余量太紧 | patch |
-| 0.1.0 | 2026-08-03 | 初始草稿；由 StudyNest 内置 JSON skill 定义迁移为 SKILL.md | minor |
+| 0.1.0 | 2026-08-03 | 初始草稿；由 nestudy 内置 JSON skill 定义迁移为 SKILL.md | minor |

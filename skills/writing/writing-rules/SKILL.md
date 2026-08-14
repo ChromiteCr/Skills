@@ -7,7 +7,7 @@ status: draft
 priority: P1
 compatible_agents:
   - claude-code
-  - studynest
+  - nestudy
   - cursor
   - generic-llm-agent
 display_name: 使用规则写作

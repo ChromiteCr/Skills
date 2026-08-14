@@ -87,7 +87,7 @@ Application essays, coursework, competition entries: for anything that goes out 
 
 ## Compatibility
 
-`claude-code`, `cursor`, `codebuddy`, `studynest`, and any agent that can read Markdown. Each `SKILL.md` declares its own list in the frontmatter.
+`claude-code`, `cursor`, `codebuddy`, `nestudy`, and any agent that can read Markdown. Each `SKILL.md` declares its own list in the frontmatter.
 
 ## Add your own
 

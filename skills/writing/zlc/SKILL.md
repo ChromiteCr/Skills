@@ -7,7 +7,7 @@ status: draft
 priority: P2
 compatible_agents:
   - claude-code
-  - studynest
+  - nestudy
   - generic-llm-agent
 display_name: zlc 体
 outputs:

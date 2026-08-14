@@ -7,7 +7,7 @@ status: draft
 priority: P0
 compatible_agents:
   - claude-code
-  - studynest
+  - nestudy
   - generic-llm-agent
 display_name: 反思访谈
 capabilities:

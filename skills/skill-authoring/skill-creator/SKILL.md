@@ -7,7 +7,7 @@ status: draft
 priority: P0
 compatible_agents:
   - claude-code
-  - studynest
+  - nestudy
   - generic-llm-agent
 display_name: 做一个自己的技能
 capabilities:
@@ -143,7 +143,7 @@ status: draft
 priority: P0
 compatible_agents:
   - claude-code
-  - studynest
+  - nestudy
   - generic-llm-agent
 display_name: <中文名，界面上显示的>
 capabilities:          # 不写 = 只读。要写库才列，且只列真正用到的
