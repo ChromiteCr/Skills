@@ -2,6 +2,7 @@
 
 [![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
 [![skills](https://img.shields.io/badge/skills-20-2f81f7?style=flat-square)](SKILL_INDEX.md)
+![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/MaestrWave)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
 [![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20studynest-555555?style=flat-square)](#compatibility)
 
