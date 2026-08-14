@@ -4,7 +4,7 @@
 [![skills](https://img.shields.io/badge/skills-20-2f81f7?style=flat-square)](SKILL_INDEX.md)
 ![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/MaestrWave)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
-[![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20studynest-555555?style=flat-square)](#compatibility)
+[![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20nestudy-555555?style=flat-square)](#compatibility)
 
 My own set of agent skills. They exist so that when I write code, lyrics, application materials or an essay, the agent stops reaching for the default.
 
