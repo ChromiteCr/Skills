@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.14.1`
+Library Version: `0.15.0`
 
 ---
 
@@ -20,6 +20,7 @@ Library Version: `0.14.1`
 | `maestrwave-ui-system` | P0 | draft | 0.1.0 | 直接套用 MaestrWave 那套深色衬线视觉，附可粘贴的 global.css 与组件层 |
 | `radio-quote-card` | P2 | draft | 0.1.0 | 名字＋内容＋主色生成车队无线电风格语录卡，单文件 800×1000，不带任何厂商徽标 |
 | `launch-summary-panel` | P1 | draft | 0.1.0 | 产品资料收成 16:9 bento 总结面板：先出策划稿再出单文件 HTML，数字必须有出处 |
+| `keynote-deck-builder` | P1 | draft | 0.1.0 | 描述／演讲稿／现有 PPT 做成发布会风格演示：先定叙事拍点再出片，一片一个概念，不用项目符号，可导 PDF 与可编辑 pptx |
 | `coding-project-brief-builder` | P0 | planned | — | 收敛需求，产出项目 brief |
 | `architecture-planner` | P0 | planned | — | 规划架构与模块边界 |
 | `repo-map-compressor` | P0 | planned | — | 生成 repo map，压缩上下文 |

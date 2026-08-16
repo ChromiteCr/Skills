@@ -1,0 +1,34 @@
+{
+  "_note": "示例片单。产品「Cadence」与其中所有数字都是为了演示编的，不是任何真实产品的参数，不要当真实数据复用。真实项目里每个数字都要能指回材料。",
+  "theme": "dark",
+  "accent": "#c8623a",
+  "font": "Helvetica Neue",
+  "slides": [
+    {"type": "title", "value": "Cadence", "caption": "练琴时间的记录器"},
+    {"type": "phrase", "value": "练了多久，没人说得清"},
+    {"type": "num", "value": "38 分钟", "caption": "自述练琴时长与实测的平均差距"},
+    {"type": "section", "value": "它怎么工作"},
+    {"type": "feature", "value": "夹上就开始", "caption": "夹在谱架上，不用开机也不用配对"},
+    {"type": "feature", "value": "只听节奏", "caption": "识别击弦与换气的节奏，不录音频"},
+    {"type": "feature", "value": "断开也记", "caption": "机上存 30 天，回到网络再同步"},
+    {"type": "section", "value": "规格"},
+    {"type": "specs", "value": "规格", "items": [
+      ["续航", "30 天"],
+      ["机上存储", "30 天"],
+      ["重量", "24 克"],
+      ["夹口", "6-22 毫米"],
+      ["同步", "蓝牙 5.3"],
+      ["防护", "IPX4"]
+    ]},
+    {"type": "versus", "value": "识别准确率", "items": [
+      ["纯麦克风方案", "71%"],
+      ["Cadence", "94%"]
+    ]},
+    {"type": "num", "value": "3 倍", "caption": "相比手记，每周留下的记录条数", "unverified": true},
+    {"type": "price", "value": "Cadence", "items": [
+      ["¥699", "标准版"],
+      ["¥899", "含谱架夹具"]
+    ], "caption": "11 月 8 日发售"},
+    {"type": "close", "value": "练了多久，现在说得清"}
+  ]
+}

@@ -1,7 +1,7 @@
 # Skills
 
 [![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
-[![skills](https://img.shields.io/badge/skills-20-2f81f7?style=flat-square)](SKILL_INDEX.md)
+[![skills](https://img.shields.io/badge/skills-21-2f81f7?style=flat-square)](SKILL_INDEX.md)
 ![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/MaestrWave)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
 [![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20nestudy-555555?style=flat-square)](#compatibility)
@@ -47,6 +47,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 - **[`maestrwave-ui-system`](skills/coding-helper/maestrwave-ui-system/SKILL.md)**: Drops in my dark serif visual system. The `global.css` and the component layer are copy-paste ready.
 - **[`launch-summary-panel`](skills/coding-helper/launch-summary-panel/SKILL.md)**: Turns scattered product material into one 16:9 bento summary panel. It writes a brief first and waits, and every number has to trace back to the source or get flagged.
 - **[`radio-quote-card`](skills/coding-helper/radio-quote-card/SKILL.md)**: Name, line, accent color in; one team-radio-style quote card out. Single file, no team badges, and it will not put invented words in a real person's mouth.
+- **[`keynote-deck-builder`](skills/coding-helper/keynote-deck-builder/SKILL.md)**: A description, a speech script or an existing deck becomes a product-launch presentation. It settles the narrative beats first and waits. One idea per slide, no bullet points anywhere, and the slide never repeats the sentence you are about to say. Exports to PDF and to an editable deck.
 
 **Music**
 

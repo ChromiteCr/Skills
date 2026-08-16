@@ -1,0 +1,443 @@
+<!doctype html>
+<!--
+  发布会风格演示模板 / Keynote Deck
+  阶段二产物。把 {{...}} 全部替换掉，用不上的 <section> 整块删掉，不要留空壳。
+
+  硬规则（违反了就不是这个风格了）：
+  - 一片一个概念。两个概念就是两片
+  - 任何文字不小于 40px（= 30pt）。塞不下就删字，不是缩字号
+  - 没有 <ul>。顺序性内容拆片，并列性内容改成 bento 格或图形
+  - 片上不放页码、页眉页脚、边框、卡片容器；logo 只允许在首尾片
+  - 单文件，不引任何外部资源。离线打开必须完全一致
+  - 数字没出处就标 【未确认】或者不放
+  - 产品位是占位图，由使用者换成有权使用的图
+
+  这里面十四类片型各有一个实例，照抄结构改内容。
+  翻页：方向键 / 空格 / 滚动。导 PDF：scripts/export_pdf.sh
+-->
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{项目名}} · 演示</title>
+<style>
+  /* ── 色板 ──────────────────────────────────────────────
+     底色不用纯黑：近黑的多层渐变，模拟舞台幕布上的光晕。
+     浅色主题用近白不用纯白，纯白投影刺眼。
+     --accent 是占位值，换成使用者给的主色。不要填一个「系统蓝」当默认。 */
+  :root {
+    --ink: #f5f5f7;
+    --muted: rgba(245, 245, 247, 0.62);
+    --faint: rgba(245, 245, 247, 0.38);
+    --line: rgba(245, 245, 247, 0.14);
+    --tile: rgba(245, 245, 247, 0.05);
+    --accent: #5a8dee;            /* 占位 */
+    --bg-base: #0a0b0e;
+    --bg-spill: #24272e;
+    --page: #08090b;
+  }
+
+  :root[data-theme="light"] {
+    --ink: #1d1d1f;
+    --muted: rgba(29, 29, 31, 0.62);
+    --faint: rgba(29, 29, 31, 0.40);
+    --line: rgba(29, 29, 31, 0.12);
+    --tile: rgba(29, 29, 31, 0.04);
+    --accent: #2b5fd0;            /* 占位 */
+    --bg-base: #f5f5f7;
+    --bg-spill: #ffffff;
+    --page: #e8e8ec;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; height: 100%; }
+
+  body {
+    background: var(--page);
+    color: var(--ink);
+    /* 只走系统栈。不要写 "SF Pro Display"：本机文件名是 SFNS.ttf，按那个名字引不可靠，
+       而且 SF Pro 的授权只允许做 Apple 系统界面的 mockup，不允许随文件分发。 */
+    font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 翻页容器 ────────────────────────────────────────── */
+  .deck {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+
+  .slide {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    scroll-snap-align: start;
+  }
+
+  /* 舞台恒为 1920×1080，只做视觉缩放，所以字号比例在任何窗口下都不变。
+     居中必须用绝对定位 + translate：舞台比视口大，grid 的 place-items:center
+     遇到超出容器的子项会退回 start 对齐，居中会失效。 */
+  .stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1920px;
+    height: 1080px;
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+    overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% -10%, var(--bg-spill) 0%, transparent 58%),
+      var(--bg-base);
+    /* 极淡的颗粒，作用是压住大面积渐变的色带。内联 SVG，不是外部资源 */
+    display: grid;
+    align-content: center;
+    /* 内容离边留 10–15%：1920 宽对应 192–288px */
+    padding: 120px 200px;
+  }
+
+  .stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .stage > * { position: relative; z-index: 1; }
+
+  /* ── 字号阶梯 ──────────────────────────────────────────
+     下限 40px = 30pt。这条不可破，它的作用是逼着删内容。 */
+  .num     { font-size: 320px; line-height: 0.9;  font-weight: 700; letter-spacing: -0.02em; }
+  .phrase  { font-size: 180px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; }
+  .feature { font-size: 120px; line-height: 1.1;  font-weight: 600; letter-spacing: -0.015em; }
+  .title   { font-size: 96px;  line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
+  .sub     { font-size: 44px;  line-height: 1.4;  font-weight: 400; color: var(--muted); }
+  .label   { font-size: 40px;  line-height: 1.3;  font-weight: 500; color: var(--muted); }
+
+  .center { text-align: center; justify-items: center; }
+  .accent { color: var(--accent); }
+  .stack  { display: grid; gap: 40px; }
+
+  /* 未确认标记：片上必须看得见，不能只写在大纲里自己知道 */
+  .unverified {
+    display: inline-block;
+    font-size: 40px;
+    font-weight: 500;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 28px;
+  }
+
+  /* ── bento 网格：分层靠格子大小，不靠列表缩进 ────────── */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 200px;
+    gap: 24px;
+  }
+
+  .tile {
+    background: var(--tile);
+    border-radius: 28px;
+    padding: 40px;
+    display: grid;
+    align-content: space-between;
+  }
+
+  .tile.big  { grid-column: span 2; grid-row: span 2; }
+  .tile.wide { grid-column: span 2; }
+
+  .tile .k { font-size: 40px; color: var(--muted); font-weight: 500; }
+  .tile .v { font-size: 72px; font-weight: 600; line-height: 1; }
+  .tile.big .v { font-size: 120px; }
+
+  /* ── 规格密排 ─────────────────────────────────────────── */
+  .specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 80px; }
+  .spec  { display: grid; gap: 8px; padding: 28px 0; border-top: 1px solid var(--line); }
+  .spec .k { font-size: 40px; color: var(--muted); }
+  .spec .v { font-size: 64px; font-weight: 600; }
+
+  /* ── 双列对比：列头必须标明对比的轴 ──────────────────── */
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 120px; align-items: start; }
+  .versus .col { display: grid; gap: 24px; }
+  .versus .head { font-size: 44px; color: var(--muted); }
+  .versus .val  { font-size: 200px; font-weight: 700; line-height: 0.95; letter-spacing: -0.02em; }
+  .versus .col.now .val { color: var(--accent); }
+
+  /* ── 图表：纯 CSS 柱状，基线必须从零起 ───────────────── */
+  .chart { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 60px; align-items: end; height: 520px; }
+  .bar   { display: grid; align-content: end; gap: 24px; text-align: center; }
+  .bar .fill { background: var(--tile); border-radius: 16px 16px 0 0; }
+  .bar.on .fill { background: var(--accent); }
+  .bar .v { font-size: 56px; font-weight: 600; }
+  .bar .k { font-size: 40px; color: var(--muted); }
+  .zero  { border-top: 1px solid var(--line); margin-top: -1px; padding-top: 20px; font-size: 40px; color: var(--faint); }
+
+  /* ── logo 墙：只放占位框。不要放任何真实商标 ─────────── */
+  .logos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .logo-slot {
+    height: 160px;
+    border: 1px dashed var(--line);
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    color: var(--faint);
+  }
+
+  /* ── 产品位占位图：居中浮着，留白四到五成，不出血 ────── */
+  .hero {
+    justify-self: center;
+    width: 900px;
+    height: 560px;
+    border-radius: 48px;
+    background:
+      radial-gradient(80% 60% at 50% 0%, rgba(255,255,255,0.10) 0%, transparent 70%),
+      var(--tile);
+    border: 1px dashed var(--line);
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    color: var(--faint);
+  }
+
+  /* ── 价格片 ───────────────────────────────────────────── */
+  .price { display: flex; gap: 140px; justify-content: center; }
+  .price .item { display: grid; gap: 16px; text-align: center; }
+  .price .p { font-size: 140px; font-weight: 700; line-height: 1; }
+  .price .n { font-size: 44px; color: var(--muted); }
+
+  /* ── 舞台外的操作条。投屏、截图、打印都不会带进去 ────── */
+  .chrome {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--page) 80%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 8px 6px 16px;
+    backdrop-filter: blur(12px);
+  }
+
+  .chrome button {
+    font: inherit;
+    color: var(--ink);
+    background: var(--tile);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+
+  /* ── 打印：一片一页，1:1 不缩放 ──────────────────────── */
+  @page { size: 1920px 1080px; margin: 0; }
+
+  @media print {
+    .chrome { display: none; }
+    .deck { height: auto; overflow: visible; }
+    .slide { height: 1080px; width: 1920px; break-after: page; }
+    /* 打印时 1:1，回到普通流，不缩放不偏移 */
+    .stage { position: static; transform: none; }
+    /* 颗粒在屏幕上压渐变色带，但逐页栅格化会让 PDF 大出一个数量级，打印时去掉 */
+    .stage::after { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · 标题卡 ───────────────────────────────────────── -->
+  <section class="slide"><div class="stage center stack">
+    <div class="phrase">{{产品名}}</div>
+    <div class="sub">{{一句话定位，不超过 20 字}}</div>
+  </div></section>
+
+  <!-- 2 · 单句大字：现状的问题。用人话讲，不用技术约束讲 ── -->
+  <section class="slide"><div class="stage center">
+    <div class="phrase">{{问题，中文 12 字内}}</div>
+  </div></section>
+
+  <!-- 3 · 大数字：一张片只放一个数字，随口播同时落地 ────── -->
+  <section class="slide"><div class="stage center stack">
+    <div class="num accent">{{7 次}}</div>
+    <div class="sub">{{限定条件不能丢，如「完成一笔转账」}}</div>
+  </div></section>
+
+  <!-- 4 · 章节分隔 ─────────────────────────────────────── -->
+  <section class="slide"><div class="stage center">
+    <div class="title" style="color: var(--muted)">{{章节名}}</div>
+  </div></section>
+
+  <!-- 5 · 产品主图。占位图，换成你有权使用的图片 ────────── -->
+  <section class="slide"><div class="stage center stack">
+    <div class="hero">产品占位图 · 换成你有权使用的图</div>
+    <div class="feature">{{产品名}}</div>
+  </div></section>
+
+  <!-- 6 · 功能名 ───────────────────────────────────────── -->
+  <section class="slide"><div class="stage center stack">
+    <div class="feature">{{功能名，中文 8 字内}}</div>
+    <div class="sub">{{一句话，中文 24 字内}}</div>
+  </div></section>
+
+  <!-- 7 · bento 网格：分层靠格子大小 ───────────────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{这一组讲什么}}</div>
+    <div class="bento">
+      <div class="tile big">
+        <div class="k">{{最重要那条}}</div>
+        <div class="v accent">{{值}}</div>
+      </div>
+      <div class="tile"><div class="k">{{标签}}</div><div class="v">{{值}}</div></div>
+      <div class="tile"><div class="k">{{标签}}</div><div class="v">{{值}}</div></div>
+      <div class="tile wide"><div class="k">{{标签}}</div><div class="v">{{值}}</div></div>
+    </div>
+  </div></section>
+
+  <!-- 8 · 规格密排 ─────────────────────────────────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{规格}}</div>
+    <div class="specs">
+      <div class="spec"><div class="k">{{项}}</div><div class="v">{{值}}</div></div>
+      <div class="spec"><div class="k">{{项}}</div><div class="v">{{值}}</div></div>
+      <div class="spec"><div class="k">{{项}}</div><div class="v">{{值}}</div></div>
+      <div class="spec"><div class="k">{{项}}</div><div class="v">{{值}}</div></div>
+      <div class="spec"><div class="k">{{项}}</div><div class="v">{{值}}</div></div>
+      <div class="spec"><div class="k">{{项}}</div><div class="v">{{值}}</div></div>
+    </div>
+  </div></section>
+
+  <!-- 9 · 双列对比：列头必须标明对比的轴 ───────────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{对比什么}}</div>
+    <div class="versus">
+      <div class="col">
+        <div class="head">{{对比对象，如「上一代」}}</div>
+        <div class="val">{{值}}</div>
+      </div>
+      <div class="col now">
+        <div class="head">{{本代}}</div>
+        <div class="val">{{值}}</div>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- 10 · 图表。基线从零起，不要截断纵轴放大差距 ───────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{图表讲什么}}</div>
+    <div class="chart" style="--n: 4">
+      <div class="bar"><div class="v">{{值}}</div><div class="fill" style="height: 28%"></div><div class="k">{{类}}</div></div>
+      <div class="bar"><div class="v">{{值}}</div><div class="fill" style="height: 45%"></div><div class="k">{{类}}</div></div>
+      <div class="bar"><div class="v">{{值}}</div><div class="fill" style="height: 61%"></div><div class="k">{{类}}</div></div>
+      <div class="bar on"><div class="v accent">{{值}}</div><div class="fill" style="height: 100%"></div><div class="k">{{类}}</div></div>
+    </div>
+    <div class="zero">{{纵轴单位}} · 基线为 0</div>
+  </div></section>
+
+  <!-- 11 · logo 墙。占位框，不要放任何真实商标 ──────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{这一组是谁}}</div>
+    <div class="logos">
+      <div class="logo-slot">占位</div>
+      <div class="logo-slot">占位</div>
+      <div class="logo-slot">占位</div>
+      <div class="logo-slot">占位</div>
+    </div>
+    <div class="label">只放你有权使用的标识</div>
+  </div></section>
+
+  <!-- 12 · 数字里有未确认项时，标记必须在片上看得见 ─────── -->
+  <section class="slide"><div class="stage center stack">
+    <div class="num">{{值}}</div>
+    <div class="sub">{{限定条件}}</div>
+    <div class="unverified">未确认 · 材料里没有出处</div>
+  </div></section>
+
+  <!-- 13 · 价格与上市 ──────────────────────────────────── -->
+  <section class="slide"><div class="stage center stack">
+    <div class="title">{{产品名}}</div>
+    <div class="price">
+      <div class="item"><div class="p accent">{{价格}}</div><div class="n">{{配置}}</div></div>
+      <div class="item"><div class="p">{{价格}}</div><div class="n">{{配置}}</div></div>
+    </div>
+    <div class="sub">{{上市日期}}</div>
+  </div></section>
+
+  <!-- 14 · 收束 ────────────────────────────────────────── -->
+  <section class="slide"><div class="stage center">
+    <div class="phrase">{{收束一句，中文 12 字内}}</div>
+  </div></section>
+
+</div>
+
+<div class="chrome">
+  <span id="count">1 / 1</span>
+  <button id="theme">浅色</button>
+</div>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const count = document.getElementById('count');
+
+  // 舞台恒为 1920×1080，只缩放外层，所以任何窗口下字号比例都不变
+  const fit = () => {
+    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    document.documentElement.style.setProperty('--s', s);
+  };
+  window.addEventListener('resize', fit);
+  fit();
+
+  // 翻页：方向键 / 空格 / PageUp PageDown / Home End
+  let i = 0;
+  const go = n => {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides[i].scrollIntoView({ behavior: 'smooth' });
+    count.textContent = `${i + 1} / ${slides.length}`;
+  };
+
+  addEventListener('keydown', e => {
+    const next = ['ArrowRight', 'ArrowDown', ' ', 'PageDown'];
+    const prev = ['ArrowLeft', 'ArrowUp', 'PageUp'];
+    if (next.includes(e.key)) { e.preventDefault(); go(i + 1); }
+    else if (prev.includes(e.key)) { e.preventDefault(); go(i - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0); }
+    else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+  });
+
+  // 滚动翻页时同步计数
+  slides.forEach(s => new IntersectionObserver(entries => {
+    for (const en of entries) {
+      if (en.isIntersecting) {
+        i = slides.indexOf(en.target);
+        count.textContent = `${i + 1} / ${slides.length}`;
+      }
+    }
+  }, { threshold: 0.6 }).observe(s));
+
+  const root = document.documentElement;
+  document.getElementById('theme').onclick = e => {
+    const light = root.dataset.theme === 'light';
+    root.dataset.theme = light ? 'dark' : 'light';
+    e.target.textContent = light ? '浅色' : '深色';
+  };
+
+  count.textContent = `1 / ${slides.length}`;
+</script>
+
+</body>
+</html>
