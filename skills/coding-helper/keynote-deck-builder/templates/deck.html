@@ -27,8 +27,10 @@
      --accent 是占位值，换成使用者给的主色。不要填一个「系统蓝」当默认。 */
   :root {
     --ink: #f5f5f7;
+    /* 透明度是量过的，不是挑好看的：--muted 7.18:1、--faint 4.23:1（底 #0a0b0e）。
+       --faint 只允许用在 ≥40px 的大字上，WCAG 大字门槛 3:1。 */
     --muted: rgba(245, 245, 247, 0.62);
-    --faint: rgba(245, 245, 247, 0.38);
+    --faint: rgba(245, 245, 247, 0.45);
     --line: rgba(245, 245, 247, 0.14);
     --tile: rgba(245, 245, 247, 0.05);
     --accent: #5a8dee;            /* 占位 */
@@ -39,8 +41,10 @@
 
   :root[data-theme="light"] {
     --ink: #1d1d1f;
-    --muted: rgba(29, 29, 31, 0.62);
-    --faint: rgba(29, 29, 31, 0.40);
+    /* 浅色下同样量过：--muted 5.58:1、--faint 3.40:1。原来的 0.62/0.40 在浅色底上
+       只有 4.61:1 与 2.43:1，后者连大字的 3:1 都不到。 */
+    --muted: rgba(29, 29, 31, 0.68);
+    --faint: rgba(29, 29, 31, 0.52);
     --line: rgba(29, 29, 31, 0.12);
     --tile: rgba(29, 29, 31, 0.04);
     --accent: #2b5fd0;            /* 占位 */
@@ -57,11 +61,23 @@
     background: var(--page);
     color: var(--ink);
     /* 只走系统栈。不要写 "SF Pro Display"：本机文件名是 SFNS.ttf，按那个名字引不可靠，
-       而且 SF Pro 的授权只允许做 Apple 系统界面的 mockup，不允许随文件分发。 */
+       而且 SF Pro 的授权只允许做 Apple 系统界面的 mockup，不允许随文件分发。
+       苹方是 macOS 独占，Windows 落到微软雅黑，所以后备必须显式写全。 */
     font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
       "Microsoft YaHei", "Noto Sans SC", sans-serif;
     -webkit-font-smoothing: antialiased;
     font-variant-numeric: tabular-nums;
+
+    /* 苹方的 700/800/900 渲染完全相同，实际上限是 Semibold。禁掉伪粗体，
+       让浏览器退到字体真有的那一档——CJK 的算法加粗很难看。 */
+    font-synthesis: none;
+    /* SF Pro 是可变字体，20pt 以上自动切 Display 光学尺寸（字距收紧） */
+    font-optical-sizing: auto;
+    /* 避头尾禁则：句号逗号不落行首，开括号不落行尾 */
+    line-break: strict;
+    /* 自动在中西文之间插约 1/4 em，「30 天」这类间距不用手工调。
+       2025 年 11 月起成为 baseline，老浏览器忽略此属性，不影响其余渲染。 */
+    text-autospace: normal;
   }
 
   /* ── 翻页容器 ────────────────────────────────────────── */
@@ -171,14 +187,23 @@
   .versus .val  { font-size: 200px; font-weight: 700; line-height: 0.95; letter-spacing: -0.02em; }
   .versus .col.now .val { color: var(--accent); }
 
-  /* ── 图表：纯 CSS 柱状，基线必须从零起 ───────────────── */
-  .chart { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 60px; align-items: end; height: 520px; }
-  .bar   { display: grid; align-content: end; gap: 24px; text-align: center; }
-  .bar .fill { background: var(--tile); border-radius: 16px 16px 0 0; }
+  /* ── 图表：纯 CSS 柱状 ────────────────────────────────
+     柱状图基线必须从零起。这不是审美偏好：Correll 等（CHI 2020）与 Pandey 等（2015）
+     都实测到截断纵轴造成系统性误读，而且**加断轴标记也不能缓解**。
+     另外这里只做柱状与折线：禁 3D、禁饼图、禁面积/半径编码、禁双纵轴。 */
+  .chart { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 60px; height: 520px; }
+  /* 柱子的高度是百分比，所以它所在的行必须有确定高度：.bar 撑满 .chart 的 520px，
+     中间那条 1fr 轨道因此是确定的，百分比才解析得出来。
+     直接写在 .fill 上而父级高度由内容决定的话，柱子会塌成零高。 */
+  .bar   { display: grid; grid-template-rows: auto 1fr auto; gap: 24px; height: 100%; text-align: center; }
+  .bar .col  { display: flex; align-items: flex-end; }
+  .bar .fill { width: 100%; background: var(--tile); border-radius: 16px 16px 0 0; }
   .bar.on .fill { background: var(--accent); }
   .bar .v { font-size: 56px; font-weight: 600; }
   .bar .k { font-size: 40px; color: var(--muted); }
-  .zero  { border-top: 1px solid var(--line); margin-top: -1px; padding-top: 20px; font-size: 40px; color: var(--faint); }
+  /* 纵轴口径与基线说明用 --muted 不用 --faint：这行字承担信息，
+     不能是全片最看不清的。 */
+  .zero  { border-top: 1px solid var(--line); margin-top: -1px; padding-top: 20px; font-size: 40px; color: var(--muted); }
 
   /* ── logo 墙：只放占位框。不要放任何真实商标 ─────────── */
   .logos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
@@ -267,6 +292,13 @@
   }
 
   /* ── 打印：一片一页，1:1 不缩放 ──────────────────────── */
+  /* 前庭功能障碍者会被快速位移触发眩晕（WCAG 2.3.3）。
+     跟随系统的减弱动效设置，平滑滚动改成瞬时。 */
+  @media (prefers-reduced-motion: reduce) {
+    .deck { scroll-behavior: auto; }
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
   @page { size: 1920px 1080px; margin: 0; }
 
   @media print {
@@ -364,11 +396,12 @@
   <section class="slide"><div class="stage stack">
     <div class="title">{{图表讲什么}}</div>
     <div class="chart" style="--n: 4">
-      <div class="bar"><div class="v">{{值}}</div><div class="fill" style="height: 28%"></div><div class="k">{{类}}</div></div>
-      <div class="bar"><div class="v">{{值}}</div><div class="fill" style="height: 45%"></div><div class="k">{{类}}</div></div>
-      <div class="bar"><div class="v">{{值}}</div><div class="fill" style="height: 61%"></div><div class="k">{{类}}</div></div>
-      <div class="bar on"><div class="v accent">{{值}}</div><div class="fill" style="height: 100%"></div><div class="k">{{类}}</div></div>
+      <div class="bar"><div class="v">{{值}}</div><div class="col"><div class="fill" style="height: 28%"></div></div><div class="k">{{类}}</div></div>
+      <div class="bar"><div class="v">{{值}}</div><div class="col"><div class="fill" style="height: 45%"></div></div><div class="k">{{类}}</div></div>
+      <div class="bar"><div class="v">{{值}}</div><div class="col"><div class="fill" style="height: 61%"></div></div><div class="k">{{类}}</div></div>
+      <div class="bar on"><div class="v accent">{{值}}</div><div class="col"><div class="fill" style="height: 100%"></div></div><div class="k">{{类}}</div></div>
     </div>
+    <!-- 柱高必须与数值成正比且从零起。改数字时两处一起改，别只改标签 -->
     <div class="zero">{{纵轴单位}} · 基线为 0</div>
   </div></section>
 

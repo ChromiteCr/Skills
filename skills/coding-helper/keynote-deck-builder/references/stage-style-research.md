@@ -113,7 +113,103 @@
 4. **reveal.js 没有单文件导出**，要手工内联；Slidev 产出多文件 dist 且需要 Node。都不满足"不装东西、单文件、离线"。来源：[reveal.js issue 788](https://github.com/hakimel/reveal.js/issues/788)、[Slidev 导出文档](https://sli.dev/guide/exporting.html)
 5. **手写 HTML+CSS 最合适**：一屏一片、`scroll-snap`、零依赖、离线一致、浏览器直接打印成 PDF。
 
-## 6. 反"发布会腔"/ Against the register
+## 6. 中文排版 / CJK typography
+
+第一轮五路检索全是拉丁文字的资料，但这个 skill 产出的几乎都是中文片子。这一节补的是最大的缺口。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | macOS 自 10.11 起内置苹方，Chrome 与 Safari 的 `system-ui` 在 macOS 上解析到苹方 SC。**苹方是 macOS 独占**，Windows 走微软雅黑，所以字体栈必须显式写后备 | [苹方与系统字体解析](https://gist.github.com/bitinn/42c95ed95aa3dcf155e2) |
+| A | **苹方的 700/800/900 渲染完全相同**，实际字重上限是 Semibold。声明 700 拿不到更粗的字 | [CJK 字重实测](https://blog.csdn.net/zwkkkk1/article/details/100107380) |
+| A | **伪粗体（算法加粗）在 CJK 上很难看**，"粗体"本来就不是中文的传统概念。缺真字重时应 `font-synthesis: none` | [font-synthesis 说明](https://www.edge-cases.com/css/font-synthesis-css) |
+| A | 思源黑体与 Noto Sans CJK 是同一套字体的两个名字，自 v1.002 起用 SIL OFL 1.1，是可以合法分发的替代 | [Source Han Sans](https://en.wikipedia.org/wiki/Source_Han_Sans) |
+| A | **`line-break: strict` 启用避头尾禁则**：句号逗号等不得出现在行首，开括号等不得出现在行尾。2020 年 7 月起浏览器普遍支持 | [MDN line-break](https://developer.mozilla.org/en-US/docs/Web/CSS/line-break)、[东亚换行规则](https://en.wikipedia.org/wiki/Line_breaking_rules_in_East_Asian_languages) |
+| A | **`text-autospace: normal` 自 2025 年 11 月成为 baseline**（Chrome 140+、Safari 18.4+），自动在中日韩与拉丁字母数字之间插入约 1/4 em | [MDN text-autospace](https://developer.mozilla.org/en-US/docs/Web/CSS/text-autospace) |
+| A | W3C 建议中西文之间留至多 1/4 em | [W3C 行内间距](https://www.w3.org/International/articles/styling/inline-space) |
+| B | `line-break: strict` 只阻止**坏的**断行，不会替你挑**好的**断点。大字标题要精确控制断在哪，仍然得手写 `<br>` | [MDN line-break](https://developer.mozilla.org/en-US/docs/Web/CSS/line-break) |
+| B | 中文标题行高比拉丁紧：CJK 字身框没有升降部余量。正文级 1.0–1.3，100px 以上取 1.0–1.15 | [中文排版要点](https://pixelcake.com.tw/posts/chinese-typography-tips/) |
+| B | 大字中文字距容忍度远小于拉丁，0 或轻微负值常见，正值不要超过 0.15em | 同上 |
+| B | 显示级中文标题的可读字数约 8 到 15 字。中文单字信息密度高于拉丁单词，同样一张片装的**字数更少而信息更多** | [标题字数建议](https://zhuanlan.zhihu.com/p/582583945) |
+
+## 7. 数字与主张的举证 / Claim substantiation
+
+原来那节事实校验规则是我自己编的，没有外部依据。这一节是它的依据。
+**出处是美国商业广告的监管标准**，本 skill 的使用者多数在做答辩与项目演示而非广告，
+所以按"什么样的数字算诚实"来用，不作为法律建议。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | **接近性要求**：限定条件必须"清晰醒目"且紧邻主张本身。光打一个星号指向别处的脚注不满足这个标准 | [FTC 广告举证政策声明](https://www.ftc.gov/legal-library/browse/ftc-policy-statement-regarding-advertising-substantiation) |
+| A | **"最高可达 / up to"**：要能证明**典型用户**在正常情况下能达到那个上限，不是个别案例。依赖特定配置时，条件要写在主张旁边 | [FTC 对 up-to 主张的口径](https://advertisinglaw.fkks.com/post/102jcia/the-ftc-weighs-in-again-on-up-to-claims) |
+| A | **对比性主张**：对比基准必须清楚标明，且要用当前版本而非过时的对照物。"快 3 倍"不写清比什么、哪个版本、什么时候测的，就是不合格 | [FTC 对比广告政策](https://www.ftc.gov/legal-library/browse/statement-policy-regarding-comparative-advertising) |
+| A | 性能类主张的举证门槛是"有资质且可靠的证据"：有记录的方法、公开的条件、能代表典型使用场景 | [FTC 举证政策声明](https://www.ftc.gov/legal-library/browse/ftc-policy-statement-regarding-advertising-substantiation) |
+| A | **调研数字的披露标准**：样本量、抽样方法、误差范围、调查方式、加权方式、题目原文 | [AAPOR 披露标准](https://aapor.org/standards-and-ethics/disclosure-standards/) |
+| A | 苹果自己**不在数字旁边打星号**。做法是页首一句统概免责（"实际结果会有差异"），再用分区详列测试日期、机型、网络类型与条件 | [Apple 电池续航页](https://www.apple.com/iphone/battery.html) |
+
+## 8. 图表 / Charts
+
+**这是整套风格里唯一一处不能照抄参考对象的地方。**
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | 纵轴截断导致系统性误读。Correll、Bertini、Franconeri 专门检验了"折线图可以豁免"这个流行说法——**不能**，折线与柱状都会被误读；而且**断轴标记也不能缓解** | [Correll et al., CHI 2020](https://dl.acm.org/doi/10.1145/3313831.3376222) |
+| A | Pandey 等 330 人实验：截断纵轴造成的误读效应量为"大" | [Pandey et al. 2015](https://medium.com/@Infogram/study-asks-how-deceptive-are-deceptive-visualizations-8ff52fd81239) |
+| A | **苹果自己的图表被批评过**：iPhone 累计销量图整个纵轴刻度缺失，iPad 那张低估实际销量约三成 | [Quartz 的分析](https://qz.com/138458/apple-is-either-terrible-at-designing-charts-or-thinks-you-wont-notice-the-difference) |
+| A | 双纵轴通过调整两侧量程可以造出虚假相关 | [Flourish 对双轴图的说明](https://flourish.studio/blog/dual-axis-charts/) |
+| A | 面积编码违反 Stevens 幂律：人对面积的感知指数约 0.7，会系统性低估；用半径编码更糟 | [编码方式与感知](https://www.datylon.com/blog/bad-data-visualization-examples) |
+| A | 3D 透视让前景柱看起来比等值的背景柱大，无法比较 | [Highcharts 对 3D 图的分析](https://www.highcharts.com/blog/best-practices/3d-graph-useful-visualization-or-misleading-illusion/) |
+| A | Okabe-Ito 八色板由色觉障碍研究者设计，在各类色觉障碍下都可区分 | [色觉障碍安全色板](https://glasbey.readthedocs.io/en/latest/color_vision_deficiency.html) |
+| A | 红绿色觉障碍影响约 8% 男性、0.5% 女性 | [色觉障碍流行率](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12385717/) |
+| B | 直接标注优于图例：图例迫使观众在图与图例之间来回，增加认知负荷与出错率。投影距离下图例基本读不到 | [直接标注与图例](https://xdgov.github.io/data-design-standards/components/labels/) |
+| B | Gelman 的折中："零如果就在附近，就请它进来"——数据接近零就带上零轴，远离零（如股价 90–200）可以不带，但要明确标注 | [Observable 的讨论](https://observablehq.com/blog/never-okay-crop-y-axis-except-when-it-is) |
+
+## 9. 投影可读性与无障碍 / Legibility and accessibility
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | WCAG 对比度：正文 4.5:1，大字（≥18pt 或 ≥14pt 粗体）3:1；AAA 分别是 7:1 与 4.5:1 | [WebAIM 对比度](https://webaim.org/articles/contrast/)、[WCAG 1.4.3](https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast-contrast.html) |
+| A | **颜色不能是传达信息的唯一手段**，要配文字、图标或形状 | [WCAG 1.4.1](https://www.w3.org/WAI/WCAG21/Understanding/use-of-color.html) |
+| A | `prefers-reduced-motion` 对应操作系统的减弱动效设置；WCAG 2.3.3 要求由交互触发的动画可关闭 | [WCAG 2.3.3](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html) |
+| A | 前庭功能障碍者会被快速位移、视差与自动播放触发眩晕与恶心 | [前庭无障碍](https://alistapart.com/article/accessibility-for-vestibular/) |
+| A | 投影距离下无衬线优于衬线；**Thin 与 Light 字重在投影上笔画会糊掉或消失**，正文不低于 Regular(400) | [可读性指南](https://www.linearity.io/blog/legibility-vs-readability/) |
+| B | AVIXA 的视距标准与 10–20 弧分的文字张角要求 | [AVIXA 显示尺寸标准](https://www.avixa.org/resources/standards/display-image-size-for-2d-content)、[Extron 字号文章](https://www.extron.com/article/videowallfontsize) |
+| B | 环境光会吞掉对比度：500 lux 下，标称 1000:1 的投影机实际会掉到 50:1 以下 | [环境光与投影](https://global.xgimi.com/blogs/projectors-101/choose-projectors-in-different-ambient-light) |
+| B | 深底浅字与浅底深字没有普适优胜者，**对比度比色相重要**。亮房间用浅底时要用近白而不是纯白 | [Tufte 的讨论](https://www.edwardtufte.com/notebook/recommended-background-for-projected-presentations/) |
+| C | "最小字高 = 房间进深英寸 ÷ 400" —— 换算下来只有 8.6 弧分，**低于 10 弧分的可辨识下限**，这条规则是错的，不采用 | — |
+
+### 本仓库自行推导：40px 下限站得住吗
+
+流传的经验规则彼此矛盾（"每 10 英尺 1 英寸"是 28.6 弧分，"进深 ÷ 400"是 8.6 弧分，差三倍多），
+所以直接用几何算。**结论与幕布物理尺寸无关**，只取决于字高占屏高的比例与"视距等于几个屏高"：
+
+```
+θ(弧分) = 3437.75 × (字高px / 1080) ÷ (视距 ÷ 屏高)
+```
+
+40px 下限的张角：
+
+| 视距（屏高的倍数） | 6 | 8 | 10 | 12 |
+|---|---|---|---|---|
+| 张角（弧分） | 21.2 | 15.9 | 12.7 | 10.6 |
+
+按 15 弧分的舒适阈值反推所需字高：6 屏高需 28px，8 屏高需 38px，10 屏高需 47px，12 屏高需 57px。
+
+**所以 40px（30pt）对进深 8 个屏高以内的房间成立，深礼堂要提到 48px。**
+这条独立几何推导与苹果内部那条"不低于 30pt"互相印证，两者来源完全无关。
+
+## 10. 2023–2026 的演变 / Recent evolution
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | SF Pro 已并入可变字体，带光学尺寸轴：20pt 以下走 Text（字距放宽、笔画加重），以上走 Display（字距收紧） | [Apple Fonts](https://developer.apple.com/fonts/) |
+| A | Liquid Glass 是 WWDC 2025 发布的**系统 UI 材质**，是苹果专有的，**不出现在发布会的片子里**，只在软件演示录像中 | [WWDC 2025 报道](https://www.engadget.com/big-tech/wwdc-2025-ios-26-new-liquid-glass-design-and-everything-else-apple-announced-171718769.html) |
+| A | 拟物化（真实材质、产品下方倒影、厚投影）在 iOS 7（2013）被整体废除，至今十三年。现在再用一眼就是旧年份的味道 | [iOS 7 与拟物化的终结](https://applescoop.org/story/the-end-of-skeuomorphism-how-ios-7-changed-ui-design) |
+| B | bento 网格的构图规矩：一张片 8–12 格，超过 12 格构图垮掉；锚点格面积约为支撑格的两倍；格子里放数字而不是标题 | [bento 版式拆解](https://www.deck.gallery/blog/apple-bento-grid-breakdown/) |
+| B | **bento 已经用滥**：2024 年后"每个 SaaS 落地页都默认用它"，设计圈批评其同质化。较好的做法是混合媒介、有意打破对齐 | [bento 实践指南](https://www.saasframe.io/blog/designing-bento-grids-that-actually-work-a-2026-practical-guide/) |
+| B | "one more thing" 自 2014 年 Apple Watch 之后基本停用；独角戏式的空台揭示被多人分段与预录片段取代 | [one more thing 清单](https://www.macworld.com/article/674643/every-one-more-thing-apple-has-ever-announced.html) |
+| B | Liquid Glass 上线后被批评可读性下降：文字与壁纸混在一起、半透明图标与背景糊成一片，被拿来类比 Windows Vista Aero | [对 Liquid Glass 的批评](https://medium.com/macoclock/apple-has-dressed-its-operating-systems-in-liquid-glass-551d1ef991b4) |
+
+## 11. 反"发布会腔"/ Against the register
 
 研究里没有这一条，但它是这套风格最容易翻车的地方，所以写进规则。
 

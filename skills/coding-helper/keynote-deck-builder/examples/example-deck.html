@@ -14,7 +14,7 @@
   :root {
     --ink: #f5f5f7;
     --muted: rgba(245, 245, 247, 0.62);
-    --faint: rgba(245, 245, 247, 0.38);
+    --faint: rgba(245, 245, 247, 0.45);
     --line: rgba(245, 245, 247, 0.14);
     --tile: rgba(245, 245, 247, 0.05);
     --accent: #e0774a;
@@ -25,8 +25,8 @@
 
   :root[data-theme="light"] {
     --ink: #1d1d1f;
-    --muted: rgba(29, 29, 31, 0.62);
-    --faint: rgba(29, 29, 31, 0.40);
+    --muted: rgba(29, 29, 31, 0.68);
+    --faint: rgba(29, 29, 31, 0.52);
     --line: rgba(29, 29, 31, 0.12);
     --tile: rgba(29, 29, 31, 0.04);
     --accent: #b8501f;
@@ -45,6 +45,10 @@
       "Microsoft YaHei", "Noto Sans SC", sans-serif;
     -webkit-font-smoothing: antialiased;
     font-variant-numeric: tabular-nums;
+    font-synthesis: none;
+    font-optical-sizing: auto;
+    line-break: strict;
+    text-autospace: normal;
   }
 
   .deck {
@@ -186,6 +190,11 @@
     border-radius: 999px;
     padding: 5px 12px;
     cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .deck { scroll-behavior: auto; }
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
   @page { size: 1920px 1080px; margin: 0; }
