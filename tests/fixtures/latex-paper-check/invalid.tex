@@ -1,0 +1,13 @@
+\documentclass{article}
+\usepackage{graphicx}
+\begin{document}
+TODO: resolve this text.
+Figure 2 is discussed before Figure~\ref{fig:missing-label}.
+\section{First}\label{sec:duplicate}
+\section{Second}\label{sec:duplicate}
+\includegraphics{figures/not-there}
+The unsupported claim cites \cite{unknown2026}.
+% \label{commented-label} \includegraphics{commented-missing}
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

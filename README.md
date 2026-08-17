@@ -1,10 +1,10 @@
 # Skills
 
 [![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
-[![skills](https://img.shields.io/badge/skills-21-2f81f7?style=flat-square)](SKILL_INDEX.md)
+[![skills](https://img.shields.io/badge/skills-30-2f81f7?style=flat-square)](SKILL_INDEX.md)
 ![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/MaestrWave)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
-[![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20cursor%20%7C%20nestudy-555555?style=flat-square)](#compatibility)
+[![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20codex%20%7C%20cursor%20%7C%20nestudy-555555?style=flat-square)](#compatibility)
 
 My own set of agent skills. They exist so that when I write code, lyrics, application materials or an essay, the agent stops reaching for the default.
 
@@ -53,6 +53,18 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 
 - **[`llm-midi-composition`](skills/songwriting/llm-midi-composition/SKILL.md)**: Gets an LLM to write a score instead of audio. Two-stage calls, salvage of truncated output, deterministic repair, and a rule-based fallback that never pretends to be the model.
 
+**Mathematical modeling**
+
+- **[`modeling-problem-reading-coach`](skills/modeling/modeling-problem-reading-coach/SKILL.md)**: Turns a modeling prompt into a checkable contract: objectives, variables and units, constraints, subproblem dependencies, ambiguities, and missing information. It stops before model selection or solution writing.
+- **[`model-selection-tutor`](skills/modeling/model-selection-tutor/SKILL.md)**: Compares genuinely different model families against a simple baseline, data and assumptions, identifiability, validation cost, extrapolation, and failure behavior. Recommendations stay conditional until a discriminating test is run.
+- **[`modeling-assumption-builder`](skills/modeling/modeling-assumption-builder/SKILL.md)**: Separates prompt facts, definitions, calibration choices, numerical settings, and actual assumptions. Every assumption gets a scope, failure consequence, load-bearing rank, and falsification or stress test.
+- **[`model-critique-coach`](skills/modeling/model-critique-coach/SKILL.md)**: Reconstructs the submitted model before attacking it, traces each claim back to runs, data, equations, and assumptions, then ranks findings by their effect on the conclusion and gives a cheap falsifying check.
+- **[`modeling-code-builder`](skills/modeling/modeling-code-builder/SKILL.md)**: Implements only a student-confirmed model. An implementation contract, hand-calculated fixture, invariants, validation matrix, explicit solver status, and run manifest keep code, figures, and claims reproducible.
+- **[`paper-structure-coach`](skills/modeling/paper-structure-coach/SKILL.md)**: Builds a claim-to-evidence map before moving sections. Each section answers a modeling question; abstract numbers trace to results and runs; validation, interpretation, and limitations stay distinct.
+- **[`paper-enhancement-builder`](skills/modeling/paper-enhancement-builder/SKILL.md)**: Turns located draft gaps, critique findings, rubric requirements, and real resource limits into a ranked backlog. Every enhancement has dependencies, validation, acceptance criteria, a failure fallback, and a reason not to add decorative complexity.
+- **[`latex-paper-formatter`](skills/modeling/latex-paper-formatter/SKILL.md)**: Freezes content before touching layout, then checks references, citations, figures, notation, tables, template rules, compilation, and the final PDF. A standard-library checker catches deterministic source defects without pretending to validate mathematics.
+- **[`team-role-coach`](skills/modeling/team-role-coach/SKILL.md)**: Assigns owners and reviewers to artifacts and decisions, not vague silos. A single source of truth, critical path, nine review gates, short handoffs, freeze points, and honest contribution records keep parallel work aligned.
+
 **Lyrics**
 
 - **[`lyric-concept-builder`](skills/songwriting/lyric-concept-builder/SKILL.md)**: Settles the situation, the image system and the hook candidates before a single line gets written. "Healing" is an effect, not a subject.
@@ -88,7 +100,7 @@ Application essays, coursework, competition entries: for anything that goes out 
 
 ## Compatibility
 
-`claude-code`, `cursor`, `codebuddy`, `nestudy`, and any agent that can read Markdown. Each `SKILL.md` declares its own list in the frontmatter.
+`claude-code`, `codex`, `cursor`, `codebuddy`, `nestudy`, and any agent that can read Markdown. Each `SKILL.md` declares its own list in the frontmatter. The modeling suite uses semantic actions and explicit no-tool fallbacks rather than depending on host-specific capability names.
 
 ## Add your own
 
@@ -102,4 +114,4 @@ It enforces the layout, the frontmatter, the test case and the index registratio
 
 ## Not written yet
 
-`modeling` for competition modeling and paper critique, `reading-notes` for textual analysis instead of plot summary, `research-coaching` for research questions and experiment design, `competition-literacy` for defense practice and AI-use limits, plus `vocabulary-learning` and `social-practice`. Priorities and the initial skill lists are in [SKILL_INDEX.md](SKILL_INDEX.md).
+`reading-notes` for textual analysis instead of plot summary, `research-coaching` for research questions and experiment design, `competition-literacy` for defense practice and AI-use limits, plus `vocabulary-learning` and `social-practice`. Priorities and the initial skill lists are in [SKILL_INDEX.md](SKILL_INDEX.md).

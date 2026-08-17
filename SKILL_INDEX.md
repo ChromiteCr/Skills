@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.15.0`
+Library Version: `0.16.0`
 
 ---
 
@@ -36,15 +36,15 @@ Library Version: `0.15.0`
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
-| `modeling-problem-reading-coach` | P0 | planned | — | 拆解建模题目与隐含条件 |
-| `model-selection-tutor` | P0 | planned | — | 比较候选模型的适用性 |
-| `modeling-assumption-builder` | P0 | planned | — | 梳理并检验模型假设 |
-| `model-critique-coach` | P0 | planned | — | 批判方案的弱点与反例 |
-| `paper-structure-coach` | P0 | planned | — | 优化论文结构与论证链 |
-| `paper-enhancement-builder` | P0 | planned | — | 提出论文可改进项 |
-| `latex-paper-formatter` | P0 | planned | — | 整理 LaTeX 格式与规范 |
-| `modeling-code-builder` | P0 | planned | — | 基于学生已有思路辅助写代码 |
-| `team-role-coach` | P0 | planned | — | 团队分工与协作节奏 |
+| `modeling-problem-reading-coach` | P0 | draft | 0.1.0 | 把题面拆成目标、变量与单位、约束、子问题依赖和待确认歧义，不越界选模型 |
+| `model-selection-tutor` | P0 | draft | 0.1.0 | 用简单基线、选型门槛与判别测试比较候选，给条件式推荐而不编性能 |
+| `modeling-assumption-builder` | P0 | draft | 0.1.0 | 区分事实、定义、选择与假设，为每条前提登记作用域、失效后果和反证测试 |
+| `model-critique-coach` | P0 | draft | 0.1.0 | 从核心主张反向追到运行、模型、数据和假设，按结论影响分级并设计反例 |
+| `paper-structure-coach` | P0 | draft | 0.1.0 | 用主张—证据图重排章节、段落与图表，让摘要、正文、运行和限制闭环 |
+| `paper-enhancement-builder` | P0 | draft | 0.1.0 | 把具体缺口按结论影响、评分关联、成本和风险排成有验收条件的最小修订计划 |
+| `latex-paper-formatter` | P0 | draft | 0.1.0 | 冻结内容后修 LaTeX 结构、引用、表图与版面，用静态检查、实际编译和 PDF 验收闭环 |
+| `modeling-code-builder` | P0 | draft | 0.1.0 | 把已确认模型实现为有小例、不变量、验证矩阵和运行清单的可复现代码 |
+| `team-role-coach` | P0 | draft | 0.1.0 | 按产物和依赖分 owner/reviewer，用九个 Gate、交接包与冻结点控制团队协作 |
 
 ## study-planning — P0
 

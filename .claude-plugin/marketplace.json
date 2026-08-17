@@ -6,11 +6,11 @@
   "plugins": [
     {
       "name": "skills-library",
-      "version": "0.15.0",
+      "version": "0.16.0",
       "source": "./",
-      "description": "A curated, extensible library of Claude Code skills and agent capabilities.",
+      "description": "A curated, portable library of agent skills and capabilities.",
       "license": "UNLICENSED",
-      "keywords": ["claude-code", "skills", "agents"]
+      "keywords": ["claude-code", "codex", "skills", "agents"]
     }
   ]
 }

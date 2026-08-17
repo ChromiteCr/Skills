@@ -5,6 +5,31 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.16.0 — 2026-08-17
+
+新增完整的 `modeling` P0 工作流，共 9 个 draft skills（均从 `0.1.0` 起）：
+
+- `modeling-problem-reading-coach`：把原题拆成题面契约、变量与单位、子问题依赖和待确认歧义
+- `model-selection-tutor`：用简单基线、十道门槛与判别测试比较模型家族
+- `modeling-assumption-builder`：区分事实、定义、设计选择、数值设置与真正假设，并为高风险假设设计反证
+- `model-critique-coach`：从论文主张反向追到运行、模型、数据与假设，按对结论的影响分级
+- `modeling-code-builder`：只实现学生确认的模型，强制小例、不变量、验证矩阵和 run manifest
+- `paper-structure-coach`：用主张—证据图组织章节、段落和图表，阻止摘要结论越过正文证据
+- `paper-enhancement-builder`：把真实 gap 排成有依赖、验收、失败退路和停止条件的最小修订计划
+- `latex-paper-formatter`：冻结内容后处理 LaTeX 引用、表图、编译与 PDF 验收
+- `team-role-coach`：按产物与决策分 owner / reviewer，以九个 Gate、交接包和冻结点组织协作
+
+共享方法拆为五份按需加载的参考：状态与稳定 ID、验证与可辨识性、代码复现、论文论证、团队闸门。
+所有技能同时声明 `claude-code`、`codex`、`cursor`、`codebuddy`、`nestudy` 与 `generic-llm-agent`，正文只依赖
+语义动作；没有文件、执行、联网、写入、子代理或可视化能力时都有明确降级路径，不会把未运行写成已验证。
+
+`latex-paper-formatter` 另带一个只用 Python 标准库的 `check_latex.py`，静态检查多文件输入、重复 / 未定义标签、
+常用 natbib / biblatex 引用键、缺图、手工编号与遗留占位符，并限制所有读取在显式项目根内。合法、故障、
+plural citation、路径逃逸与编码错误 fixture 已接入 `validate.sh`，JSON 输出和退出状态都有确定性验证。
+
+边界统一为教练、批判、实现与格式化：不代写可直接提交的竞赛论文，不替学生隐藏模型决定，不虚构数据、结果、
+来源、专家意见、团队贡献或检查状态。
+
 ## 0.14.1 — 2026-08-05
 
 运行时改名：`compatible_agents` 里的 `studynest` 全部改为 `nestudy`（与域名 nestudy.cn 对齐），

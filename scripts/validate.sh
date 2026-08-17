@@ -257,3 +257,5 @@ print(
     % (len(skill_files), library_version)
 )
 PY
+
+python3 "$repo_root/tests/test_latex_checker.py"
