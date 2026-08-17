@@ -27,6 +27,9 @@
                             "unverified": false},
         {"type": "section", "value": "章节名"},
         {"type": "feature", "value": "功能名", "caption": "一句话"},
+        {"type": "quote",   "value": "用户原话", "caption": "出处，必填"},
+        {"type": "steps",   "value": "这套流程产出什么",
+                            "items": [["步骤", "一句话"], ["步骤", "一句话"]]},
         {"type": "specs",   "value": "规格",
                             "items": [["项", "值"], ["项", "值"]]},
         {"type": "versus",  "value": "对比什么",
@@ -200,6 +203,35 @@ class Deck:
             self.text(s, d["caption"], top=Inches(5.4), height=Inches(0.7),
                       size=SIZE["sub"], color=self.muted)
 
+    def quote(self, d):
+        s = self.slide()
+        self.text(s, f"「{d['value']}」", top=Inches(2.2), height=Inches(2.8),
+                  size=54, bold=False)
+        # 出处必须写。没有出处的引语是把编的话当证据用
+        if d.get("caption"):
+            self.text(s, d["caption"], top=Inches(5.2), height=Inches(0.7),
+                      size=SIZE["sub"], color=self.muted)
+
+    def steps(self, d):
+        s = self.slide()
+        self.text(s, d["value"], top=PAD_Y, height=Inches(1.0),
+                  size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT)
+        items = d.get("items", [])[:5]
+        if not items:
+            return
+        col_w = BODY_W / len(items)
+        for n, (name, desc) in enumerate(items):
+            cx = PAD_X + col_w * n
+            self.text(s, f"{n + 1:02d}", top=Inches(2.7), height=Inches(0.6),
+                      size=SIZE["label"], color=self.accent, align=PP_ALIGN.LEFT,
+                      left=cx, width=col_w - Inches(0.2))
+            self.text(s, name, top=Inches(3.3), height=Inches(0.9), size=44,
+                      bold=True, align=PP_ALIGN.LEFT,
+                      left=cx, width=col_w - Inches(0.2))
+            self.text(s, desc, top=Inches(4.2), height=Inches(1.2),
+                      size=SIZE["label"], color=self.muted, align=PP_ALIGN.LEFT,
+                      left=cx, width=col_w - Inches(0.2))
+
     def close(self, d):
         self.phrase(d)
 
@@ -220,7 +252,7 @@ def main() -> int:
     deck = Deck(spec)
     handlers = {name: getattr(deck, name) for name in
                 ("title", "phrase", "num", "section", "feature",
-                 "specs", "versus", "price", "close")}
+                 "specs", "versus", "price", "close", "quote", "steps")}
 
     unknown, made = set(), 0
     for d in slides:

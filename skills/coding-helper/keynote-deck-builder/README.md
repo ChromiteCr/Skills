@@ -11,9 +11,9 @@ keynote-deck-builder/
 │   └── stage-style-research.md       取证记录，规则的依据，分 A/B/C 三档
 ├── templates/
 │   ├── deck-outline.md               阶段一：叙事拍点与逐片清单
-│   └── deck.html                     阶段二：单文件演示，十四类片型各一个实例
+│   └── deck.html                     阶段二：单文件演示，十八类片型各一个实例
 ├── scripts/
-│   ├── read_pptx.py                  从现有 .pptx 提取文字，标出该拆的片
+│   ├── read_pptx.py                  从现有 .pptx 提取文字，标出该拆的片与近重复的片
 │   ├── outline_to_pptx.py            从片单 JSON 生成可编辑的 .pptx
 │   └── export_pdf.sh                 HTML 导 16:9 PDF
 └── examples/
@@ -39,6 +39,9 @@ keynote-deck-builder/
 
 它会先给一份 `deck-outline.md`——叙事拍点、逐片清单、每个数字的出处、以及哪些内容被舍弃了。
 **这一步会停下来等你确认**，因为哪句话该单独占一张片是整件事里最需要你拍板的判断。
+
+答辩和课程汇报也能用，拍点会跟着改。但目录页、分工页、课程要求的说明页在这套风格里没有位置，
+它会把这几页单独列出来问你，不会自己删掉。
 
 确认之后出 `deck.html`。翻页用方向键、空格或滚动。
 

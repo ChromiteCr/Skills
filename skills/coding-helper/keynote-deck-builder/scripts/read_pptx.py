@@ -22,7 +22,9 @@ except ImportError:
 # 该拆片的判据。光数总词数会冤枉规格密排和 bento——那两种片型本来就有很多标签值对，
 # 但每条都很短。真正需要拆的信号是片上出现了整句散文，或者有项目符号层级。
 PROSE_WORDS = 20   # 单行超过这个词数，基本是一整句，属于该留给讲的人说的部分
-TOTAL_WORDS = 45   # 总量上限，标签值对再多也不该超过这个
+TOTAL_WORDS = 60   # 总量上限。定这么松是因为规格密排与五步流程条本来就有十几个短标签，
+                   # 卡在 45 会把它们全冤枉掉。真正的信号是 PROSE_WORDS，这条只兜底
+DUPE_RATIO = 0.6   # 两页文字重合到这个比例，按同一张片的重复用法处理
 
 
 def words(text: str) -> int:
@@ -42,6 +44,8 @@ def main() -> int:
         sys.exit(f"找不到文件: {path}")
 
     prs = Presentation(str(path))
+    seen: dict[frozenset, int] = {}   # 文字指纹 → 首次出现的页码
+    dupes: list[tuple[int, int, float]] = []
     w, h = prs.slide_width, prs.slide_height
     ratio = f"{w / h:.3f}" if h else "?"
     print(f"# {path.name}")
@@ -75,7 +79,24 @@ def main() -> int:
         wc = sum(counts)
         prose = sum(1 for c in counts if c > PROSE_WORDS)
 
+        # 近重复：同一张版式换个配图重复用，是密集汇报 PPT 里最常见的浪费。
+        # 逐页单独看永远看不出来，要跨页比。
+        fp = frozenset(lines)
+        near = None
+        if fp:
+            for prev_fp, prev_n in seen.items():
+                overlap = len(fp & prev_fp) / max(len(fp | prev_fp), 1)
+                if overlap >= DUPE_RATIO:
+                    near = (prev_n, overlap)
+                    break
+            if near:
+                dupes.append((near[0], n, near[1]))
+            else:
+                seen[fp] = n
+
         reasons = []
+        if near:
+            reasons.append(f"与第 {near[0]} 页重合 {near[1]:.0%}")
         if prose:
             reasons.append(f"{prose} 行是整句")
         if bullets:
@@ -95,6 +116,9 @@ def main() -> int:
         print()
 
     print(f"---\n{total_dense} / {len(prs.slides)} 页需要拆。")
+    if dupes:
+        pairs = "、".join(f"{b}≈{a}" for a, b, _ in dupes)
+        print(f"{len(dupes)} 页与前面的片近重复（{pairs}）：同一张版式换配图重复用，合并成一张。")
     print("整句的那几行：片上只留碎片、数字或图，句子留给讲的人说。")
     print("项目符号那几行：顺序性的拆片，并列性的改成 bento 格或图形。")
     print("规格密排与 bento 本来就有很多短标签，词数高不算问题，看的是有没有整句。")

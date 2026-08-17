@@ -12,7 +12,7 @@
   - 数字没出处就标 【未确认】或者不放
   - 产品位是占位图，由使用者换成有权使用的图
 
-  这里面十四类片型各有一个实例，照抄结构改内容。
+  这里面十八类片型各有一个实例，照抄结构改内容。
   翻页：方向键 / 空格 / 滚动。导 PDF：scripts/export_pdf.sh
 -->
 <html lang="zh-CN" data-theme="dark">
@@ -191,6 +191,30 @@
     font-size: 40px;
     color: var(--faint);
   }
+
+  /* ── 引语：用户原话、评审意见、调研摘录 ───────────────
+     出处要跟在引语下面。没有出处的话不要做成引语片，那是把编的话当证据用。 */
+  .quote { font-size: 96px; line-height: 1.3; font-weight: 500; letter-spacing: -0.01em; }
+  .quote .mark { color: var(--accent); }
+
+  /* ── 流程条：有先后顺序的步骤。这是项目符号的替代品之一 ── */
+  .steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 20px; }
+  .step  { display: grid; gap: 16px; align-content: start; padding-top: 32px; border-top: 3px solid var(--accent); }
+  .step .i { font-size: 40px; color: var(--accent); font-weight: 600; }
+  .step .n { font-size: 60px; font-weight: 600; line-height: 1.1; }
+  .step .d { font-size: 40px; color: var(--muted); line-height: 1.35; }
+
+  /* ── 双栏人物：分工、团队、职责 ──────────────────────── */
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+  .role  { display: grid; gap: 28px; align-content: start; }
+  .role .who  { font-size: 76px; font-weight: 600; }
+  .role .what { font-size: 44px; color: var(--muted); line-height: 1.5; }
+
+  /* ── 全黑过场：现场切视频或实机演示时停在这一张 ────────
+     不要在这张片上放「演示视频播放位」这类占位框。占位框是给做片子的人看的，
+     投出来观众只会看到一个空框。 */
+  .stage.blackout { background: #000; }
+  .stage.blackout::after { display: none; }
 
   /* ── 产品位占位图：居中浮着，留白四到五成，不出血 ────── */
   .hero {
@@ -377,7 +401,44 @@
     <div class="sub">{{上市日期}}</div>
   </div></section>
 
-  <!-- 14 · 收束 ────────────────────────────────────────── -->
+  <!-- 14 · 引语。出处要写，没出处就别做成引语片 ─────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="quote"><span class="mark">「</span>{{原话，中文 30 字内}}<span class="mark">」</span></div>
+    <div class="sub">{{出处，如「中期问卷的一条意见」}}</div>
+  </div></section>
+
+  <!-- 15 · 流程条。有先后顺序的步骤，替代项目符号 ────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{这套流程产出什么}}</div>
+    <div class="steps">
+      <div class="step"><div class="i">01</div><div class="n">{{步骤}}</div><div class="d">{{一句话}}</div></div>
+      <div class="step"><div class="i">02</div><div class="n">{{步骤}}</div><div class="d">{{一句话}}</div></div>
+      <div class="step"><div class="i">03</div><div class="n">{{步骤}}</div><div class="d">{{一句话}}</div></div>
+      <div class="step"><div class="i">04</div><div class="n">{{步骤}}</div><div class="d">{{一句话}}</div></div>
+    </div>
+  </div></section>
+
+  <!-- 16 · 双栏人物：分工、团队、职责 ────────────────────── -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">{{标题}}</div>
+    <div class="roles">
+      <div class="role">
+        <div class="who">{{名字}}</div>
+        <div class="what">{{职责，连成一句，不要拆成项目符号}}</div>
+      </div>
+      <div class="role">
+        <div class="who">{{名字}}</div>
+        <div class="what">{{职责}}</div>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- 17 · 全黑过场：现场切视频或实机演示时停在这张 ──────── -->
+  <section class="slide"><div class="stage blackout center">
+    <div class="label" style="color: rgba(255,255,255,0.20)">{{演示}}</div>
+  </div></section>
+
+  <!-- 18 · 收束 ────────────────────────────────────────── -->
   <section class="slide"><div class="stage center">
     <div class="phrase">{{收束一句，中文 12 字内}}</div>
   </div></section>
