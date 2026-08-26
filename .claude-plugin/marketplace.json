@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "skills-library",
-      "version": "0.16.0",
+      "version": "0.17.0",
       "source": "./",
       "description": "A curated, portable library of agent skills and capabilities.",
       "license": "UNLICENSED",

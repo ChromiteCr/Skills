@@ -1,0 +1,92 @@
+{
+  "title": "示例版面 · Photo Spread",
+  "accent": "#b3121d",
+  "header": {
+    "folio": "12",
+    "section": "ARTS",
+    "headline": "THROUGH THE LENS"
+  },
+  "page": {
+    "width_mm": 297,
+    "height_mm": 420,
+    "margin_mm": 18,
+    "gutter_mm": 3,
+    "dpi": 150
+  },
+  "bands": [
+    {
+      "caption": "第一带：两张，主角在右。左小右大是最省事的建立主次的方式。",
+      "credit": "摄影：示例甲、示例乙",
+      "items": [
+        {
+          "type": "photo",
+          "src": "photos/wide3.jpg"
+        },
+        {
+          "type": "photo",
+          "src": "photos/wide2.jpg"
+        }
+      ]
+    },
+    {
+      "caption": "第二带：三张并置，带自然变矮，形成与上一带的节奏差。",
+      "credit": "摄影：示例丙",
+      "items": [
+        {
+          "type": "photo",
+          "src": "photos/wide1.jpg"
+        },
+        {
+          "type": "photo",
+          "src": "photos/wide4.jpg"
+        },
+        {
+          "type": "photo",
+          "src": "photos/sq1.jpg"
+        }
+      ]
+    },
+    {
+      "caption": "第三带：中间两张叠成一列，与左右等高——竖构图的常用去处。",
+      "credit": "摄影：示例丁",
+      "items": [
+        {
+          "type": "photo",
+          "src": "photos/wide1.jpg"
+        },
+        {
+          "type": "stack",
+          "src": [
+            "photos/sq2.jpg",
+            "photos/wide3.jpg"
+          ]
+        },
+        {
+          "type": "photo",
+          "src": "photos/tall1.jpg"
+        }
+      ]
+    },
+    {
+      "caption": "第四带：文字栏作为带内的一个 item，与照片同高同天沟。",
+      "credit": "作品：示例戊",
+      "items": [
+        {
+          "type": "text",
+          "width_mm": 42,
+          "title": "作品自述",
+          "byline": "示例戊",
+          "body": "文字栏宽度固定，高度由同带照片解出。它和照片走同一套天沟与对齐，不浮在图上，也不压边。"
+        },
+        {
+          "type": "photo",
+          "src": "photos/wide2.jpg"
+        },
+        {
+          "type": "photo",
+          "src": "photos/tall2.jpg"
+        }
+      ]
+    }
+  ]
+}

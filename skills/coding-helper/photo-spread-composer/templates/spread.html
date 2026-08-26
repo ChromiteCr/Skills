@@ -1,0 +1,196 @@
+<!doctype html>
+<!--
+  照片版面模板 / Photo Spread
+
+  由 scripts/build_spread.py 填充，正常情况下不要手改 <!--BANDS--> 那部分。
+
+  这个文件里**没有任何写死的位置**。整套版面只靠下面这一条规则成立：
+
+      一带之内所有 item 的 flex-grow 等于脚本解出的宽度，flex-basis 为 0。
+      于是剩余空间（版心宽 − 天沟总和）按宽度比例分配，各 item 得到的正是解出的宽度。
+      每张照片带自己的 aspect-ratio，高度随宽度而定，因此一带自然等高。
+
+  改版式的正确做法是改 plan.json 里的分带与 item 顺序，然后重跑脚本；
+  不是回来在这里加 margin、position 或固定宽度。加了就等于把判断焊死了。
+
+  可以在这里调的：字体、字号级差、图注样式、页面家具的排法、强调色的用法。
+  这些是审美，本来就该由人定。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<style>
+  :root {
+    --page-w: {{PAGE_W}}mm;
+    --page-h: {{PAGE_H}}mm;
+    --margin: {{MARGIN}}mm;
+    --gutter: {{GUTTER}}mm;
+    --accent: {{ACCENT}};
+    --ink: #111;
+    --paper: #fdfdfb;
+    --rule: #111;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #8a8a8a;
+    color: var(--ink);
+    font-family: "Times New Roman", Times, "Songti SC", "SimSun", serif;
+    -webkit-font-smoothing: antialiased;
+    line-break: strict;
+    text-autospace: normal;
+  }
+
+  /* 纸张。尺寸来自 plan.json，内容区就是版心 */
+  .sheet {
+    width: var(--page-w);
+    min-height: var(--page-h);
+    margin: 12mm auto;
+    padding: var(--margin);
+    background: var(--paper);
+    box-shadow: 0 2mm 8mm rgba(0,0,0,.35);
+  }
+
+  /* ── 页面家具：坐标，不是内容。轻 ────────────────────── */
+  .folio {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 3.1mm;
+    letter-spacing: .02em;
+    padding-bottom: 1.2mm;
+    border-bottom: .5pt solid var(--rule);
+  }
+  .folio .no { font-weight: 700; }
+  .folio .mast { text-transform: uppercase; letter-spacing: .06em; }
+
+  .section-bar {
+    border-bottom: 1.2pt solid var(--rule);
+    margin-bottom: 4mm;
+    text-align: center;
+  }
+  .section-bar h1 {
+    margin: 2mm 0 1.5mm;
+    font-size: 14mm;
+    line-height: 1;
+    letter-spacing: .01em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  h2.headline {
+    margin: 0 0 3mm;
+    font-size: 8mm;
+    line-height: 1.05;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .005em;
+  }
+
+  /* ── 版面语法本体 ─────────────────────────────────────
+     一带 = 一个 flex 行。item 的 flex-grow 由脚本写在行内。
+     天沟是全页唯一的间距值，横竖相同。 */
+  .band {
+    display: flex;
+    gap: var(--gutter);
+    align-items: flex-start;
+    margin-bottom: var(--gutter);
+  }
+
+  /* 照片：不加边框、不加阴影、不加圆角。层级只靠面积 */
+  .ph {
+    margin: 0;
+    overflow: hidden;
+    background: #e8e8e6;
+  }
+  .ph img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 竖向叠放的一组，共用一个宽度 */
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+  }
+  .stack .ph { width: 100%; }
+
+  /* 文字栏：带内的一个 item，与照片同一套对齐 */
+  .txt {
+    align-self: stretch;
+    font-size: 3.1mm;
+    line-height: 1.35;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .txt h3 {
+    margin: 0 0 .5mm;
+    font-size: 3.4mm;
+    color: var(--accent);
+  }
+  .txt .by { margin: 0 0 1.5mm; font-style: italic; }
+  .txt p { margin: 0 0 1.5mm; }
+
+  /* 图注：归带不归张，贴在带下方左对齐，小字号 */
+  .cap {
+    margin: 0 0 calc(var(--gutter) * 2);
+    font-size: 2.9mm;
+    line-height: 1.3;
+  }
+  .cap .cred { font-style: italic; }
+
+  /* ── 打印：1:1，纸张尺寸来自 plan.json ─────────────── */
+  @page { size: {{PAGE_W}}mm {{PAGE_H}}mm; margin: 0; }
+
+  /* 屏幕上把整页缩到窗口宽度，只为预览方便。zoom 会真正重排，
+     不像 transform 那样在下方留一大片空白。打印时不生效。 */
+  @media screen { body { zoom: var(--fit, 1); } }
+
+  @media print {
+    body { background: none; }
+    .sheet { margin: 0; box-shadow: none; width: auto; min-height: auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="folio">
+    <span class="no">{{FOLIO}}</span>
+    <span class="mast">{{MASTHEAD}}</span>
+  </div>
+
+  <div class="section-bar"><h1>{{SECTION}}</h1></div>
+
+  <h2 class="headline">{{HEADLINE}}</h2>
+
+<!--BANDS-->
+
+</div>
+
+<script>
+  // 只影响屏幕预览：把整页缩到窗口宽。打印走 @page，不受这里影响。
+  const sheet = document.querySelector('.sheet');
+  const fit = () => {
+    document.documentElement.style.setProperty('--fit', 1);
+    const w = sheet.getBoundingClientRect().width;
+    const s = Math.min(1, (window.innerWidth - 24) / w);
+    document.documentElement.style.setProperty('--fit', s.toFixed(4));
+  };
+  addEventListener('resize', fit);
+  fit();
+</script>
+
+</body>
+</html>
