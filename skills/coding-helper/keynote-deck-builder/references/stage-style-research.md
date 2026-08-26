@@ -83,7 +83,8 @@
 | A | **不照读片子**。讲的人重复片上文字会造成认知过载，大脑要同时读和听 | 同上 |
 | A | **问题先于产品**。先让人感到现状的挫败、"投入到问题里"，再给解法。用人话讲问题（"你不希望你的手机能……？"），不用技术约束讲 | [Gong 对 2007 iPhone 发布会的拆解](https://www.gong.io/blog/steve-jobs-iphone-keynote) |
 | A | Duarte 的结构：确立"现状"（对手/问题），转向"可能"，中段在两者间来回摆荡，最后收到产品带来的新常态 | [Duarte TED](https://www.ted.com/talks/nancy_duarte_the_secret_structure_of_great_talks)、[Resonate](https://www.duarte.com/resources/books/resonate/) |
-| A | **三的法则**：工作记忆约容纳三个块，三是避免过载的最优数。分段和段内分点都用三 | [Gallo](https://www.carminegallo.com/books/presentation-secrets-of-steve-jobs/)、[Slidegenius](https://www.slidegenius.com/blog/apple-presentations-3) |
+| A | **工作记忆约容纳三个块**。这支撑的是一个**上限**：并列的点超过三四个就会过载 | [Gallo](https://www.carminegallo.com/books/presentation-secrets-of-steve-jobs/) |
+| B | Gallo 由此主张「三是最优数，分段和段内分点都用三」。**这是演讲教练的处方，不是研究结论**——容量上限推不出「必须凑够三个」。本 skill 只采纳上限，不采纳处方 | [Gallo](https://www.carminegallo.com/books/presentation-secrets-of-steve-jobs/)、[Slidegenius](https://www.slidegenius.com/blog/apple-presentations-3) |
 | A | 数字出场时，**这个数字是片上唯一的文字**，随口播同时落地，留一拍让人消化再展开。一张片最多一个统计数字 | [Inc. / Gallo](https://www.inc.com/carmine-gallo/since-apples-new-product-launch-number-100-million-keeps-popping-up-its-not-accidental.html) |
 | A | 复杂概念一律用熟悉物类比落地："思维的自行车"、"一千首歌装进口袋"、从信封里抽出 MacBook Air | [Forbes / Gallo](https://www.forbes.com/sites/carminegallo/2026/04/01/the-simple-strategy-that-made-steve-jobs-so-good-at-explaining-complex-ideas/) |
 | B | 九拍结构：打破现状 → 展示收益 → 在痛与益之间反复 → 早早给出核心揭示（iPhone 在第 3 分钟）→ 每约 9 分钟换节奏（换人、换演示、换故事）→ 简化片子 → 多用人称代词 → 给路标 → 段间回顾 | [Gong](https://www.gong.io/blog/steve-jobs-iphone-keynote) |
