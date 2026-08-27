@@ -10,6 +10,8 @@
   - 片上不放页码、页眉页脚、边框、卡片容器；logo 只允许在首尾片
   - 单文件，不引任何外部资源。离线打开必须完全一致
   - 数字没出处就标 【未确认】或者不放
+  - **片上不出现问句**。标题用名词短语，问题留给讲的人用嘴问
+  - **中文标题末尾不加句号**
   - 产品位是占位图，由使用者换成有权使用的图
 
   这里面二十一类片型各有一个实例，照抄结构改内容。
@@ -381,7 +383,7 @@
 
   <!-- 7 · bento 网格：分层靠格子大小 ───────────────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{这一组讲什么}}</div>
+    <div class="title">{{这一组的名字，名词短语，如「续航」}}</div>
     <div class="bento">
       <div class="tile big">
         <div class="k">{{最重要那条}}</div>
@@ -408,7 +410,7 @@
 
   <!-- 9 · 双列对比：列头必须标明对比的轴 ───────────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{对比什么}}</div>
+    <div class="title">{{对比的轴，名词短语，如「识别准确率」}}</div>
     <div class="versus">
       <div class="col">
         <div class="head">{{对比对象，如「上一代」}}</div>
@@ -423,7 +425,7 @@
 
   <!-- 10 · 图表。基线从零起，不要截断纵轴放大差距 ───────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{图表讲什么}}</div>
+    <div class="title">{{图表的主语，名词短语，如「三年采用率」}}</div>
     <div class="chart" style="--n: 4">
       <div class="bar"><div class="v">{{值}}</div><div class="col"><div class="fill" style="height: 28%"></div></div><div class="k">{{类}}</div></div>
       <div class="bar"><div class="v">{{值}}</div><div class="col"><div class="fill" style="height: 45%"></div></div><div class="k">{{类}}</div></div>
@@ -436,7 +438,7 @@
 
   <!-- 11 · logo 墙。占位框，不要放任何真实商标 ──────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{这一组是谁}}</div>
+    <div class="title">{{名词短语，如「合作方」}}</div>
     <div class="logos">
       <div class="logo-slot">占位</div>
       <div class="logo-slot">占位</div>
@@ -471,7 +473,7 @@
 
   <!-- 15 · 流程条。有先后顺序的步骤，替代项目符号 ────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{这套流程产出什么}}</div>
+    <div class="title">{{流程的名字，如「五步，一条音轨」}}</div>
     <div class="steps">
       <div class="step"><div class="i">01</div><div class="n">{{步骤}}</div><div class="d">{{一句话}}</div></div>
       <div class="step"><div class="i">02</div><div class="n">{{步骤}}</div><div class="d">{{一句话}}</div></div>
@@ -502,13 +504,13 @@
 
   <!-- 18 · 时刻。内容主导时展开的每一点一张 ─────────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="moment"><span class="lead">{{这一点叫什么，中文 8 字内}}</span>
-      {{一个能拍成十秒视频的场景，中文 30 字内}}</div>
+    <div class="moment"><span class="lead">{{这一点的名字，四字名词短语，如「就地取材」}}</span>
+      {{一个能拍成十秒视频的场景。每行 14 字，手写 <br> 断句，总计 30 字内}}</div>
   </div></section>
 
   <!-- 19 · 信号汇入。回答「它凭什么知道」 ─────────────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{它凭什么知道}}</div>
+    <div class="title">{{结果的名字，名词短语，如「建议的来处」}}</div>
     <div class="converge">
       <div class="ins">
         <div class="in">{{输入一}}</div>
@@ -518,18 +520,18 @@
       <div class="arrow">&rarr;</div>
       <div class="out">
         <div class="v">{{产出，中文 10 字内}}</div>
-        <div class="d">{{在哪处理、要不要联网、要不要授权}}</div>
+        <div class="d">{{一句短陈述，说清在哪处理、要不要授权}}</div>
       </div>
     </div>
   </div></section>
 
   <!-- 20 · 取舍。它故意不做什么，以及为什么 ───────────────── -->
   <section class="slide"><div class="stage stack">
-    <div class="title">{{它不做什么}}</div>
+    <div class="title">{{名词短语，如「取舍」}}</div>
     <div class="tradeoffs">
       <div class="tradeoff">
-        <div class="no">{{不做的事，中文 8 字内}}</div>
-        <div class="why">{{为什么，中文 24 字内}}</div>
+        <div class="no">{{不做的事，名词或短动宾，如「不做社交」}}</div>
+        <div class="why">{{一句短陈述说清理由，中文 24 字内}}</div>
       </div>
       <div class="tradeoff">
         <div class="no">{{不做的事}}</div>

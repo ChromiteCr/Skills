@@ -132,6 +132,68 @@
 | B | 大字中文字距容忍度远小于拉丁，0 或轻微负值常见，正值不要超过 0.15em | 同上 |
 | B | 显示级中文标题的可读字数约 8 到 15 字。中文单字信息密度高于拉丁单词，同样一张片装的**字数更少而信息更多** | [标题字数建议](https://zhuanlan.zhihu.com/p/582583945) |
 
+## 6b. 片上文字的句式 / The grammar of slide copy
+
+第一轮查的是"写什么"，这一节查的是"用什么句式写"。
+实跑一次之后发现缺这一节：产出的文案在长度和具体性上都合格，但语气是**讲解**和**提问**，
+不是发布会片子上那种**陈述**。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | **苹果官网英文页通篇没有问句标题**。句式是名词短语、短陈述片段、祈使句，且大量用两段式对仗（"Truly helpful. Truly yours."、"More personal. More powerful."） | 实取 [apple.com/apple-intelligence](https://www.apple.com/apple-intelligence/) |
+| A | **中文页同样没有问句标题，标题末尾不加句号**。固定模式是两层：四字名词标签 + 一句短陈述——「轻松上手 / 从其他智能手机换成 iPhone，很简单」「经久耐用 / iPhone 的价值，时间可证」「环保 / 设计，为地球设想」 | 实取 [apple.com.cn/iphone](https://www.apple.com.cn/iphone/) |
+| A | **章节名是单个名词**：隐私、环保、创新、iOS | 同上 |
+| A | 中文文案约**八成是名词性结构**，动词被删除、后移或埋进句中 | [数英 港台陆文案对比](https://www.digitaling.com/articles/349110.html)、[张洪 苹果式中文分析](https://blog.zhheo.com/p/8657316e.html) |
+| A | **动词后移／属格倒装**：写「A15 芯片的高能效」而不是「高能效的 A15 芯片」 | [张洪](https://blog.zhheo.com/p/8657316e.html) |
+| A | **对仗靠字数相等与内韵，不靠词性严格相对**：「身量小，能量大」「事事拿手，轻松入手」「可重复充电，又可圈可点」 | [数英 349110](https://www.digitaling.com/articles/349110.html) |
+| A | 「比大更大」翻车的三个原因：同一个字重复不产生递进只产生冗余；撞上廉价广告的语感；「比…还…」是书面古语，与现代产品主张冲突。改成「岂止于大」才成立 | [网易科技](https://www.163.com/tech/article/A5SJ41FF000915BD.html) |
+| A | 大陆文案倾向省略人称；港台偶尔用「你」 | [数英 977745](https://www.digitaling.com/articles/977745.html) |
+| B | 问句只作**反问式重构**用（先立预期再推翻），如「你的下一台电脑，何必是电脑」。**求解式直问（"你想要更快的芯片吗"）被明确排除** | 同上 |
+| B | 口语可用但有线：判据是"一个不每天上网的读者能不能不靠语境看懂"。平台梗与过时网络语不行 | [搜狐 苹果文案口语化](https://www.sohu.com/a/493037359_339227) |
+| C | "无 `我们`" —— 方向可信但只有单一来源的概括，实取页面里也确实没见到，不作为硬规则，只作倾向 | — |
+
+英文侧（这个 skill 产出中文，但对照能看清哪些是通例、哪些是中文特有）：
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | 片上标题约 **65% 是名词短语或最高级说法**，35% 是陈述句或祈使句。实例：「A widescreen iPod with touch controls」「All-day battery life」「1,000 songs in your pocket」 | [2007 iPhone 发布会实录](http://www.european-rhetoric.com/analyses/ikeynote-analysis-iphone/transcript-2007/)、[WWDC 2023 实录](https://www.rev.com/transcripts/apple-wwdc-2023-transcript) |
+| A | **片上文字总是比口播更短、更少解释、更偏收益或断言**。片子锚定注意力，解释留给嘴 | 同上 + [Presentation Zen](https://presentationzen.com/blog/steve-jobs-and-visual-presentation) |
+| A | **能省动词就省**：写「All-day battery life」而不是「The battery lasts all day」 | [Apple 文案技法整理](https://leadpages.com/blog/landing-pages-apple-borrow-apples-best-copywriting-techniques-copy) |
+| B | **问句只出现在口播里，不出现在片上**。2007 年那场，片上是「A widescreen iPod with touch controls」，Jobs 嘴上说的是「Does it do email? Yeah, it does.」 | [Duarte 对 Jobs 修辞手法的整理](https://www.duarte.com/blog/rhetoric-isnt-a-bad-thing-16-rhetorical-devices-regularly-used-by-steve-jobs/)、2007 实录 |
+| B | **讲机制时片上几乎不写字**：用动画或演示代替，片上只留一个名字当标注（「Multi-touch」）。技术细节走口播 | 多来源归纳，见上 |
+| B | 英文片上**不用 you / we**，走产品视角。**注意这条与中文相反**——中文页会用「你」（「数据怎么安置，全听你的」） | 英文侧多来源；中文侧实取 apple.com.cn |
+| B | 英文标题用句号分隔并列的名词短语（「MacBook Air. The world's thinnest notebook.」）。**中文不这么做**，中文标题末尾不加句号 | 同上 |
+
+### 「苹果式中文」是要避开的，不是要学的
+
+上面引的苹果中文页文案有两副面孔，写规则时必须分开对待。
+**第一版规则是从官网标题推出来的，这是个错误的取材面**，这一节是修正。
+
+「苹果式中文」在中文语境里是**批评性的词**，指苹果翻译腔那种句式：
+句子结构破碎、常缺主语、滥用排比与顶真、硬拆成语、生造四字词、英文语序直译。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | 这个词指的是「句子结构破碎，经常缺乏主语，滥用排比、顶真、偏正短语和不恰当四字词的广告文体」 | [萌娘百科 苹果式中文](https://zh.moegirl.org.cn/%E8%8B%B9%E6%9E%9C%E5%BC%8F%E4%B8%AD%E6%96%87)（条目内容经检索摘要获得，页面本身取不到）|
+| A | 典型翻车：「开发者的大事，大快所有人心的大好事」——三个「大」重复，成语「大快人心」被硬塞进「所有」，拗口 | [爱范儿](https://www.ifanr.com/426156)、[知乎相关问题](https://www.zhihu.com/question/24138410) |
+| A | 手法清单：重复、双关、顶真、用错词、奇怪排比、随便拆解成语、模仿「一棵是枣树，另一棵还是枣树」，目的是制造陌生感 | 同上 |
+| B | 具体机制五条：碎句子、移除主语、名词前置（「A15 芯片的高能效」）、重复与排比、删「被」字 | [张洪 苹果式中文分析](https://blog.zhheo.com/p/8657316e.html) |
+| B | 同一位作者的评价：「看着觉得奇怪，但令人印象深刻」，同时承认「生涩、大量语法错误」，并指出**更适合书面语而非口头表达** | 同上 |
+
+**由此得到的关键区分**：官网文案与片上文字的处境不一样。
+
+| | 官网文案 | 片上文字 |
+|---|---|---|
+| 读者状态 | 自己停下来看，可以反复读 | 三秒扫一眼，旁边有人在讲 |
+| 陌生化 | 是卖点，让人停住 | 是成本，抢走理解时间 |
+| 可以承受 | 拗口、生造、语序古怪 | 一眼读不懂就是失败 |
+
+所以**官网那套手法不能直接搬上片**。五条机制里只有「名词前置」是可以照搬的，
+它不增加理解成本；其余四条在片上都是负担。
+
+**由此定的规则**写在 SKILL.md 的「片上文字的句式」一节。
+中英差异那两条要分开写进规则，不能混用。
+
 ## 7. 数字与主张的举证 / Claim substantiation
 
 原来那节事实校验规则是我自己编的，没有外部依据。这一节是它的依据。
