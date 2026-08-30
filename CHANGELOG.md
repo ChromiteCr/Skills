@@ -5,6 +5,68 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.19.0 — 2026-08-30
+
+**修复七个游离的 skill 目录。** 它们此前提交在仓库根目录（`ai-*`、`prompt-brief-builder`、
+`dimensional-analysis-checker`），不在 `skills/` 下，因此 `validate.sh` 看不见它们，
+`SKILL_INDEX.md` 与 `README.md` 也从未登记——等于写了但没装上。
+
+- 新开 `ai-usage` 分类，六个 skill 移入 `skills/ai-usage/`：`prompt-brief-builder`、
+  `ai-answer-triage`、`ai-output-fact-checker`、`ai-code-onboarding-checklist`、
+  `ai-diff-review-protocol`、`ai-session-handoff-writer`
+- `dimensional-analysis-checker` 移入 `skills/physics/`，是组三的第一个，
+  索引里从 `planned` 改为 `draft`
+
+frontmatter 全部按 `CONTRIBUTING.md` 归一：七个必填键补齐（此前多数只有
+`name` / `description` / `version` 三个；`ai-output-fact-checker` 把 `description` 写成了
+`summary`，`dimensional-analysis-checker` 用了非约定的 `tags`）。`outputs` 违反取值契约的
+（`claim-ledger` 之类）改成 `chat` / `document`。description 一律改写成中文触发式，
+与 `modeling`、`physics` 保持一致。
+
+两处交叉引用补上，避免与新建的东西重复：
+
+- `dimensional-analysis-checker` 的确定性路径改为优先用 `physics/_shared/scripts/dimcheck.py`
+  （纯标准库，随处可跑），SymPy 只留给它做不了的事（无量纲组枚举、量纲矩阵求秩、代数化简）；
+  并补上指向 `_shared/` 四份共享参考的 References。推荐邻居按实际状态标注，`planned` 的
+  不再当作可调用
+- `ai-session-handoff-writer` 补一节说清它与仓库根 `templates/handoff-template.md` 的分工：
+  后者是同一 session 内子代理交回主代理的短单（接手方已有上下文），前者是跨 session 的完整交接。
+  判据只有一句：接手方有没有本轮上下文
+
+七份 `tests/cases/` 用例补齐，均含矛盾输入与边界违规两类场景——这是 `AUDIT-AND-IDEAS.md`
+第一部分 B 节点名的缺口。用例覆盖了几个关键的诚实边界：量纲通过不等于公式正确
+（系数错了照样通过）、体检通过不等于代码正确、一条声明为真不能给整段盖章、
+没有 diff 就不给放行结论、密钥只写位置不写值。
+
+## 0.18.0 — 2026-08-30
+
+新开 `physics` 分类，落地 `AUDIT-AND-IDEAS.md` 里物理流水线的组〇与组一，共 6 个 draft skill（均从 `0.1.0` 起）：
+
+- `physics-problem-router`：三个判别问题（答案唯一吗 / 什么算做完 / 卡在哪）定出类型、产物与卡点，
+  再分流；专门检出"要一个数但问题是开放的"和"其实该先回去读题"两种走错门
+- `competition-scenario-extractor`：竞赛题、IYPT 一句话题、文献段落、实验记录四类材料分别处理，
+  压成干净题面、给定量台账、理想化台账、约束与子问题树；模糊措辞、符号单位冲突、
+  未知与方程计数三项确定性检查
+- `problem-formalization-coach`：每条条件追到定律，适用条件不写出来就不许往下推；
+  区分完整与非完整约束数自由度；守恒律是首次积分而非额外方程；欠定就是欠定，不用"合理假设"补
+- `problem-representation-scout`：阶段边界只有五种（约束改变、接触断开、摩擦切换、冲量、相变）；
+  冲量极限下位置不能突变、速度能、有限力的冲量趋零；再按"要求的量里不含什么"选表示
+- `reference-frame-choice-guide`：区分坐标轴旋转、伽利略变换与非惯性系三件事；
+  给完整惯性力式（平动、科里奥利、离心、欧拉）；强制产出不变量清单
+- `physics-mechanism-decomposer`：收支表与物理域清单双路枚举防漏；标度律必须带指数并标来源档；
+  只比同量纲的量；可分辨观测量的判据是指数或符号不同，不是系数不同
+
+共享参考拆为四份按需加载的文档：证据契约与有效数字纪律、定律适用条件表、理想化对照表、无量纲数表。
+物理常数只写死 2019 年 SI 定义值（精确），测量值一律要求引用时注明 CODATA 版本与查阅日期——
+这是 `AUDIT-AND-IDEAS.md` 的 A1 条（写死易变事实）在新分类上的落实。
+
+`_shared/scripts/dimcheck.py` 是纯标准库的量纲检查器：解析符号量纲表与表达式，
+检查加减两侧同量纲、指数对数三角函数的宗量无量纲、若干项是否同量纲可比，
+并对未声明的符号报错（这正是"检出凭空补进来的量"）。带 `--selftest`，含五个必须被抓到的反例。
+
+边界统一为拆解与检查：不解题、不列完整方程组、不给数值答案、不补条件、不虚构常数与文献；
+作业与竞赛进行中只给结构与判据，不因催促放宽。六份测试用例都含矛盾输入与边界违规两类场景。
+
 ## 0.16.0 — 2026-08-17
 
 新增完整的 `modeling` P0 工作流，共 9 个 draft skills（均从 `0.1.0` 起）：

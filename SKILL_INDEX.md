@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.17.0`
+Library Version: `0.19.0`
 
 ---
 
@@ -47,6 +47,36 @@ Library Version: `0.17.0`
 | `modeling-code-builder` | P0 | draft | 0.1.0 | 把已确认模型实现为有小例、不变量、验证矩阵和运行清单的可复现代码 |
 | `team-role-coach` | P0 | draft | 0.1.0 | 按产物和依赖分 owner/reviewer，用九个 Gate、交接包与冻结点控制团队协作 |
 
+## physics — P0
+
+从一句现象或一道题，拆到可以动手的结构：分流、题面、原理、表示、参考系、机制。
+只做拆解、检查与判据，不解题、不给答案。
+Physics decomposition pipeline: routing, framing, principles, representations, frames, mechanisms. It never solves.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `physics-problem-router` | P0 | draft | 0.1.0 | 统一入口：定问题类型、目标产物与卡点，检出"要的产物与问题类型不匹配"，再分流 |
+| `competition-scenario-extractor` | P0 | draft | 0.1.0 | 长材料压成干净题面与子问题树；每条理想化标出关掉的机制与破坏判据；抓模糊措辞、单位冲突与欠定 |
+| `problem-formalization-coach` | P0 | draft | 0.1.0 | 每条条件追到定律并强制写出适用条件；数自由度与独立方程，判断定不定得下来 |
+| `problem-representation-scout` | P0 | draft | 0.1.0 | 先按约束改变与冲量把过程切成阶段，再为每段配一个能回答本段问题的表示 |
+| `reference-frame-choice-guide` | P1 | draft | 0.1.0 | 比较候选参考系要付的惯性力代价，强制列出换系后不变的量与只是表象变了的量 |
+| `physics-mechanism-decomposer` | P0 | draft | 0.1.0 | 开放现象拆成机制清单：收支表查漏、标度律带指数、同量纲排序、配可分辨的观测量 |
+| `dimensional-analysis-checker` | P0 | draft | 0.1.0 | 逐项查量纲：加减同量纲、两边一致、超越函数宗量无量纲；每个通过的项还要说出它代表什么物理贡献 |
+| `concept-to-formula-deriver` | P1 | planned | — | 从守恒律或定义重建标准公式，每步标物理含义 |
+| `symbolic-first-discipline-coach` | P1 | planned | — | 符号做到底与早代入数字的对照，暴露真正的独立组合 |
+| `fermi-estimation-coach` | P1 | planned | — | 结构化数量级估算，为已排序的机制配数值锚点 |
+| `limiting-case-validator` | P0 | planned | — | 查公式在各极限下是否回到已知特例 |
+| `answer-plausibility-checker` | P1 | planned | — | 数值答案的嗅觉测试：量级、极限、单位、守恒量收支 |
+| `derivation-step-checker` | P1 | planned | — | 逐步验推导，并检查定律的适用条件是否中途被悄悄破坏 |
+| `uncertainty-propagator` | P1 | planned | — | 不确定度传播与灵敏度排序 |
+| `model-fit-auditor` | P1 | planned | — | 拟合诚实性体检：残差结构、χ²/自由度、过拟合信号 |
+| `dataset-systematic-error-hunter` | P2 | planned | — | 从原始数据里找系统误差并归因到具体物理过程 |
+| `numerical-stability-auditor` | P2 | planned | — | 判模拟可不可信：守恒量漂移、步长收敛、鬼频 |
+
+共用参考在 `skills/physics/_shared/`：证据契约与有效数字纪律、定律适用条件表、
+理想化对照表、无量纲数表。确定性检查在 `skills/physics/_shared/scripts/dimcheck.py`
+（纯标准库，`--selftest` 可跑）。
+
 ## study-planning — P0
 
 学习规划、活动整理、反思与成长档案。Study planning and growth canvas.
@@ -61,6 +91,25 @@ Library Version: `0.17.0`
 | `admissions-reader` | P0 | draft | 0.2.0 | 以招生官视角点评现有档案与经历 |
 | `activity-list-optimizer` | P0 | draft | 0.2.0 | 把活动描述压进 Common App 字符限额 |
 | `application-timeline-builder` | P0 | draft | 0.2.0 | 从各校截止日倒推申请季节点 |
+
+## ai-usage — P1
+
+用 AI 的纪律：给出去之前先把需求说清，拿回来之后先分级、先核实、先体检。
+每个 skill 只解决一个具体痛点，脚本能兜底的绝不靠模型自觉。
+Discipline for working with AI: specify before, triage and verify after.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `prompt-brief-builder` | P0 | draft | 0.1.0 | 一句话需求用至多 3–5 个追问补成九字段任务简报，字段完整性有脚本校验 |
+| `ai-answer-triage` | P0 | draft | 0.1.0 | 把 AI 回答按声明类型分四级，每级配处置动作，按影响半径排序给最小的下一步检查 |
+| `ai-output-fact-checker` | P0 | draft | 0.1.0 | 拆成可检验声明逐条配核验路径，专防引用了不存在的库、论文和命令 |
+| `ai-code-onboarding-checklist` | P1 | draft | 0.1.0 | AI 生成代码的客观体检：体量、测试、占位符、密钥、依赖真实性；明写它查不了算法正确性 |
+| `ai-diff-review-protocol` | P1 | draft | 0.1.0 | 按意图、边界、副作用、可逆性四步走查 diff，不逐行精读，有 pass/caution/stop 判据 |
+| `ai-session-handoff-writer` | P1 | draft | 0.1.0 | 跨 session 或换人接手时的交接文档：决定带理由、事实与推断分标、重启须知 |
+| `ai-generated-test-auditor` | P1 | planned | — | 查 AI 写的测试是否断言恒真、只测快乐路径、复制实现逻辑；用突变测试抽样验证 |
+
+`ai-session-handoff-writer` 与仓库根的 `templates/handoff-template.md` 不是一回事：
+后者是子代理交回主代理的短单（同一 session，接手方已有上下文），前者是跨 session 的完整交接。
 
 ## skill-authoring — P0
 
