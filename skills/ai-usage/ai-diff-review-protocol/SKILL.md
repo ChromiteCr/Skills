@@ -1,7 +1,22 @@
 ---
 name: ai-diff-review-protocol
-description: Review an AI-generated code change by risk rather than by line-by-line reading. Triage whether the change matches intent, touches risky boundaries, creates broad side effects, and stays reversible.
+description: 当 AI 改完代码、要决定这份 diff 放不放行时使用。不逐行精读，按四步走查高风险点——意图是否匹配、有没有碰到边界条件、副作用面有多大、能不能回滚——每步有明确的放过与打回判据。改动文件数、增删行数、有没有动到测试与配置迁移文件这类统计先由脚本出，超阈值时强制人工逐段过。
+category: ai-usage/code-review
 version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: AI 改动走查协议
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「AI 改动走查协议」按意图、边界、副作用、可逆性四步过一遍这份 diff
 ---
 
 # AI Diff Review Protocol

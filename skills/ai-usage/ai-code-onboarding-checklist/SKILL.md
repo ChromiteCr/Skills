@@ -1,7 +1,22 @@
 ---
 name: ai-code-onboarding-checklist
-description: Run a fast, objective intake review on AI-generated code before deciding whether to trust, run, or extend it.
+description: 当拿到一段 AI 生成的代码，还没决定要不要信、要不要跑、要不要往上继续加东西时使用。先做一遍客观体检：行数与嵌套深度、有没有测试、有没有硬编码密钥或遗留 TODO、依赖是不是真实存在、有没有危险调用；再给风险评级和下一步动作。老实写明它查不了算法正确性——体检通过不等于代码是对的。
+category: ai-usage/code-review
 version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: AI 代码入库体检
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 跑这段 AI 写的代码之前，先用「AI 代码入库体检」查密钥、依赖和测试覆盖
 ---
 
 # ai-code-onboarding-checklist

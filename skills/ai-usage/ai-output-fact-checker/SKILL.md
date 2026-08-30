@@ -1,19 +1,22 @@
 ---
 name: ai-output-fact-checker
-summary: 将 AI 回答拆成可检验声明，按风险排序，并产出一份诚实的核验清单与处置建议。
+description: 当拿到一段 AI 回答、准备直接复制去用之前使用。把回答拆成可检验的声明（链接、库名与版本、论文 DOI、命令行参数、API 名、数字、引文），按"用错了会炸多大"排序，为每条配一条最直接的核验路径；产出声明台账、核验计划和"现在可以用 / 必须先核实"两栏。专门防住引用了不存在的库、论文或命令这种直接复制就会出事的情况。不替使用者背书，核不了就写核不了。
+category: ai-usage/verification
 version: 0.1.0
 status: draft
-category: ai-usage
-allowed-tools:
-  - text inspection
-  - web/browser lookup
-  - package registry lookup
-  - document lookup
-  - local command help/version checks
+priority: P0
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: AI 回答事实核验
 outputs:
-  - claim-ledger
-  - verification-plan
-  - safe-to-use summary
+  - chat
+max_rounds: 20
+suggest_hint: 复制这段 AI 回答之前，先用「AI 回答事实核验」把里面的链接、库名、版本和引文过一遍
 ---
 
 # ai-output-fact-checker

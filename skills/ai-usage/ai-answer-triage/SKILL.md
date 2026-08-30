@@ -1,7 +1,22 @@
 ---
 name: ai-answer-triage
-description: Triage an AI answer into what can be used directly, what needs verification first, and what should be treated only as an option or draft.
+description: 当想知道一段 AI 回答"哪些能直接用、哪些必须先验证、哪些只能当建议"时使用。按声明类型分四级——低风险草稿材料、观点与策略建议、可查证的事实声明、会改变状态的可执行指令——每级配一句默认处置动作；再按影响半径排序，给出最小的下一步检查。可执行类一律标"必须先实跑"。教的是一套可复用的复查习惯，不是替使用者把所有内容都核实一遍。
+category: ai-usage/verification
 version: 0.1.0
+status: draft
+priority: P0
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: AI 回答分级
+outputs:
+  - chat
+max_rounds: 16
+suggest_hint: 用「AI 回答分级」把这段回答分成能直接用的、要先验证的和只能当建议的
 ---
 
 # ai-answer-triage

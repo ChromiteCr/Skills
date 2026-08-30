@@ -1,7 +1,22 @@
 ---
 name: prompt-brief-builder
-description: Turn a vague request into a portable task brief by asking only the highest-leverage missing questions, then produce a concise brief that any mainstream agent or human collaborator can execute.
+description: 当需求还只是"帮我写个东西""让 AI 做这个任务"这种一句话时使用。用至多 3–5 个高杠杆追问把它补成一份可交付的任务简报——目标、产物、受众、已有素材、约束、验收标准、不做什么、待确认假设，外加一段可直接粘贴的执行 prompt。简报的字段完整性由 scripts/check_brief.py 校验。产出不绑定任何一家模型，人或 Agent 都能照着执行。
+category: ai-usage/prompting
 version: 0.1.0
+status: draft
+priority: P0
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 任务简报生成器
+outputs:
+  - document
+max_rounds: 16
+suggest_hint: 需求还是一句话时，先用「任务简报生成器」补成目标、约束和验收标准都齐的简报
 ---
 
 # prompt-brief-builder

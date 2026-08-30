@@ -1,7 +1,22 @@
 ---
 name: ai-session-handoff-writer
-description: Create a portable handoff document for a paused or transferred AI-assisted task, preserving verified progress, decisions, risks, and the next concrete step.
+description: 当一个长任务要跨 session 继续、或者要交给另一个人、另一个 Agent 接手时使用。把当前进度压成一份可移植的交接文档：目标、已确认完成的事、关键决定及其理由、证据与验证状态、遗留风险、下一步的具体动作、重启须知。事实与推断分开标注，没验证过的绝不写成已完成。写的是跨 session 的交接，不是子代理交回主代理的那种短单。
+category: ai-usage/workflow
 version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 跨 session 交接文档
+outputs:
+  - document
+max_rounds: 16
+suggest_hint: 这轮要停了，用「跨 session 交接文档」把进度、决定和下一步写成能直接接手的交接单
 ---
 
 # ai-session-handoff-writer
@@ -169,4 +184,17 @@ When using this skill, produce a handoff document that:
 
 ## Deliverable
 
-Return a completed handoff document based on `handoff-template.md`.
+Return a completed handoff document based on this skill's own `handoff-template.md`.
+
+### Not the same as the repository's short handoff
+
+`templates/handoff-template.md` at the repository root is a **different artifact**: a ~30-line
+note from a sub-agent back to its parent, inside one session, carrying only the result, the
+evidence location and the next step. It assumes the reader already has the context.
+
+This skill writes the **cross-session** handoff, where the next reader has no context at all,
+so it additionally carries decisions with their rationale, what was already tried and should not
+be repeated, and restart notes.
+
+Pick by one question: **does whoever picks this up already have this session's context?**
+Yes → use the repository's short template. No → use this one.

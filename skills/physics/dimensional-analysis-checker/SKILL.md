@@ -1,14 +1,22 @@
 ---
 name: dimensional-analysis-checker
-description: Check whether a physics derivation, model equation, or final formula is dimensionally consistent, identify suspicious leftover terms, and explain what each surviving term means physically.
+description: 当有一条推导、模型方程、标度律或最终公式，想在相信它之前先过最便宜的一关时使用。逐项查量纲：先统一记号、建符号量纲表，再按加减两侧同量纲、等式两边一致、指数对数三角函数的宗量无量纲逐条核对，指出第一处不一致；每个通过的项还要说出它代表什么物理贡献，说不出的项就是没理解的项。结论里写明量纲通过不等于物理正确。
+category: physics/checking
 version: 0.1.0
-category: physics
-tags:
-  - physics
-  - dimensional-analysis
-  - derivation-checking
-  - modeling
-  - validation
+status: draft
+priority: P0
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 量纲检查器
+outputs:
+  - chat
+max_rounds: 16
+suggest_hint: 相信这条公式之前，先用「量纲检查器」逐项查一遍量纲
 ---
 
 # dimensional-analysis-checker
@@ -134,14 +142,26 @@ Use these outcome labels:
 
 ## Deterministic path vs fallback path
 
-### If code execution or CAS is available
+### If code execution is available
 
-Use a symbolic math tool such as SymPy or an equivalent CAS to:
+Prefer this repository's own checker first — it is standard-library only, so it runs anywhere:
 
-- encode the dimension map
-- test term-by-term homogeneity
-- simplify candidate dimensionless groups
-- isolate the first failing subexpression
+```bash
+python3 ../_shared/scripts/dimcheck.py expressions.dim
+```
+
+Write the dimension map into a `[symbols]` section and the expressions into `[check]`,
+with the declared dimension after a `;`. Use `[compare]` to assert that several terms
+share a dimension. It reports the first mismatch, refuses to add unlike terms, rejects
+dimensional arguments to `exp`/`log`/trig, and errors on any symbol that was never
+declared — which doubles as a check for quantities that appeared out of nowhere.
+Exit status is non-zero when anything fails. `--selftest` verifies the checker itself.
+
+Reach for SymPy or another CAS only for what `dimcheck.py` deliberately does not do:
+
+- simplifying and enumerating candidate dimensionless groups
+- solving the dimension matrix for its rank (the `k` in Buckingham's `n − k`)
+- algebraic simplification of the expression itself
 
 ### If no code execution is available
 
@@ -171,11 +191,27 @@ Hand off to another skill or workflow when:
 - the user needs uncertainty propagation rather than unit checking
 - the main problem is symbol collision across a longer document
 
-Recommended neighbors:
+Recommended neighbors (status matters — do not describe the output of a skill that does not exist yet):
 
-- `limiting-case-validator` for regime checks
-- `physics-mechanism-decomposer` for open-phenomenon mechanism ranking
-- `derivation-step-checker` for algebra plus law-by-law validation
+- `physics-mechanism-decomposer` — available; open-phenomenon mechanism ranking
+- `problem-formalization-coach` — available; when the real problem is that a law was used
+  without stating why it applies
+- `limiting-case-validator` — **planned**; regime checks. Until it exists, do the limits by hand:
+  send each parameter to 0 and to infinity in turn and check that the expression returns to a
+  known special case
+- `derivation-step-checker` — **planned**; algebra plus law-by-law validation
+
+## References
+
+Shared physics material lives one level up, loaded on demand:
+
+- `../_shared/dimensionless-groups.md` — Buckingham's theorem (including the two ways `k` is
+  miscounted), the standard groups, and the discipline for comparing magnitudes
+- `../_shared/law-applicability-table.md` — when a dimensionally valid term still violates the
+  conditions of the law it came from
+- `../_shared/physics-evidence-contract.md` — status tags, significant figures, which constants
+  are exact by definition and which must be cited with a date
+- `../_shared/scripts/dimcheck.py` — the deterministic checker
 
 ## Example prompts
 
