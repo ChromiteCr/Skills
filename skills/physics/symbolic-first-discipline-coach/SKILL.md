@@ -1,0 +1,215 @@
+---
+name: symbolic-first-discipline-coach
+description: Keep a physics derivation symbolic until the underlying structure is visible, then compare the symbolic form with an early-number-substitution path to expose hidden cancellations, invariant parameter groups, and where numeric substitution starts to hide the physics.
+version: 0.1.0
+category: physics
+license: CC0-1.0
+---
+
+# symbolic-first-discipline-coach
+
+## Purpose
+
+Use this skill when someone is solving a physics problem and is tempted to substitute numbers too early.
+The skill helps them keep the derivation symbolic long enough to see:
+
+- which parameters genuinely matter,
+- which ones cancel,
+- which combinations survive as the real control parameters,
+- and what physical interpretation is lost once the work collapses into arithmetic.
+
+The skill is about **structure before calculation**. It may simplify algebraic forms, compare solution paths, and point out hidden dimensionless groups, but it should not pretend that symbolic manipulation alone proves a model is physically correct.
+
+## When to use
+
+Use this skill when the user says things like:
+
+- "I can plug in the numbers, but I don't see what the result depends on."
+- "Why do these two variables disappear?"
+- "Should I keep everything symbolic first?"
+- "This equation works numerically, but I don't understand the pattern."
+- "I want to know which parameter actually controls the behavior."
+
+Typical settings:
+
+- competition physics and Olympiad-style derivations,
+- introductory and intermediate mechanics / E&M / thermodynamics,
+- modeling and open-ended problems where scaling structure matters,
+- pre-lab or pre-simulation sanity checks.
+
+## When not to use
+
+Do **not** use this skill when:
+
+- the user wants a finished homework derivation written for submission;
+- the bottleneck is choosing the wrong law, not symbolic discipline;
+- the expression is already symbolic and the real issue is units, limits, or data fitting;
+- the user only needs a quick numerical estimate and explicitly does not care about structural insight.
+
+Route elsewhere when appropriate:
+
+- to a problem-formalization skill if the variables and constraints are not yet defined;
+- to a dimensional-analysis skill if unit consistency is still in doubt;
+- to a limiting-case skill if the formula is derived but its physical behavior is not trusted.
+
+## Inputs required
+
+Ask for the smallest set that makes structural comparison possible:
+
+1. **Target quantity** — what is being solved for?
+2. **Symbol definitions** — each symbol, unit, and physical meaning.
+3. **Starting relations** — laws, definitions, constraints, or equations already accepted.
+4. **Early numeric path** — where the user would normally substitute values.
+5. **Known scales or regimes** — small angle, low speed, weak damping, large separation, etc.
+
+If any of 1–3 are missing, stop and request them before coaching.
+
+## Output contract
+
+Produce a compact coaching artifact with these sections:
+
+1. **Symbolic target** — the quantity to derive and the allowed symbols.
+2. **Stay-symbolic path** — a stepwise derivation that delays substitution.
+3. **Early-substitution path** — the shorter arithmetic-first route, if available.
+4. **What becomes visible symbolically** — canceled parameters, surviving groups, proportionalities, symmetries.
+5. **Physical reading** — what each surviving factor means physically.
+6. **Decision rule** — exactly when numbers should finally be substituted.
+7. **Confidence / gaps** — assumptions, unproved steps, or places needing human checking.
+
+## Core workflow
+
+### Step 1: Freeze the symbol table
+
+Before manipulating anything, normalize the symbol table.
+Each symbol must have:
+
+- name,
+- meaning,
+- unit or dimension,
+- whether it is variable, constant, or measured input.
+
+If a symbol is overloaded, rename it locally and say so.
+
+### Step 2: State the structural question
+
+Pick one explicit structural question to answer, such as:
+
+- Which parameters cancel?
+- Which dimensionless combination controls the answer?
+- Which approximation creates the apparent simplicity?
+- Which variable only matters through a ratio or product?
+
+This prevents the skill from becoming generic algebra commentary.
+
+### Step 3: Derive symbolically as far as the structure is still changing
+
+Keep quantities symbolic until at least one of the following becomes clear:
+
+- the dependency graph is stable,
+- the remaining operation is routine arithmetic,
+- the controlling nondimensional group has appeared,
+- or the only unknown is a measured constant.
+
+At each step, annotate one of these move types:
+
+- **definition**
+- **conservation / balance law**
+- **constraint substitution**
+- **algebraic isolation**
+- **approximation**
+- **scaling interpretation**
+
+### Step 4: Compare against early substitution
+
+Show how an arithmetic-first path hides information. Focus on concrete losses such as:
+
+- cancellation is no longer visible,
+- a ratio that should be recognized as the true control parameter is buried,
+- sensitivity to one parameter is misread because numbers are frozen too soon,
+- an approximation looks exact because the substituted values happen to mask error.
+
+### Step 5: Extract the physical structure
+
+Name the structure explicitly. Good outputs include statements like:
+
+- "The result depends on density and radius only through the combination ρR³, so mass scaling is the real lever."
+- "The angle cancels because only the component ratio matters in this regime."
+- "The answer is controlled by the dimensionless product ωτ; frequency and timescale do not enter independently."
+- "The apparent dependence on g vanishes once the kinematic constraint is substituted, so geometry dominates."
+
+### Step 6: Decide when numbers belong
+
+Recommend substitution only after one of these is true:
+
+- the structure has been interpreted,
+- a limiting regime has been identified,
+- the user is choosing between candidate experimental scales,
+- or the task is now purely quantitative.
+
+When giving final numeric guidance, preserve the symbolic master expression in the output.
+
+## Coaching rules
+
+- Prefer the **shortest symbolic path that still reveals structure**.
+- Do not inflate simple problems into ceremonial derivations.
+- If the expression is messy, factor or nondimensionalize before expanding.
+- If a parameter cancels, say **why physically**, not just that it canceled algebraically.
+- If two parameters only appear as a ratio, name that ratio as a new control variable.
+- If an approximation is introduced, mark what small or large parameter licenses it.
+- If the user is learning, expose one hidden pattern at a time.
+
+## Deterministic checks this skill can support
+
+These checks are optional aids, not substitutes for judgment:
+
+- verify that the final symbolic expression only uses declared symbols;
+- compare symbolic and numeric paths to find parameters that disappear after simplification;
+- detect whether multiple variables always appear as a single product, ratio, or power-law group;
+- flag substitution that occurs before an approximation or cancellation is justified;
+- list candidate dimensionless groups for human review.
+
+If no tooling is available, perform the same checks manually and label them as manual.
+
+## Failure modes to avoid
+
+- confusing algebraic simplification with physical explanation;
+- claiming a parameter is irrelevant when it only canceled under an unstated approximation;
+- substituting reference values so early that sensitivity information is destroyed;
+- introducing new symbols or constants without declaring them;
+- turning a coaching request into full assignment completion.
+
+## Boundaries and integrity
+
+This skill is for coaching, explanation, and structural diagnosis.
+It must not be used to ghostwrite a graded derivation that the learner is expected to produce independently.
+A good boundary is:
+
+- okay: reveal the dependency structure, identify cancellations, suggest a symbolic path, explain what the surviving groups mean;
+- not okay: produce a polished end-to-end submission-ready derivation when the user asks for direct homework completion.
+
+## Minimal example
+
+### Example prompt
+
+"I need the terminal speed of a small sphere in a viscous fluid. If I plug in numbers immediately I get an answer, but I can't tell what really controls it. Show me why keeping it symbolic helps."
+
+### Expected coaching shape
+
+- define the target quantity and symbols;
+- balance drag and effective weight symbolically;
+- solve for terminal speed before substituting values;
+- point out that radius enters quadratically while density contrast enters linearly;
+- identify which constants are medium properties versus object properties;
+- only then substitute numbers.
+
+## Acceptance checklist
+
+A solid run of this skill should satisfy all of the following:
+
+- the target quantity is explicit;
+- all symbols used in the derivation are defined;
+- the symbolic path is shown at least until the dependency structure stops changing;
+- at least one hidden cancellation, grouping, or proportionality is named;
+- the physical meaning of the surviving group(s) is explained;
+- the output states when numeric substitution becomes appropriate;
+- uncertainties, approximations, or missing assumptions are called out plainly.
