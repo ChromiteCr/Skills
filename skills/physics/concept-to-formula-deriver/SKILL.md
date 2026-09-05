@@ -1,7 +1,22 @@
 ---
 name: concept-to-formula-deriver
-description: Rebuild a physics formula from definitions or conservation laws with every step tied to a physical principle, while keeping the final assessed derivation owned by the learner.
+description: 当想弄清一条公式「为什么长这样」、而不是想让人把它推出来时使用。从定义或守恒律出发重建标准公式，每一步标出用的是哪条原理、这一步在物理上做了什么；假设写在它真正被用到的那一步，不堆在开头。终式可用 scripts/compare_formula.py 与标准式做符号比对。会被评分的推导由本人写，本 skill 只讲这条式子从哪来。
+category: physics/derivation
 version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 公式溯源教练
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「公式溯源教练」把这条公式还原成某条守恒律的推论，而不是背下来的结论
 ---
 
 # concept-to-formula-deriver

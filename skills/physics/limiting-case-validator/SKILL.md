@@ -1,8 +1,22 @@
 ---
 name: limiting-case-validator
-description: Validate a physics formula, scaling law, or model by checking carefully chosen limiting cases before trusting the result.
+description: 当有一条公式、标度律或模型结果，想在相信它之前查它在极限下还讲不讲得通时使用。先找出控制参数与无量纲组，挑最小一组有用的极限，在动手算之前先写下物理上应该发生什么，再做数学化简两相对照；专抓在某个极限下发散、变号、或丢掉已知特例的表达式。manifest 的完整性由 scripts/check_limit_manifest.py 校验。
+category: physics/checking
 version: 0.1.0
-category: physics
+status: draft
+priority: P0
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 极限情形验证
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「极限情形验证」把每个参数分别推到 0 和无穷，看它回不回得到已知特例
 ---
 
 # limiting-case-validator

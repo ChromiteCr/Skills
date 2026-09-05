@@ -1,8 +1,22 @@
 ---
 name: dataset-systematic-error-hunter
-description: Audit raw experimental data for systematic error signatures such as drift, temperature dependence, nonlinearity, hysteresis, and repeat inconsistency; connect each observed signature to testable physical mechanisms without claiming causation from correlation alone. Use when a physics, IYPT, modeling, or laboratory dataset may contain hidden apparatus or environmental bias.
+description: 当一份实验数据可能藏着仪器或环境偏差时使用。扫描漂移、温度依赖、非线性、滞回、重复不一致这几类系统误差特征，再把每一类归因到一个具体的物理过程（热学、电子学、机械），而不是一句「数据有问题」。相关不等于因果——脚本给的是线索，归因要另找证据。
+category: physics/data
 version: 0.1.0
 status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 系统误差搜寻
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「系统误差搜寻」查这份数据里的漂移、温度依赖和重复不一致
 ---
 
 # Dataset Systematic Error Hunter

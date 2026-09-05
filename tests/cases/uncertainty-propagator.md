@@ -1,4 +1,4 @@
-# Test cases
+# uncertainty-propagator
 
 ## Case 1 — independent, nearly linear inputs
 

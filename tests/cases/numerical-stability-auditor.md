@@ -1,4 +1,4 @@
-# Behavioral test cases
+# numerical-stability-auditor
 
 ## Case 1 — Conservative oscillator with refinement runs
 

@@ -1,4 +1,4 @@
-# ai-generated-test-auditor - Test Cases
+# ai-generated-test-auditor
 
 These cases are for validating the skill behavior, not for asserting product code correctness.
 

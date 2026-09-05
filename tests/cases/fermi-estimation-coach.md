@@ -1,4 +1,4 @@
-# Test cases
+# fermi-estimation-coach
 
 ## Case 1 — complete additive estimate
 

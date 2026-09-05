@@ -1,10 +1,22 @@
 ---
 name: fermi-estimation-coach
-description: Structure and audit order-of-magnitude estimates for physical questions. Use when a mechanism list already exists or when the user needs numerical anchors, uncertainty ranges, and a defensible magnitude conclusion; do not use to discover or rank physical mechanisms from scratch.
-license: MIT
-metadata:
-  version: "0.1.0"
-  status: draft
+description: 当机制清单已经排好、需要给每个机制配数值锚点并合成一个站得住的量级结论时使用。把估算写成显式的因子分解，每个因子给低／中／高三值与证据档位，算出区间而不是装饰性的小数位，再与参考区间和守恒量核对。worksheet 的结构与算术由 scripts/check_estimate.py 校验。不负责发现或排序机制——那是 physics-mechanism-decomposer 的事。
+category: physics/estimation
+version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 费米估算教练
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 机制排完了，用「费米估算教练」给每个机制配数值锚点并合出量级
 ---
 
 # Fermi Estimation Coach

@@ -1,6 +1,22 @@
 ---
 name: model-fit-auditor
-description: Audit a fitted physical model using residuals, uncertainty-aware goodness of fit, leverage and influence, information criteria, and residual structure. Use when a user has observations plus model predictions or fit output and needs to decide whether the fit is trustworthy, overfit, dominated by influential points, or missing a physical mechanism. Do not use to choose a model before data exist or to silently remove outliers.
+description: 当已经有观测与模型预测（或一份拟合输出）、要判断这个拟合信不信时使用。看残差结构、带不确定度的拟合优度、杠杆值与影响点、信息准则。系统性残差是理论模型的照妖镜——残差里有结构，说明模型漏了一段物理，必须说出漏的可能是哪一段，而不是加参数。不在有数据之前选模型，也不悄悄删离群点。
+category: physics/data
+version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 拟合诚实性体检
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「拟合诚实性体检」看残差里有没有结构——有结构就是漏了物理，不是该加参数
 ---
 
 # Model Fit Auditor

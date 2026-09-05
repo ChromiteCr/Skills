@@ -5,6 +5,95 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.21.0 — 2026-09-05
+
+新开 `community-programs` 分类，首个 skill `program-maturity-navigator`（0.1.0 draft）：
+把「这个活动下一步该干什么」变成一个有证据门槛的判断。
+
+按讨论时定下的五处设计，与最初那份提案有实质出入：
+
+**一、双轴，不是线性链。** 提案把两条链（读书会→…→城市读书会；学长课堂→…→Workshop）
+合成一条五级梯子。但提案自己已经写出症结——城市读书会是**扩大范围**，Workshop 是**加深参与**。
+这是两个轴，不是一条梯子。合并会造出三个假问题：两者谁更高？八个人的深度 Workshop 算不算卡住？
+两百人却什么也不留的公共讲座算第几级？现在主干只有三段（种子／孵化／系列），之后分叉成
+深度与广度两个 0–2 的独立轴，位置判定输出一个坐标而不是级别。提案里的原则
+「上升不等于参与者更优秀」「允许停在当前阶段」因此变成结构自带，不再靠嘴上强调。
+
+**两个轴的门槛有意不对称**：深度进入要 1（动手过一次就证明形式跑得起来），
+广度进入要 2（来过一个陌生人证明不了什么，再来一次才是信号）。
+
+**二、闸门是证据清单，不是判断题。** 表单模型都会填，这个 skill 的价值全在会不会拦住人。
+五道闸（G1–G5）逐条列出「拿什么证明」。其中 G2 的第二条是最硬的一条：
+**试办必须产生至少一条出乎意料的观察**——完全符合预期说明没有在观察，
+那次试办没有产生新信息，不构成放行证据。
+
+**三、位置由痕迹决定，不由名字决定。** 第一个问题不是「你觉得自己在哪个阶段」，
+而是「上一次是哪天、来了几个人、留下了什么」。办过三次「系列读书会」却拿不出记录的，
+证据只支持孵化。这是唯一的防名词通胀机制。
+
+**四、系列的顺序做成机器可判的。** 提案的原则「不能只把相近题目放在一起」原本只是一句话。
+现在每一场声明 `consumes` / `produces`，脚本查连通性：除第一场外必须至少消费一件前面某场的产物。
+消费不到的就是孤立节点——把它拿掉系列不会有任何损失，那它就不该在系列里。
+
+**五、补了两份提案里没有的产物。** `孵化复盘`（G2 的证据来源，提案只有 Incubation Plan 没有复盘）
+和 `停办记录`。后者尤其要紧：大多数种子会死，只有成功形状的表格会逼人给已经黄了的活动
+写成功形状的文档。停办原因必须归到没人要／没人带／时间不对三类之一，三者处理完全不同，
+不许合并成「效果不佳」。
+
+架构按提案作者本人的倾向，先做单个总控 skill。**但拆分预判改了**：
+`activity-format-router` 不拆——它就是一张二十行的决策表，独立成 skill 撑不起一份 SKILL.md，
+且脱离活动背景判不准，放进 `references/format-selection.md`；
+`workshop-designer` 保留为 planned，它的输入（材料、场地、时长切分、安全与无障碍）
+与前面几阶段几乎不共享字段，真跑几轮后值得拆。
+
+`Catena`、`Incubator`、`学长课堂`、`Leminar` 归入 `references/local-vocabulary.md` 由使用者填写，
+机制部分保持通用。`Leminar` 无定义即留空槽，不按字面猜——
+「Lecture 加 Seminar」是猜测不是定义。
+
+`scripts/check_program.py` 纯标准库，两个子命令 `stage` 与 `catena`，带 `--selftest`（七个用例）。
+实跑验证：四本书各读各的被判出三个孤立节点；改成前后传递产物之后通过。
+九份测试用例覆盖提案点名的四种情形，外加混淆两轴、Leminar 缺定义、粉饰停办、
+跳过闸门与无执行能力。
+
+## 0.20.0 — 2026-09-05
+
+**修复十一个未接入的 skill。** `physics` 组二、三、四共十个，加 `ai-usage/ai-generated-test-auditor`，
+此前已写好正文与脚本但 frontmatter 不合规、测试用例放在各自目录里、索引与 README 未登记，
+`validate.sh` 报 64 个错误。与 0.19.0 修的那批是同一种失败方式：写完了但没装上。
+
+`physics` 至此覆盖 `AUDIT-AND-IDEAS.md` 规划的完整五组流水线：
+
+- 组二（动手纪律）：`concept-to-formula-deriver`、`symbolic-first-discipline-coach`、`fermi-estimation-coach`
+- 组三（检错）：`limiting-case-validator`、`answer-plausibility-checker`、`derivation-step-checker`
+  （`dimensional-analysis-checker` 已于 0.19.0 归位）
+- 组四（数据与模拟）：`uncertainty-propagator`、`model-fit-auditor`、
+  `dataset-systematic-error-hunter`、`numerical-stability-auditor`
+
+做的事：
+
+- frontmatter 全部按 `CONTRIBUTING.md` 归一。原状况五花八门：多数只有 `name` / `description` / `version`；
+  `fermi-estimation-coach` 与 `uncertainty-propagator` 把 `version` / `status` 塞进嵌套的 `metadata:`
+  块里（扁平解析器读出来带引号，过不了 semver 校验）；`ai-generated-test-auditor` 用了非约定的 `tags`；
+  `symbolic-first-discipline-coach` 与 `answer-plausibility-checker` 带 `license` 键。
+  description 一律改写成中文触发式，与既有 skill 一致
+- 七份写在 skill 目录内的用例（`TEST-CASES.md`、`tests/cases.md`、`tests/test_cases.md`）
+  移到 `tests/cases/<name>.md`，内容保留；另补写四份缺失的
+  （`concept-to-formula-deriver`、`symbolic-first-discipline-coach`、
+  `answer-plausibility-checker`、`derivation-step-checker`）
+- 十一个 skill 在 `SKILL_INDEX.md` 从 `planned` 改为 `draft`，并在 `README.md` 登记
+
+**八个新脚本逐个实跑验证过**，正例与反例都跑，退出状态确认能区分通过与失败：
+`check_derivation.py`、`check_limit_manifest.py`、`check_plausibility.py`、`check_estimate.py`、
+`compare_formula.py`、`audit_fit.py`、`audit_stability.py`、`hunt_systematics.py`、
+`propagate_uncertainty.py`、`check_test_audit_manifest.py`。
+
+其中修掉一个真 bug：`check_derivation.py` 在 `=` 两侧切分后没有 strip，
+`"F = m*a"` 里的 `" m*a"` 被 `ast.parse` 当成缩进而报 `unexpected indent`——
+**它自己 `references/input-schema.md` 里的示例都跑不通**。改为解析前 strip。
+
+抽查过的数值都对：`audit_stability convergence` 对 `error ∝ step²` 的数据给出斜率 2.0；
+`propagate_uncertainty` 对单摆 `g = 4π²L/T²` 在 `L = 0.994`、`T = 2.006` 下给出 9.7518 m·s⁻²。
+
 ## 0.19.0 — 2026-08-30
 
 **修复七个游离的 skill 目录。** 它们此前提交在仓库根目录（`ai-*`、`prompt-brief-builder`、

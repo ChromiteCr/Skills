@@ -1,6 +1,22 @@
 ---
 name: numerical-stability-auditor
-description: Audit whether a physics simulation is numerically trustworthy using invariant drift, step-size convergence, and suspicious high-frequency content. Use when reviewing ODE/PDE, particle, rigid-body, circuit, wave, or other time-stepping results; when a result changes with timestep; or before interpreting simulated behavior as physics.
+description: 当一个模拟跑出了结果、要判断它是物理还是数值假象时使用。查三件事：守恒量的漂移曲线、步长收敛阶、功率谱里可疑的高频内容。守恒量在哪一步开始漂，就指向哪个物理过程被离散化破坏。结果随步长改变时，必须先做收敛性检查再解释现象。
+category: physics/data
+version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 数值稳定性审计
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 解释这个模拟结果之前，先用「数值稳定性审计」查守恒量漂移和步长收敛
 ---
 
 # Numerical Stability Auditor

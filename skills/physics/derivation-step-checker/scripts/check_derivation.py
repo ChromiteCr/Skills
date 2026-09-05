@@ -59,7 +59,7 @@ class ExpressionParser(ast.NodeVisitor):
     def parse(self, text: str) -> sp.Expr:
         if not isinstance(text, str) or not text.strip():
             raise CheckError("expression must be a nonempty string")
-        normalized = text.replace("^", "**")
+        normalized = text.strip().replace("^", "**")
         try:
             tree = ast.parse(normalized, mode="eval")
         except SyntaxError as exc:

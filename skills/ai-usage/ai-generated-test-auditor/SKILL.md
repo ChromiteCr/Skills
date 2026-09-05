@@ -1,14 +1,22 @@
 ---
 name: ai-generated-test-auditor
-description: Audit tests drafted by an AI for false confidence, copied logic, missing edge coverage, and weak failure signals before you trust them.
+description: 当 AI 写完测试、要决定信不信这份测试时使用。查四类假信心：断言与实现是否同源复制、有没有边界与异常用例、失败信号够不够强、以及把被测代码改坏之后测试会不会真的变红（突变抽样）。测试全绿不等于代码对，也可能是测试根本抓不住错。
+category: ai-usage/code-review
 version: 0.1.0
-category: ai-usage
-tags:
-  - ai
-  - testing
-  - test-quality
-  - review
-  - mutation-testing
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: AI 测试体检
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「AI 测试体检」看这份 AI 写的测试删掉实现之后会不会真的变红
 ---
 
 # ai-generated-test-auditor

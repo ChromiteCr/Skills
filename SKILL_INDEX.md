@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.19.0`
+Library Version: `0.21.0`
 
 ---
 
@@ -62,16 +62,16 @@ Physics decomposition pipeline: routing, framing, principles, representations, f
 | `reference-frame-choice-guide` | P1 | draft | 0.1.0 | 比较候选参考系要付的惯性力代价，强制列出换系后不变的量与只是表象变了的量 |
 | `physics-mechanism-decomposer` | P0 | draft | 0.1.0 | 开放现象拆成机制清单：收支表查漏、标度律带指数、同量纲排序、配可分辨的观测量 |
 | `dimensional-analysis-checker` | P0 | draft | 0.1.0 | 逐项查量纲：加减同量纲、两边一致、超越函数宗量无量纲；每个通过的项还要说出它代表什么物理贡献 |
-| `concept-to-formula-deriver` | P1 | planned | — | 从守恒律或定义重建标准公式，每步标物理含义 |
-| `symbolic-first-discipline-coach` | P1 | planned | — | 符号做到底与早代入数字的对照，暴露真正的独立组合 |
-| `fermi-estimation-coach` | P1 | planned | — | 结构化数量级估算，为已排序的机制配数值锚点 |
-| `limiting-case-validator` | P0 | planned | — | 查公式在各极限下是否回到已知特例 |
-| `answer-plausibility-checker` | P1 | planned | — | 数值答案的嗅觉测试：量级、极限、单位、守恒量收支 |
-| `derivation-step-checker` | P1 | planned | — | 逐步验推导，并检查定律的适用条件是否中途被悄悄破坏 |
-| `uncertainty-propagator` | P1 | planned | — | 不确定度传播与灵敏度排序 |
-| `model-fit-auditor` | P1 | planned | — | 拟合诚实性体检：残差结构、χ²/自由度、过拟合信号 |
-| `dataset-systematic-error-hunter` | P2 | planned | — | 从原始数据里找系统误差并归因到具体物理过程 |
-| `numerical-stability-auditor` | P2 | planned | — | 判模拟可不可信：守恒量漂移、步长收敛、鬼频 |
+| `concept-to-formula-deriver` | P1 | draft | 0.1.0 | 从守恒律或定义重建标准公式，每步标物理含义；假设写在真正用到它的那一步；终式可符号比对 |
+| `symbolic-first-discipline-coach` | P1 | draft | 0.1.0 | 符号做到结构不再变化，与早代入数字并排对照，暴露约掉的量与只以组合出现的参数 |
+| `fermi-estimation-coach` | P1 | draft | 0.1.0 | 显式因子分解，每个因子给低／中／高与证据档，算区间不算装饰小数；worksheet 有脚本校验 |
+| `limiting-case-validator` | P0 | draft | 0.1.0 | 先写下物理上该发生什么，再做极限化简两相对照；专抓发散、变号、丢掉已知特例 |
+| `answer-plausibility-checker` | P1 | draft | 0.1.0 | 单位、符号、量级、极限、参考值、守恒收支六项嗅觉测试；无标准答案时改用双锚点 |
+| `derivation-step-checker` | P1 | draft | 0.1.0 | 逐步查代数、量纲、符号，外加定律的适用条件是否中途被悄悄破坏；前三项有脚本 |
+| `uncertainty-propagator` | P1 | draft | 0.1.0 | 含相关项的协方差传播，给符号灵敏度、不确定度预算与蒙特卡罗对标；灵敏度大不等于贡献大 |
+| `model-fit-auditor` | P1 | draft | 0.1.0 | 残差结构、带不确定度的拟合优度、杠杆与影响点、信息准则；残差有结构就是漏了物理 |
+| `dataset-systematic-error-hunter` | P2 | draft | 0.1.0 | 扫漂移、温度依赖、非线性、滞回、重复不一致，每类归因到具体物理过程而非「数据有问题」 |
+| `numerical-stability-auditor` | P2 | draft | 0.1.0 | 守恒量漂移曲线、步长收敛阶、功率谱鬼频；结果随步长变就先做收敛性检查 |
 
 共用参考在 `skills/physics/_shared/`：证据契约与有效数字纪律、定律适用条件表、
 理想化对照表、无量纲数表。确定性检查在 `skills/physics/_shared/scripts/dimcheck.py`
@@ -92,6 +92,25 @@ Physics decomposition pipeline: routing, framing, principles, representations, f
 | `activity-list-optimizer` | P0 | draft | 0.2.0 | 把活动描述压进 Common App 字符限额 |
 | `application-timeline-builder` | P0 | draft | 0.2.0 | 从各校截止日倒推申请季节点 |
 
+`physics/` 现已覆盖完整流水线的五组：入口分流、题面到可解结构、动手纪律、检错、数据与模拟。
+八个确定性脚本分散在各 skill 的 `scripts/` 下，另有共享的 `_shared/scripts/dimcheck.py`。
+除 `uncertainty-propagator`（需 sympy 与 numpy）与 `concept-to-formula-deriver`、
+`derivation-step-checker`（需 sympy）外，其余脚本只用标准库。
+
+## community-programs — P1
+
+学生社群活动怎么从一个零散想法长成成熟项目。读书会、分享、讲座、Workshop、公共活动。
+Turning a scattered activity idea into a program that survives.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `program-maturity-navigator` | P1 | draft | 0.1.0 | 按留下的痕迹判活动实际长到哪儿，用带证据清单的五道闸决定下一步；深度与广度是两个独立的轴 |
+| `workshop-designer` | P2 | planned | — | 把成熟内容转成参与式任务、流程与交付物；等主控 skill 跑过几轮、输入输出稳定后再拆 |
+
+活动形式的选择表、七份表单骨架（含停办记录）与本地词汇留在
+`program-maturity-navigator/references/`，不单独拆成 skill——
+形式选择只是一张表，脱离活动背景反而判不准。
+
 ## ai-usage — P1
 
 用 AI 的纪律：给出去之前先把需求说清，拿回来之后先分级、先核实、先体检。
@@ -106,7 +125,7 @@ Discipline for working with AI: specify before, triage and verify after.
 | `ai-code-onboarding-checklist` | P1 | draft | 0.1.0 | AI 生成代码的客观体检：体量、测试、占位符、密钥、依赖真实性；明写它查不了算法正确性 |
 | `ai-diff-review-protocol` | P1 | draft | 0.1.0 | 按意图、边界、副作用、可逆性四步走查 diff，不逐行精读，有 pass/caution/stop 判据 |
 | `ai-session-handoff-writer` | P1 | draft | 0.1.0 | 跨 session 或换人接手时的交接文档：决定带理由、事实与推断分标、重启须知 |
-| `ai-generated-test-auditor` | P1 | planned | — | 查 AI 写的测试是否断言恒真、只测快乐路径、复制实现逻辑；用突变测试抽样验证 |
+| `ai-generated-test-auditor` | P1 | draft | 0.1.0 | 查断言是否与实现同源复制、有无边界与异常用例、失败信号强不强；用突变抽样验证测试真能变红 |
 
 `ai-session-handoff-writer` 与仓库根的 `templates/handoff-template.md` 不是一回事：
 后者是子代理交回主代理的短单（同一 session，接手方已有上下文），前者是跨 session 的完整交接。

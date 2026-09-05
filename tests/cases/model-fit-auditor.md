@@ -1,4 +1,4 @@
-# Test cases
+# model-fit-auditor
 
 ## Case 1 — Clean uncertainty-aware fit
 

@@ -1,4 +1,4 @@
-# TEST-CASES
+# limiting-case-validator
 
 These cases are written so an agent can practice the skill without needing vendor-specific tooling.
 

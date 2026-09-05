@@ -1,8 +1,22 @@
 ---
 name: answer-plausibility-checker
-description: Check whether a numerical physics answer is believable using units, sign, scale, limiting behavior, reference values, and conservation balances. Use after a calculation, estimate, fit, or simulation has produced a candidate result; for research or modeling outputs without a known answer, use order-of-magnitude and conserved-total anchors instead of pretending to know a ground truth.
+description: 当算完、估完、拟合完或模拟完，拿到一个数值结果、要决定信不信时使用。按单位、符号、量级、极限行为、与参考值对比、守恒量收支六项过一遍嗅觉测试。对没有标准答案的科研与建模结果，改用「数量级 + 守恒总量核算」双锚点，不假装知道真值。引用的参考值必须带来源与查阅日期。
+category: physics/checking
 version: 0.1.0
-license: MIT
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 结果可信度嗅探
+outputs:
+  - chat
+max_rounds: 16
+suggest_hint: 先用「结果可信度嗅探」过一遍量级、极限和守恒收支，再决定信不信这个数
 ---
 
 # Answer Plausibility Checker

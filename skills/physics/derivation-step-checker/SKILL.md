@@ -1,6 +1,22 @@
 ---
 name: derivation-step-checker
-description: Audit a physics derivation step by step for algebraic equivalence, dimensional consistency, sign changes, named physical laws, and whether each law's applicability conditions remain valid. Use when a user provides an existing derivation to verify or debug; do not use to silently produce a complete assessed derivation for them.
+description: 当手上有一份已经写好的推导、要逐步核验时使用。每一步查四件事：代数是否等价、量纲是否一致、符号有没有翻错、以及这一步用的定律在此处适用条件是否仍然成立——变质量、非惯性系、准静态假设中途被悄悄破坏是高频翻车点。scripts/check_derivation.py 做前三项的确定性检查，第四项是人的判断。只核验已有推导，不代写推导。
+category: physics/checking
+version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 推导逐步核验
+outputs:
+  - chat
+max_rounds: 24
+suggest_hint: 用「推导逐步核验」逐步查代数、量纲、符号，以及定律的适用条件有没有中途失效
 ---
 
 # Derivation Step Checker

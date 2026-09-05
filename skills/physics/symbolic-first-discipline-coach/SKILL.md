@@ -1,9 +1,22 @@
 ---
 name: symbolic-first-discipline-coach
-description: Keep a physics derivation symbolic until the underlying structure is visible, then compare the symbolic form with an early-number-substitution path to expose hidden cancellations, invariant parameter groups, and where numeric substitution starts to hide the physics.
+description: 当推导中途就把数字代进去、结果看不出结构时使用。把符号一路保留到结构不再变化，再与「早代入数字」的路径并排对照：哪些量其实约掉了、哪两个量只以某个组合出现（说明本质自由度比看上去少）、从哪一步开始代数字会把物理藏起来。给的是纪律与对照，不替使用者算完。
+category: physics/derivation
 version: 0.1.0
-category: physics
-license: CC0-1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 符号优先纪律
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「符号优先纪律」看看这堆参数里，真正独立的组合其实有几个
 ---
 
 # symbolic-first-discipline-coach

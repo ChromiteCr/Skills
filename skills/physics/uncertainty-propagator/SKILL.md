@@ -1,10 +1,22 @@
 ---
 name: uncertainty-propagator
-description: Propagate measurement uncertainty through one or more physical models, including correlated inputs; report sensitivity coefficients, uncertainty budgets, linear-versus-Monte-Carlo agreement, and measurement priorities. Use when a user has measured quantities with uncertainties and needs uncertainty on a derived result. Do not use to fit a model, diagnose time-dependent systematic error, or invent missing uncertainty data.
-license: MIT
-metadata:
-  version: 0.1.0
-  status: draft
+description: 当有一组带不确定度的测量量、需要给导出量一个不确定度时使用。做线性协方差传播（含相关项），给出符号灵敏度、不确定度预算、线性与蒙特卡罗的一致性检查，并按贡献大小排出下一轮该先测哪个量。灵敏度大不等于贡献大，这一条会被明确区分。不做拟合、不诊断系统误差、不替缺失的不确定度编数。
+category: physics/data
+version: 0.1.0
+status: draft
+priority: P1
+compatible_agents:
+  - claude-code
+  - codex
+  - cursor
+  - codebuddy
+  - nestudy
+  - generic-llm-agent
+display_name: 不确定度传播
+outputs:
+  - chat
+max_rounds: 20
+suggest_hint: 用「不确定度传播」算出导出量的不确定度，并看清预算里是哪一项在主导
 ---
 
 # Uncertainty Propagator

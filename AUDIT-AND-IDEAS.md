@@ -158,7 +158,7 @@ modeling-problem-reading-coach   0   ← 孤儿
 
 
 **组〇与组一已于 2026-08-30 落地**（Library 0.18.0，均为 `0.1.0` draft），开在新分类 `skills/physics/`；共享参考四份 + 纯标准库量纲检查器 `_shared/scripts/dimcheck.py`。
-下面「先做哪三个」是组〇/组一动工之前写的建议：`physics-mechanism-decomposer` 与 `dimensional-analysis-checker` 都已完成（后者原先游离在仓库根目录，0.19.0 归位到 `skills/physics/`），[x] `limiting-case-validator` 已完成。
+**组二、三、四已于 2026-09-05 全部接入（0.20.0）**：十个 physics skill 加 `ai-generated-test-auditor` 此前已写好正文与脚本，但 frontmatter 不合规、用例散在各自目录、索引未登记，校验报 64 个错误。现已归一并登记，物理流水线五组齐全，共 17 个 skill。下面「先做哪三个」的建议已全部完成。
 
 **先做哪三个**：`dimensional-analysis-checker` → `limiting-case-validator` → `physics-mechanism-decomposer`。前两个确定性最强（sympy 直接跑）、见效最快，用来验证"物理类适不适合做成 skill"；第三个是流水线里唯一覆盖开放题核心动作（机制分解）的，原推荐里的 `model-fit-auditor` 只服务有数据的子集，推迟到实证环节铺开时再做。
 
