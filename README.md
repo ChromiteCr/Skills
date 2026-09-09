@@ -114,6 +114,10 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 
 - **[`program-maturity-navigator`](skills/community-programs/program-maturity-navigator/SKILL.md)**: Where an activity actually is, decided by the traces it left — the dates, the headcounts, what people took away — not by what it is called. Three trunk stages, then a fork into two independent axes: depth, where participants make something, and reach, where strangers show up and come back. Neither outranks the other and staying put is a legitimate answer. Each gate is an evidence checklist rather than a judgement call, so it can and does refuse to let you advance; the sharpest requirement is that a trial run must have produced at least one observation you did not expect, because a session that went exactly to plan produced no information. A script decides whether a series has real order — every session after the first has to consume something an earlier one produced — and there is a template for shutting something down, which is what most seeds actually do.
 
+**Photography**
+
+- **[`photo-caption-writer`](skills/photography/photo-caption-writer/SKILL.md)**: Writes a caption or artist statement only from facts the photographer confirmed plus optional EXIF. It will not read emotions, intent, or a location into the pixels; gaps get asked about or left out.
+
 **Working with AI**
 
 - **[`prompt-brief-builder`](skills/ai-usage/prompt-brief-builder/SKILL.md)**: "Write me something" becomes a brief anyone can execute. It asks at most three to five questions — the ones whose answers actually change the work — and everything still unknown is labelled as an assumption rather than quietly decided. A script checks the brief has no empty sections.

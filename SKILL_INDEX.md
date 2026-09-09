@@ -205,6 +205,14 @@ Chinese lyric writing plus LLM-to-MIDI composition.
 | `personalized-review-scheduler` | P2 | planned | — | 生成个性化复习计划 |
 | `example-sentence-builder` | P2 | planned | — | 生成贴合语境的例句 |
 
+## photography — P2
+
+摄影产物的确定性处理与克制写作：脚本兜底事实，模型只做判断。Photography outputs: scripts own the facts, the model owns judgment.
+
+| Skill | 优先级 | 状态 | 版本 | 用途 |
+|---|---|---|---|---|
+| `photo-caption-writer` | P2 | draft | 0.1.0 | 基于拍摄者确认的事实与 EXIF 写图注或作品阐述，不从画面脑补情绪与意图 |
+
 ## social-practice — P2
 
 社会实践与影响力整理。Social practice and impact reporting.
