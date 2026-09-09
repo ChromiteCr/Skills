@@ -120,6 +120,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 - **[`photo-exif-frame`](skills/photography/photo-exif-frame/SKILL.md)**: Adds a configurable information band below a photograph — aperture, shutter, exposure compensation, ISO, capture time, camera. Missing fields stay blank rather than invented, and the source file is never overwritten.
 - **[`photo-poster-stylist`](skills/photography/photo-poster-stylist/SKILL.md)**: Turns the photographer's own account of a photo into a minimal geometric SVG poster — restrained palette, grid, typography, bleed — with a script checking the palette and element counts stay minimal.
 - **[`photo-series-layout`](skills/photography/photo-series-layout/SKILL.md)**: Lays out 3–9 finished photographs as one cohesive page, long image, or PDF with consistent frames and gutters. The photographer's order is preserved unless sequencing suggestions are explicitly requested.
+- **[`shoot-outing-review-card`](skills/photography/shoot-outing-review-card/SKILL.md)**: Turns one outing into a shareable review card: cover image, focal-length/aperture/shutter habit summaries, and a capture timeline. It shows the habits; it never grades them, and it never exposes GPS or serial numbers.
 
 **Working with AI**
 

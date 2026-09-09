@@ -215,6 +215,7 @@ Chinese lyric writing plus LLM-to-MIDI composition.
 | `photo-exif-frame` | P2 | draft | 0.1.0 | 照片下方加信息带：光圈、快门、曝光补偿、ISO、时间、设备；缺字段留空不编造 |
 | `photo-poster-stylist` | P2 | draft | 0.1.0 | 按拍摄者描述把照片转译为极简几何 SVG 海报：受限色板、网格、出血，脚本校验 |
 | `photo-series-layout` | P2 | draft | 0.1.0 | 3–9 张照片排成一页成套作品：统一画幅与间距，顺序由人定，输出长图或 PDF |
+| `shoot-outing-review-card` | P2 | draft | 0.1.0 | 一场拍摄生成回顾卡：封面 + 焦距/光圈/快门习惯分布 + 时间线，不评价好坏 |
 
 ## social-practice — P2
 
