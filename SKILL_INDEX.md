@@ -212,6 +212,7 @@ Chinese lyric writing plus LLM-to-MIDI composition.
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
 | `photo-caption-writer` | P2 | draft | 0.1.0 | 基于拍摄者确认的事实与 EXIF 写图注或作品阐述，不从画面脑补情绪与意图 |
+| `photo-exif-frame` | P2 | draft | 0.1.0 | 照片下方加信息带：光圈、快门、曝光补偿、ISO、时间、设备；缺字段留空不编造 |
 
 ## social-practice — P2
 

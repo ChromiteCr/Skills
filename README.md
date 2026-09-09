@@ -117,6 +117,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 **Photography**
 
 - **[`photo-caption-writer`](skills/photography/photo-caption-writer/SKILL.md)**: Writes a caption or artist statement only from facts the photographer confirmed plus optional EXIF. It will not read emotions, intent, or a location into the pixels; gaps get asked about or left out.
+- **[`photo-exif-frame`](skills/photography/photo-exif-frame/SKILL.md)**: Adds a configurable information band below a photograph — aperture, shutter, exposure compensation, ISO, capture time, camera. Missing fields stay blank rather than invented, and the source file is never overwritten.
 
 **Working with AI**
 
