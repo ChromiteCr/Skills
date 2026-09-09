@@ -5,6 +5,24 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.22.0 — 2026-09-09
+
+新开 `photography` 分类，落地审计文档组四的五项摄影技能（均 0.1.0 draft），共同分工：
+**脚本兜底一切事实，模型只做判断与排版决策。**
+
+- `photo-caption-writer`：基于拍摄者确认的事实与可选 EXIF 写短图注/长作品阐述；
+  证据分 confirmed / attributed / unknown 三清单，拒绝从画面推断情绪、身份与意图。
+- `photo-exif-frame`：照片下方加可配置信息带（光圈/快门/曝光补偿/ISO/时间/设备）；
+  缺字段留空不编造，永不覆盖源文件，版式默认值写入 references。
+- `photo-poster-stylist`：把拍摄者自己的描述转译为极简几何 SVG 海报；
+  脚本校验调色板与元素数量上限，强制极简，不假装会画画。
+- `photo-series-layout`：3–9 张照片排成一页成套作品；顺序默认由人定，
+  与 `photo-exif-frame` 可组合且不加第二层框。
+- `shoot-outing-review-card`：一场拍摄生成回顾卡（封面 + 参数习惯分布 + 时间线）；
+  只呈现习惯不评价好坏，GPS/序列号等隐私字段永不展示。
+
+另修复 A3：`writing-rules`（0.2.0→0.2.1）补上与 `zlc` 的双向互斥声明，原来互斥只写了 `zlc` 一边。
+
 ## 0.21.0 — 2026-09-05
 
 新开 `community-programs` 分类，首个 skill `program-maturity-navigator`（0.1.0 draft）：
