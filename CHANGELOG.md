@@ -5,6 +5,17 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.22.2 — 2026-09-17
+
+合并 Downloads 副本中滞留的未提交更改。这些改动写于 0.22.0 前后（9/10–9/15），各 skill 的 PATCH 版本与变更记录当时已写好，只是一直没有入库；Library 层按规则补记 PATCH：
+
+- `modeling-problem-reading-coach` 0.1.1：接入 `_shared/` 工作契约与验证手册（审计项 A2 修复）
+- `activity-list-optimizer` 0.2.1：Common App 易变限额补核对日期、官方来源与每申请季复核要求（审计项 A1 修复）
+- `application-timeline-builder` 0.2.1：倒推提前量标明为经验默认值，补核对日期与流程来源（审计项 A1 修复）
+- `model-selection-tutor` 0.1.1：明确与 `modeling-assumption-builder` 的分流
+- `modeling-code-builder` 0.1.1：补充矛盾输入与受评任务边界违规评估用例，新增 `references/evaluation-cases.md`
+- AUDIT-AND-IDEAS.md：A1、A2 两项标记为已修复
+
 ## 0.22.1 — 2026-09-17
 
 `keynote-deck-builder` 升到 0.6.0：从发布会扩到课堂、讲座与学术报告。Library 层只动了索引与 README 的描述，按规则记 PATCH；
