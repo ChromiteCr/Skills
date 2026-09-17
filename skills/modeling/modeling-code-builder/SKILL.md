@@ -2,7 +2,7 @@
 name: modeling-code-builder
 description: 当使用者说“按我的模型写代码”“把方程实现成 Python/MATLAB/R”“调试这段建模代码”“补验证和灵敏度分析”“让结果可复现”时使用。只实现学生已确认的模型与数据契约，先写实现合同、手算小例、不变量和验收矩阵，再按读取、变换、求解、验证、敏感性与导出拆分；执行后记录输入快照、种子、环境、求解设置和输出，不静默修数据、不硬编码结果、不替学生发明模型或伪造数据。
 category: modeling/implementation
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -214,9 +214,11 @@ suggest_hint: 模型和方程定了？用「建模代码助手」把它实现成
 - `../_shared/modeling-work-contract.md` —— 稳定 ID、状态与运行 / 图表交接
 - `../_shared/validation-playbook.md` —— 验证梯、泄漏、可辨识性与结论强度
 - `../_shared/code-reproducibility-checklist.md` —— 实现、数据、数值、测试和 Run Manifest 检查表
+- `references/evaluation-cases.md` —— 矛盾输入与受评任务边界违规的跨 Agent 行为评估用例
 
 ## 变更记录 / Changelog
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-15 | 补充矛盾输入与受评任务边界违规评估用例 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：就绪门槛、实现合同、验证夹具、数据链、运行清单与跨工具降级 | minor |

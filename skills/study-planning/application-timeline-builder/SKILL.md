@@ -2,7 +2,7 @@
 name: application-timeline-builder
 description: 当学生说"申请季怎么安排"、"ED 之前要做完哪些事"、"帮我排一下今年的申请节点"时使用。从各校截止日往回推出整个申请季的时间线：推荐信什么时候要请老师、文书初稿什么时候出、标化什么时候送分，全部换算成北京时间直接排出来落进日程，只把"走哪一轮"这类只有本人能定的岔路口做成选择题一次问完。截止日只用核实过的，本地数据没核实的一律让学生去官网确认后再排。
 category: study-planning/admissions
-version: 0.2.0
+version: 0.2.1
 status: draft
 priority: P0
 compatible_agents:
@@ -78,7 +78,14 @@ suggest_hint: 申请季快开始了，用「申请季时间线」把各校截止
 3. **换算**：所有截止日过 `resolve_deadline` 换成北京时间。
    **`warnings` 里凡是提到夏令时切换的，必须转述**——11 月初 ET 从 EDT 切回 EST，
    北京时间会整整差一小时，而 ED/EA 的截止日正好压在那几天。
-4. **直接倒推排完**，对每个已核实的截止日往回排（下面是常见提前量，学生的实际情况优先）：
+4. **直接倒推排完**，对每个已核实的截止日往回排。
+
+   下面的提前量是**保守的排程默认值，不是平台承诺或统一行业标准**；学生、推荐人和学校的实际要求优先。
+   最近核对：**2026-09-11**。流程依据：
+   [Common App — First-year application guide](https://www.commonapp.org/apply/first-year-students)；
+   [College Board — Sending SAT scores](https://satsuite.collegeboard.org/sat/scores/send-scores-to-colleges/sending-scores)。
+   这些来源用于核对申请材料与送分流程，**不规定下表的统一提前天数**；表中区间是本 skill 的保守经验值。
+   每个申请季开始前应复核这些来源和目标学校官网；若上游流程变化影响默认提前量，更新核对日期并发布 PATCH 版本。
 
    | 节点 | 相对截止日 | 为什么这么早 |
    |---|---|---|
@@ -143,5 +150,6 @@ suggest_hint: 申请季快开始了，用「申请季时间线」把各校截止
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.2.1 | 2026-09-11 | 标明倒推提前量是经验默认值，补充核对日期、流程来源与上游变化时发布 PATCH 的维护约定 | patch |
 | 0.2.0 | 2026-08-04 | 转向先产出：已核实的学校直接排完整时间线，不再等所有信息齐；轮次选择改用 `ask_user` 一次问完 | minor |
 | 0.1.0 | 2026-08-04 | 初始草稿 | minor |

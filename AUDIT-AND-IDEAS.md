@@ -24,12 +24,12 @@
 
 两个 skill 把会逐年变动的外部事实写死在正文里，既没有来源也没有记录日期：
 
-- `activity-list-optimizer` SKILL.md:57–63 与 description 里写死 Common App 字符限额（职位 50 / 组织 100 / 描述 150）。脚本 `check_activity_limits` 负责数字符是对的，**但上限本身是写死的常量**，Common App 几乎每季都可能调。
-- `application-timeline-builder` SKILL.md:82–88 写死提前量（推荐信 4–6 周、主文书 3–4 周、补充文书 2–3 周、送分 2–3 周、自查 3–5 天）。这条比上一条轻，因为表格旁边写了"学生的实际情况优先"，属于经验值而非硬事实。
+- [x] `activity-list-optimizer` SKILL.md:57–63 与 description 里写死 Common App 字符限额（职位 50 / 组织 100 / 描述 150）。脚本 `check_activity_limits` 负责数字符是对的，**但上限本身是写死的常量**，Common App 几乎每季都可能调。
+- [x] `application-timeline-builder` SKILL.md:82–88 写死提前量（推荐信 4–6 周、主文书 3–4 周、补充文书 2–3 周、送分 2–3 周、自查 3–5 天）。这条比上一条轻，因为表格旁边写了"学生的实际情况优先"，属于经验值而非硬事实。
 
 **建议**：给这类常量加一行「核对日期 + 出处 URL」，并在 changelog 里约定"上游变了就发 PATCH"。这正是 `keynote-deck-builder` 用 A/B/C 分档解决的同一类问题。
 
-#### A2. `modeling-problem-reading-coach` 完全没有引用 `_shared/` — **已核实**
+#### A2. [x] `modeling-problem-reading-coach` 完全没有引用 `_shared/` — **已核实**
 
 modeling 九个 skill 里，八个引用 `_shared/` 文档 3 到 5 次，只有它是 **0 次**：
 

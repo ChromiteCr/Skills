@@ -2,7 +2,7 @@
 name: model-selection-tutor
 description: 当使用者说“这题该用什么模型”“A 和 B 哪个更合适”“要不要上机器学习”“我的模型选得对吗”时使用。基于已拆清的目标、变量、数据与验证条件，区分模型家族、算法和求解器，建立简单基线，比较至少两个有意义的候选，并给出条件式推荐与最低成本判别测试；不凭流行度拍板、不编造性能、不替学生隐藏最终选择。
 category: modeling/model-design
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -35,7 +35,7 @@ suggest_hint: 有几个模型拿不准？用「建模选型导师」从目标、
 **不适用于** / Not for：
 
 - 目标、变量、约束或交付物尚未拆清 —— 先用 `modeling-problem-reading-coach`
-- 已定模型，要系统写假设 —— 用 `modeling-assumption-builder`
+- 已定模型，要系统写假设 —— 用 `modeling-assumption-builder`；若手上虽有模型草稿，但仍在比较不同模型结构、尚未确认采用哪一个，则留在本 skill
 - 要实现学生已选定的模型 —— 用 `modeling-code-builder`
 - 要攻击现有方案的漏洞 —— 用 `model-critique-coach`
 
@@ -203,4 +203,5 @@ suggest_hint: 有几个模型拿不准？用「建模选型导师」从目标、
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-14 | 明确与 `modeling-assumption-builder` 的分流：模型结构未定时留在选型，模型已定后再系统整理假设 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：模型 / 算法 / 求解器分层、简单基线、十道选型门槛和判别测试 | minor |
