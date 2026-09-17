@@ -1,9 +1,10 @@
 # Skills
 
 [![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
-[![skills](https://img.shields.io/badge/skills-31-2f81f7?style=flat-square)](SKILL_INDEX.md)
-![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/MaestrWave)
+[![skills](https://img.shields.io/badge/skills-61-2f81f7?style=flat-square)](SKILL_INDEX.md)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
+[![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
+[![stars](https://img.shields.io/github/stars/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/stargazers)
 [![agents](https://img.shields.io/badge/agents-claude--code%20%7C%20codex%20%7C%20cursor%20%7C%20nestudy-555555?style=flat-square)](#compatibility)
 
 My own set of agent skills. They exist so that when I write code, lyrics, application materials or an essay, the agent stops reaching for the default.
@@ -47,7 +48,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 - **[`maestrwave-ui-system`](skills/coding-helper/maestrwave-ui-system/SKILL.md)**: Drops in my dark serif visual system. The `global.css` and the component layer are copy-paste ready.
 - **[`launch-summary-panel`](skills/coding-helper/launch-summary-panel/SKILL.md)**: Turns scattered product material into one 16:9 bento summary panel. It writes a brief first and waits, and every number has to trace back to the source or get flagged.
 - **[`radio-quote-card`](skills/coding-helper/radio-quote-card/SKILL.md)**: Name, line, accent color in; one team-radio-style quote card out. Single file, no team badges, and it will not put invented words in a real person's mouth.
-- **[`keynote-deck-builder`](skills/coding-helper/keynote-deck-builder/SKILL.md)**: A description, a speech script or an existing deck becomes a product-launch presentation. It settles the narrative beats first and waits. One idea per slide, no bullet points anywhere, and the slide never repeats the sentence you are about to say. Exports to PDF and to an editable deck.
+- **[`keynote-deck-builder`](skills/coding-helper/keynote-deck-builder/SKILL.md)**: A description, a speech script or an existing deck becomes a keynote-style presentation, for a product launch or for a classroom, a lecture or a research talk. It settles the occasion and the narrative beats first and waits. One idea per slide, no bullet points anywhere, the slide never repeats the sentence you are about to say, and nothing appears before you get to it: steps reveal on click, what you have covered dims, and the same symbol glides from one slide to the next. In the classroom three launch habits give way to learning research: evidence slides carry a one-sentence claim, real questions are allowed as long as the answer gets revealed, and the recap makes people recall before it shows. Native MathML for equations, a presenter window, a handout for what the projector leaves out, and exports to PDF and to an editable deck with speaker notes.
 - **[`photo-spread-composer`](skills/coding-helper/photo-spread-composer/SKILL.md)**: A set of photographs becomes a printed spread. It hands you a grammar rather than a template: band composition, caption and credit conventions, and one equation that solves every position, so which photo leads and how the page divides stay judgment calls. Under-resolution stops the build.
 
 **Music**

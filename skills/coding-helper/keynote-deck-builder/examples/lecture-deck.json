@@ -1,0 +1,182 @@
+{
+  "_note": "示例片单：课堂场合。物理内容是教科书上的标准结论；第 10 张的数值按公式计算，不是实测。第 3 张没有图，导出时会提示，换成你有权使用的照片并填 src 与 credit。",
+  "theme": "dark",
+  "accent": "#e0913a",
+  "font": "Helvetica Neue",
+  "slides": [
+    {
+      "type": "title",
+      "value": "单摆",
+      "caption": "决定周期的两个量",
+      "notes": "十五分钟。结束时，听众能说出单摆周期只跟摆长和重力有关，并会用公式估算。"
+    },
+    {
+      "type": "roadmap",
+      "items": [
+        "现象",
+        "原理",
+        "检验"
+      ],
+      "current": 0
+    },
+    {
+      "type": "image",
+      "value": "摆钟靠一根摆计时",
+      "caption": "钟准不准，看它来回一次的时间稳不稳",
+      "notes": "为什么一根摆能拿来计时？它来回一次的时间得足够稳定。"
+    },
+    {
+      "type": "question",
+      "kicker": "先预测",
+      "value": "同一根绳，摆锤换成两倍重，周期会怎样？",
+      "items": [
+        "变短",
+        "不变",
+        "变长"
+      ],
+      "notes": "给二十秒，请大家举手。先不揭晓，讲完原理后回到这道题。"
+    },
+    {
+      "type": "roadmap",
+      "items": [
+        "现象",
+        "原理",
+        "检验"
+      ],
+      "current": 1
+    },
+    {
+      "type": "specs",
+      "value": "四个量",
+      "items": [
+        [
+          "摆锤质量",
+          "m"
+        ],
+        [
+          "摆长",
+          "L"
+        ],
+        [
+          "重力加速度",
+          "g"
+        ],
+        [
+          "摆角",
+          "θ"
+        ]
+      ]
+    },
+    {
+      "type": "formula",
+      "value": "m L θ̈ = −m g sin θ  →  θ̈ = −(g / L) θ",
+      "items": [
+        "切向的牛顿第二定律",
+        "惯性质量等于引力质量",
+        "小角度下 sin θ ≈ θ"
+      ],
+      "caption": "两种质量相等：Touboul 等 2022",
+      "notes": "关键一步：约掉的两个 m 来历不同，一个来自 F = ma，一个来自重力。它们相等是实验结论。"
+    },
+    {
+      "type": "definition",
+      "value": "周期",
+      "symbol": "T",
+      "caption": "来回摆动一次所用的时间"
+    },
+    {
+      "type": "formula",
+      "value": "T = 2π √(L / g)",
+      "items": [
+        "L 摆长",
+        "g 重力加速度"
+      ],
+      "caption": "小角度下成立，式子里没有质量",
+      "notes": "单位核对：根号里是米除以米每二次方秒，开方后是秒。"
+    },
+    {
+      "type": "claim",
+      "value": "摆长变成四倍，周期只变成两倍",
+      "caption": "0.25 m → 1.0 s，1.0 m → 2.0 s，4.0 m → 4.0 s；按公式计算，g 取 9.8 m/s²，非实测"
+    },
+    {
+      "type": "roadmap",
+      "items": [
+        "现象",
+        "原理",
+        "检验"
+      ],
+      "current": 2
+    },
+    {
+      "type": "formula",
+      "value": "T = 2π √(1.0 m / 9.8 m/s²) ≈ 2.0 s",
+      "items": [
+        "两位有效数字，与输入一致"
+      ],
+      "caption": "一米长的摆，周期约两秒",
+      "notes": "算得 2.007 秒，报 2.0 秒：输入只有两位有效数字。"
+    },
+    {
+      "type": "question",
+      "kicker": "回到开头那道题",
+      "value": "同一根绳，摆锤换成两倍重，周期会怎样？",
+      "items": [
+        "变短",
+        "不变",
+        "变长"
+      ],
+      "answer": 1,
+      "caption": "质量在方程里约掉了",
+      "notes": "先问刚才押「变短」的同学现在怎么想，再揭晓。"
+    },
+    {
+      "type": "myth",
+      "value": "摆锤越重，摆得越快",
+      "caption": "小角度下，周期与质量无关",
+      "notes": "这个直觉来自「重的东西掉得快」。先承认它符合日常经验，再讲理想单摆里为什么不成立。"
+    },
+    {
+      "type": "question",
+      "kicker": "检查一下",
+      "value": "摆长变成 4 倍，周期变成几倍？",
+      "items": [
+        "2 倍",
+        "4 倍",
+        "16 倍"
+      ],
+      "answer": 0,
+      "caption": "周期与摆长的平方根成正比",
+      "notes": "选 16 倍的同学把平方根当成了平方。"
+    },
+    {
+      "type": "recap",
+      "items": [
+        [
+          "周期",
+          "来回摆动一次的时间"
+        ],
+        [
+          "质量",
+          "在方程里约掉，不影响周期"
+        ],
+        [
+          "摆长",
+          "周期随它的平方根变化"
+        ],
+        [
+          "条件",
+          "以上都在小角度下成立"
+        ]
+      ],
+      "notes": "每一条先请听众说，再揭晓。pptx 里没有逐步出现，要点直接显示。"
+    },
+    {
+      "type": "refs",
+      "items": [
+        "Halliday, D., Resnick, R., & Walker, J.（2021）. Fundamentals of Physics（第 12 版）. Wiley.",
+        "Touboul, P., et al.（2022）. MICROSCOPE Mission: Final Results of the Test of the Equivalence Principle. Physical Review Letters, 129, 121102."
+      ]
+    }
+  ]
+}

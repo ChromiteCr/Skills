@@ -11,8 +11,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cadence · 演示</title>
 <style>
+  /* ── 色板 ──────────────────────────────────────────────
+     底色不用纯黑：近黑的多层渐变，模拟舞台幕布上的光晕。
+     浅色主题用近白不用纯白，纯白投影刺眼。
+     --accent 是占位值，换成使用者给的主色。不要填一个「系统蓝」当默认。 */
   :root {
     --ink: #f5f5f7;
+    /* 透明度是量过的，不是挑好看的：--muted 7.18:1、--faint 4.23:1（底 #0a0b0e）。
+       --faint 只允许用在 ≥40px 的大字上，WCAG 大字门槛 3:1。 */
     --muted: rgba(245, 245, 247, 0.62);
     --faint: rgba(245, 245, 247, 0.45);
     --line: rgba(245, 245, 247, 0.14);
@@ -25,6 +31,8 @@
 
   :root[data-theme="light"] {
     --ink: #1d1d1f;
+    /* 浅色下同样量过：--muted 5.58:1、--faint 3.40:1。原来的 0.62/0.40 在浅色底上
+       只有 4.61:1 与 2.43:1，后者连大字的 3:1 都不到。 */
     --muted: rgba(29, 29, 31, 0.68);
     --faint: rgba(29, 29, 31, 0.52);
     --line: rgba(29, 29, 31, 0.12);
@@ -36,22 +44,35 @@
   }
 
   * { box-sizing: border-box; }
+
   html, body { margin: 0; height: 100%; }
 
   body {
     background: var(--page);
     color: var(--ink);
+    /* 只走系统栈。不要写 "SF Pro Display"：本机文件名是 SFNS.ttf，按那个名字引不可靠，
+       而且 SF Pro 的授权只允许做 Apple 系统界面的 mockup，不允许随文件分发。
+       苹方是 macOS 独占，Windows 落到微软雅黑，所以后备必须显式写全。 */
     font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
       "Microsoft YaHei", "Noto Sans SC", sans-serif;
     -webkit-font-smoothing: antialiased;
     font-variant-numeric: tabular-nums;
+
+    /* 苹方的 700/800/900 渲染完全相同，实际上限是 Semibold。禁掉伪粗体，
+       让浏览器退到字体真有的那一档——CJK 的算法加粗很难看。 */
     font-synthesis: none;
+    /* SF Pro 是可变字体，20pt 以上自动切 Display 光学尺寸（字距收紧） */
     font-optical-sizing: auto;
+    /* 避头尾禁则：句号逗号不落行首，开括号不落行尾 */
     line-break: strict;
+    /* 自动在中西文之间插约 1/4 em，「30 天」这类间距不用手工调。
+       2025 年 11 月起成为 baseline，老浏览器忽略此属性，不影响其余渲染。 */
     text-autospace: normal;
   }
 
+  /* ── 翻页容器 ────────────────────────────────────────── */
   .deck {
+    position: relative;
     height: 100vh;
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
@@ -65,6 +86,9 @@
     scroll-snap-align: start;
   }
 
+  /* 舞台恒为 1920×1080，只做视觉缩放，所以字号比例在任何窗口下都不变。
+     居中必须用绝对定位 + translate：舞台比视口大，grid 的 place-items:center
+     遇到超出容器的子项会退回 start 对齐，居中会失效。 */
   .stage {
     position: absolute;
     top: 50%;
@@ -76,8 +100,10 @@
     background:
       radial-gradient(120% 80% at 50% -10%, var(--bg-spill) 0%, transparent 58%),
       var(--bg-base);
+    /* 极淡的颗粒，作用是压住大面积渐变的色带。内联 SVG，不是外部资源 */
     display: grid;
     align-content: center;
+    /* 内容离边留 10–15%：1920 宽对应 192–288px */
     padding: 120px 200px;
   }
 
@@ -92,6 +118,8 @@
 
   .stage > * { position: relative; z-index: 1; }
 
+  /* ── 字号阶梯 ──────────────────────────────────────────
+     下限 40px = 30pt。这条不可破，它的作用是逼着删内容。 */
   .num     { font-size: 320px; line-height: 0.9;  font-weight: 700; letter-spacing: -0.02em; }
   .phrase  { font-size: 180px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; }
   .feature { font-size: 120px; line-height: 1.1;  font-weight: 600; letter-spacing: -0.015em; }
@@ -103,6 +131,7 @@
   .accent { color: var(--accent); }
   .stack  { display: grid; gap: 40px; }
 
+  /* 未确认标记：片上必须看得见，不能只写在大纲里自己知道 */
   .unverified {
     display: inline-block;
     font-size: 40px;
@@ -113,6 +142,7 @@
     padding: 10px 28px;
   }
 
+  /* ── bento 网格：分层靠格子大小，不靠列表缩进 ────────── */
   .bento {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -130,21 +160,110 @@
 
   .tile.big  { grid-column: span 2; grid-row: span 2; }
   .tile.wide { grid-column: span 2; }
+
   .tile .k { font-size: 40px; color: var(--muted); font-weight: 500; }
   .tile .v { font-size: 72px; font-weight: 600; line-height: 1; }
   .tile.big .v { font-size: 120px; }
 
+  /* ── 规格密排 ─────────────────────────────────────────── */
   .specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 80px; }
   .spec  { display: grid; gap: 8px; padding: 28px 0; border-top: 1px solid var(--line); }
   .spec .k { font-size: 40px; color: var(--muted); }
   .spec .v { font-size: 64px; font-weight: 600; }
 
+  /* ── 双列对比：列头必须标明对比的轴 ──────────────────── */
   .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 120px; align-items: start; }
   .versus .col { display: grid; gap: 24px; }
   .versus .head { font-size: 44px; color: var(--muted); }
   .versus .val  { font-size: 200px; font-weight: 700; line-height: 0.95; letter-spacing: -0.02em; }
   .versus .col.now .val { color: var(--accent); }
 
+  /* ── 图表：纯 CSS 柱状 ────────────────────────────────
+     柱状图基线必须从零起。这不是审美偏好：Correll 等（CHI 2020）与 Pandey 等（2015）
+     都实测到截断纵轴造成系统性误读，而且**加断轴标记也不能缓解**。
+     另外这里只做柱状与折线：禁 3D、禁饼图、禁面积/半径编码、禁双纵轴。 */
+  .chart { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 60px; height: 520px; }
+  /* 柱子的高度是百分比，所以它所在的行必须有确定高度：.bar 撑满 .chart 的 520px，
+     中间那条 1fr 轨道因此是确定的，百分比才解析得出来。
+     直接写在 .fill 上而父级高度由内容决定的话，柱子会塌成零高。 */
+  .bar   { display: grid; grid-template-rows: auto 1fr auto; gap: 24px; height: 100%; text-align: center; }
+  .bar .col  { display: flex; align-items: flex-end; }
+  /* 柱子本身就是数据，要满足非文字内容 3:1（WCAG 1.4.11）。原来用 --tile（5% 白），
+     投出来几乎看不见。改用已量过的 --faint：深色 3.99:1、浅色 3.40:1 */
+  .bar .fill { width: 100%; background: var(--faint); border-radius: 16px 16px 0 0; }
+  .bar.on .fill { background: var(--accent); }
+  .bar .v { font-size: 56px; font-weight: 600; }
+  .bar .k { font-size: 40px; color: var(--muted); }
+  /* 纵轴口径与基线说明用 --muted 不用 --faint：这行字承担信息，
+     不能是全片最看不清的。 */
+  .zero  { border-top: 1px solid var(--line); margin-top: -1px; padding-top: 20px; font-size: 40px; color: var(--muted); }
+
+  /* ── logo 墙：只放占位框。不要放任何真实商标 ─────────── */
+  .logos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .logo-slot {
+    height: 160px;
+    border: 1px dashed var(--line);
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    color: var(--faint);
+  }
+
+  /* ── 引语：用户原话、评审意见、调研摘录 ───────────────
+     出处要跟在引语下面。没有出处的话不要做成引语片，那是把编的话当证据用。 */
+  .quote { font-size: 96px; line-height: 1.3; font-weight: 500; letter-spacing: -0.01em; }
+  .quote .mark { color: var(--accent); }
+
+  /* ── 流程条：有先后顺序的步骤。这是项目符号的替代品之一 ── */
+  .steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 20px; }
+  .step  { display: grid; gap: 16px; align-content: start; padding-top: 32px; border-top: 3px solid var(--accent); }
+  .step .i { font-size: 40px; color: var(--accent); font-weight: 600; }
+  .step .n { font-size: 60px; font-weight: 600; line-height: 1.1; }
+  .step .d { font-size: 40px; color: var(--muted); line-height: 1.35; }
+
+  /* ── 双栏人物：分工、团队、职责 ──────────────────────── */
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+  .role  { display: grid; gap: 28px; align-content: start; }
+  .role .who  { font-size: 76px; font-weight: 600; }
+  .role .what { font-size: 44px; color: var(--muted); line-height: 1.5; }
+
+  /* ── 时刻：一个具体到能拍成视频的场景 ─────────────────
+     比单句大字长、比说明小字大。内容主导时展开的每一点配一张。
+     判据：拍不成十秒视频的，就是形容词，不该占这张片。 */
+  .moment { font-size: 108px; line-height: 1.22; font-weight: 600; letter-spacing: -0.012em; }
+  .moment .lead { display: block; font-size: 44px; font-weight: 500; color: var(--muted);
+                  letter-spacing: 0; margin-bottom: 28px; }
+
+  /* ── 信号汇入：左边几路输入，汇到右边一个结果 ──────────
+     回答"它凭什么知道"。不是技术栈清单。 */
+  .converge { display: grid; grid-template-columns: 1fr auto 1.1fr; gap: 64px; align-items: center; }
+  .converge .ins { display: grid; gap: 20px; }
+  .converge .in {
+    font-size: 52px; font-weight: 500;
+    padding: 22px 32px; border-radius: 999px;
+    background: var(--tile); color: var(--ink);
+  }
+  .converge .arrow { font-size: 72px; color: var(--accent); line-height: 1; }
+  .converge .out { display: grid; gap: 20px; }
+  .converge .out .v { font-size: 96px; font-weight: 600; line-height: 1.1; color: var(--accent); }
+  .converge .out .d { font-size: 44px; color: var(--muted); line-height: 1.35; }
+
+  /* ── 取舍：它故意不做什么 ─────────────────────────────
+     两三条并列。每条一行短句 + 一行为什么。不要退化成项目符号。 */
+  .tradeoffs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 72px; }
+  .tradeoff { display: grid; gap: 20px; align-content: start;
+              padding-top: 30px; border-top: 3px solid var(--accent); }
+  .tradeoff .no  { font-size: 76px; font-weight: 600; line-height: 1.12; }
+  .tradeoff .why { font-size: 44px; color: var(--muted); line-height: 1.38; }
+
+  /* ── 全黑过场：现场切视频或实机演示时停在这一张 ────────
+     不要在这张片上放「演示视频播放位」这类占位框。占位框是给做片子的人看的，
+     投出来观众只会看到一个空框。 */
+  .stage.blackout { background: #000; }
+  .stage.blackout::after { display: none; }
+
+  /* ── 产品位占位图：居中浮着，留白四到五成，不出血 ────── */
   .hero {
     justify-self: center;
     width: 900px;
@@ -160,11 +279,190 @@
     color: var(--faint);
   }
 
+  /* ── 价格片 ───────────────────────────────────────────── */
   .price { display: flex; gap: 140px; justify-content: center; }
   .price .item { display: grid; gap: 16px; text-align: center; }
   .price .p { font-size: 140px; font-weight: 700; line-height: 1; }
   .price .n { font-size: 44px; color: var(--muted); }
 
+  /* ════════════════════════════════════════════════════════
+     出场顺序：一次出一个意义单位，讲到才出现
+     ════════════════════════════════════════════════════════
+     三个属性，可以写在任何元素上，MathML 元素也可以：
+       data-build="N"    第 N 步出现；"N-M" 表示第 N 到 M 步出现，之后退场
+       data-dim="N"      第 N 步起调暗（讲过了，退到背景）；同样接受 "N-M"
+       data-mark="N"     第 N 步起换重点色；"N-M" 只在第 N 到 M 步
+     翻页键先走完本片的步数，再进下一片；退回上一片时显示它的最终状态。
+     时长 320ms 是本模板的取值，不是苹果的参数：发布会的真实动效时长没有公开实测。 */
+  [data-build] { transition: opacity .32s ease, transform .32s ease; }
+  [data-build]:not(.shown) { opacity: 0; transform: translateY(16px); }
+  /* 调暗不用 opacity 叠乘。次要字本身是 0.62 的透明度，再乘一次会掉到 1.7:1，
+     讲过的内容就读不出来了。统一换成 --faint：它按最坏底色量过，
+     深色 3.99:1、浅色 3.40:1，过大字 3:1 门槛，而本模板所有字都 ≥40px。 */
+  .dimmed, .dimmed * { color: var(--faint) !important; transition: color .32s ease; }
+  .dimmed img, .dimmed .photo, .dimmed .hero { opacity: .45; }
+  .marked { color: var(--accent) !important; transition: color .32s ease; }
+
+  /* 跨片连续（Magic Move 的做法）：相邻两片上 data-morph 值相同的元素，
+     翻页时从旧位置平移缩放到新位置，其余部分溶解。
+     浏览器不支持 View Transitions 或开了「减弱动效」时，退化为直接切换。
+     只在相邻两片之间配对，而且只配「是同一个东西」的元素：同一个符号、同一个词、同一张图。
+     形状差得多（一整行字配一个字母）会变成拉伸，比不做还难看。
+     data-morph 不要写在带 data-build 的元素上：变到一个还没出现的元素上会一闪而过。 */
+  ::view-transition-group(*) { animation-duration: .48s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .36s; }
+
+  /* 讲者备注：写在 <section> 里、舞台外。不上屏，按 P 在另一个窗口看 */
+  .slide > .notes { display: none; }
+
+  /* 黑屏：按 B。课堂上停下来让人想的时候用 */
+  .blank { position: fixed; inset: 0; z-index: 20; background: #000; display: none; }
+  .blank.on { display: block; }
+
+  /* ════════════════════════════════════════════════════════
+     课堂与讲堂的片型
+     ════════════════════════════════════════════════════════ */
+
+  :root { --math-font: math, "STIX Two Math", "Cambria Math", "Latin Modern Math", serif; }
+
+  /* ── 主张与证据：左上一句主张，下面是证据 ─────────────
+     主张句 80px，版心 1520 ÷ 80 = 每行 19 字，两行封顶。
+     依据：Garner & Alley（2013）的主张句加视觉证据结构，见 references 第 12 节。 */
+  .stage.evidence { align-content: stretch; grid-template-rows: auto 1fr auto; gap: 44px; }
+  .claim { font-size: 80px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+  .proof { display: grid; place-items: center; min-height: 0; }
+  .cite  { font-size: 40px; color: var(--muted); }
+
+  /* ── 概念：学科通行的术语，加一句定义 ──────────────────
+     定义 52px，版心 1520 ÷ 52 = 每行 29 字，一行最好，两行封顶。 */
+  .term   { font-size: 120px; line-height: 1.1; font-weight: 600; letter-spacing: -0.015em; }
+  .term .sym { font-family: var(--math-font); font-style: italic; font-weight: 400;
+               color: var(--accent); margin-left: 0.3em; }
+  .define { font-size: 52px; line-height: 1.35; color: var(--muted); }
+
+  /* ── 公式：原生 MathML，不引任何公式库 ────────────────
+     Chrome 109 起原生渲染 MathML Core；字体走系统自带的数学字体。
+     上下标按字体自带的缩放表缩小。本机 Chrome + STIX Two Math 实测：
+       .eq 120px    一级上下标 84px、二级 66px；顶层分式的分子分母保持 120px，嵌套分式 84px
+       .derive 72px 行内公式，分式的分子分母就已是 50.4px，再往里一层是 39.6px，低于下限
+     所以大公式最多用两级；推演行里分式内不要再套上下标或分式。 */
+  math { font-family: var(--math-font); }
+  .eq { font-size: 120px; }
+  .terms { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px 72px; }
+  .terms .t { display: flex; gap: 18px; align-items: baseline; font-size: 44px; color: var(--muted); }
+  .terms .t math { font-size: 60px; color: var(--ink); }
+  .derive { display: grid; gap: 30px; }
+  .derive .row { display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 48px; align-items: center; }
+  .derive math { font-size: 72px; justify-self: start; }
+  .derive .why { font-size: 44px; line-height: 1.3; color: var(--muted); }
+
+  /* ── 代码：只放要讲的那几行 ───────────────────────────
+     40px 等宽字每字约 24px 宽，版心 1520 ÷ 24 ≈ 每行 60 个半角字符；
+     行高 54px，一张片 12 行封顶。字体用 ui-monospace，不点名 SF Mono（与 SF Pro 同一份授权）。 */
+  .code {
+    margin: 0;
+    font: 400 40px/1.35 ui-monospace, Menlo, Consolas, "Noto Sans Mono CJK SC", monospace;
+    background: var(--tile);
+    border-radius: 28px;
+    padding: 40px 48px;
+    overflow: hidden;
+    tab-size: 2;
+  }
+  .code .ln { display: block; white-space: pre; }
+
+  /* ── 提问：真要听众作答的题 ───────────────────────────
+     只有这一类片允许问号。选项做成格子，2 到 4 个，每个 72px、8 字以内。 */
+  .kicker  { font-size: 44px; font-weight: 600; color: var(--accent); }
+  .choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 32px; width: 100%; }
+  .choice  {
+    font-size: 72px; font-weight: 600; text-align: center;
+    padding: 44px 24px; border-radius: 28px;
+    background: var(--tile); border: 4px solid transparent;
+  }
+  .choice.marked { border-color: var(--accent); }
+
+  /* ── 误解：标签先亮，改正在同一张片上揭晓 ─────────────
+     误解不能单独以大字占一张片：只看到那张的人会把它记成对的。 */
+  .myth, .fact { display: grid; gap: 18px; }
+  .tag { font-size: 44px; font-weight: 600; color: var(--muted); }
+  .fact .tag { color: var(--accent); }
+  .myth .said, .fact .body { font-size: 88px; font-weight: 600; line-height: 1.18; letter-spacing: -0.01em; }
+  .myth .said { color: var(--muted); text-decoration-thickness: 6px; }
+  /* 揭晓时给误解划线；覆盖掉 .marked 的换色，这里要的是划线不是强调 */
+  .myth .said.marked { color: var(--muted) !important; text-decoration-line: line-through;
+                       text-decoration-color: var(--accent); }
+
+  /* ── 路线：两到四站，每站一个名词 ─────────────────────
+     开场给全貌；每个章节分隔处再出一次，当前站亮、讲过的暗。
+     两张路线片中间隔着一整节，不相邻，所以这里不用 data-morph。
+     当前站用重点色字加描边，不用白字压重点色底：占位色 #5a8dee 上白字只有 3.2:1。 */
+  .roadmap { display: flex; gap: 28px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .stop {
+    font-size: 64px; font-weight: 600;
+    padding: 26px 52px; border-radius: 999px;
+    background: var(--tile); color: var(--muted);
+    border: 4px solid transparent;
+  }
+  .stop.now  { color: var(--accent); border-color: var(--accent); }
+  .stop.done { color: var(--faint); }
+
+  /* ── 回顾：先给提示让人自己想，再揭晓要点 ─────────────
+     提取比重读更有效（Adesope 等 2017）。提示词一格 5 字以内，要点 52px。 */
+  .recap { display: grid; gap: 26px; }
+  .recap .item {
+    display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 48px; align-items: baseline;
+    padding-top: 22px; border-top: 1px solid var(--line);
+  }
+  .recap .q { font-size: 64px; font-weight: 600; }
+  .recap .a { font-size: 52px; line-height: 1.3; color: var(--muted); }
+
+  /* ── 参考文献：只在学术场合的末尾出现，一张 6 条封顶 ── */
+  .refs { display: grid; gap: 22px; }
+  .ref  { font-size: 40px; line-height: 1.35; color: var(--muted); padding-left: 2em; text-indent: -2em; }
+  .ref b { color: var(--ink); font-weight: 600; }
+
+  /* ── 满版图与半幅图 ───────────────────────────────────
+     两种图的处理不一样：拍的是一件东西就用「产品位」那种居中浮着的；
+     拍的是一个地方、一个现象、一个时刻，就出血铺满。
+     图片一律内联成 data URI，见 scripts/inline_images.py。 */
+  .stage.bleed, .stage.half { padding: 0; }
+  .stage.bleed { background: #000; }
+  .stage.bleed::after, .stage.half::after { display: none; }
+  .photo {
+    position: absolute; inset: 0; z-index: 0;
+    display: grid; place-items: center;
+    font-size: 40px; color: rgba(255, 255, 255, 0.45);
+    background: repeating-linear-gradient(45deg, #1b1d22 0 24px, #16181c 24px 48px);
+  }
+  /* --focus 是裁切焦点。cover 会裁掉一部分，主体偏在哪就往哪设 */
+  .photo img { position: absolute; inset: 0; width: 100%; height: 100%;
+               object-fit: cover; object-position: var(--focus, 50% 50%); }
+
+  /* 遮罩量过：底部 32% 恒为 0.72 的黑。即使遮罩下是纯白像素，
+     白字仍有 9.29:1，0.78 白的来源行 6.46:1。
+     文字不能超出这 32%（1080 × 0.32 ≈ 345px），超出去就没有这个保证。
+     这是按最坏情况定的，所以换图不用重量。 */
+  .stage.bleed::before {
+    content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.72) 32%, rgba(0,0,0,0) 64%);
+  }
+  /* 离底 96px 起，可用高度约 249px：一行 96px 标题加一行 44px 小字正好 */
+  .stage.bleed .overlay {
+    position: absolute; left: 200px; right: 200px; bottom: 96px; z-index: 2;
+    display: grid; gap: 18px; color: #fff;
+  }
+  .stage.bleed .overlay .sub { color: rgba(255, 255, 255, 0.78); }
+  .credit { position: absolute; z-index: 2; right: 48px; bottom: 28px;
+            font-size: 40px; color: rgba(255, 255, 255, 0.78); }
+
+  /* 半幅：图出血占右半，字在左半的舞台底色上，不压图，所以不需要遮罩 */
+  .stage.half { background: var(--bg-base); grid-template-columns: 1fr 1fr; align-content: stretch; }
+  .stage.half .photo { inset: 0 0 0 50%; }
+  .stage.half .side { grid-column: 1; align-self: center; display: grid; gap: 40px; padding: 0 96px 0 200px; }
+  /* 来源行压在图上，给它一小块同样量过的底 */
+  .stage.half .credit { right: 28px; bottom: 24px; padding: 4px 16px; border-radius: 12px; background: rgba(0, 0, 0, 0.72); }
+
+  /* ── 舞台外的操作条。投屏、截图、打印都不会带进去 ────── */
   .chrome {
     position: fixed;
     right: 24px;
@@ -182,6 +480,8 @@
     backdrop-filter: blur(12px);
   }
 
+  :root:fullscreen .chrome { display: none; }
+
   .chrome button {
     font: inherit;
     color: var(--ink);
@@ -192,17 +492,24 @@
     cursor: pointer;
   }
 
+  /* ── 打印：一片一页，1:1 不缩放 ──────────────────────── */
+  /* 前庭功能障碍者会被快速位移触发眩晕（WCAG 2.3.3）。
+     跟随系统的减弱动效设置，平滑滚动改成瞬时。 */
   @media (prefers-reduced-motion: reduce) {
     .deck { scroll-behavior: auto; }
+    [data-build] { transform: none !important; }
     * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
   @page { size: 1920px 1080px; margin: 0; }
 
   @media print {
-    .chrome { display: none; }
+    .chrome, .blank { display: none !important; }
+    /* 无头打印时脚本不会跑到每一片，所以在这里强制显示所有步骤 */
+    [data-build] { opacity: 1 !important; transform: none !important; }
     .deck { height: auto; overflow: visible; }
     .slide { height: 1080px; width: 1920px; break-after: page; }
+    /* 打印时 1:1，回到普通流，不缩放不偏移 */
     .stage { position: static; transform: none; }
     /* 颗粒在屏幕上压渐变色带，但逐页栅格化会让 PDF 大出一个数量级，打印时去掉 */
     .stage::after { display: none; }
@@ -311,54 +618,270 @@
 </div>
 
 <div class="chrome">
-  <span id="count">1 / 13</span>
+  <span id="count">1 / 1</span>
+  <span class="keys">P 讲者视图 · B 黑屏 · F 全屏</span>
   <button id="theme">浅色</button>
 </div>
 
 <script>
+(() => {
+  const deck = document.getElementById('deck');
   const slides = [...document.querySelectorAll('.slide')];
   const count = document.getElementById('count');
+  const root = document.documentElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
+  // 舞台恒为 1920×1080，只缩放外层，所以任何窗口下字号比例都不变
   const fit = () => {
-    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-    document.documentElement.style.setProperty('--s', s);
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    root.style.setProperty('--s', s);
   };
-  window.addEventListener('resize', fit);
   fit();
+  // 刷新时不让浏览器恢复旧的滚动位置，位置由下面的脚本决定
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
-  let i = 0;
-  const go = n => {
-    i = Math.max(0, Math.min(slides.length - 1, n));
-    slides[i].scrollIntoView({ behavior: 'smooth' });
-    count.textContent = `${i + 1} / ${slides.length}`;
+  // ── 步数 ──────────────────────────────────────────────
+  // "3" 表示第 3 步起一直成立；"2-4" 表示只在第 2 到 4 步成立
+  const warned = new Set();
+  const range = (el, key) => {
+    const raw = el.dataset[key];
+    const m = String(raw).trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if (!m) {
+      if (!warned.has(raw)) { warned.add(raw); console.warn(`data-${key}="${raw}" 写法不对，应为 N 或 N-M`); }
+      return null;
+    }
+    return [Number(m[1]), m[2] === undefined ? Infinity : Number(m[2])];
   };
+  const within = (r, step) => !!r && step >= r[0] && step <= r[1];
 
-  addEventListener('keydown', e => {
-    const next = ['ArrowRight', 'ArrowDown', ' ', 'PageDown'];
-    const prev = ['ArrowLeft', 'ArrowUp', 'PageUp'];
-    if (next.includes(e.key)) { e.preventDefault(); go(i + 1); }
-    else if (prev.includes(e.key)) { e.preventDefault(); go(i - 1); }
-    else if (e.key === 'Home') { e.preventDefault(); go(0); }
-    else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
-  });
-
-  slides.forEach(s => new IntersectionObserver(entries => {
-    for (const en of entries) {
-      if (en.isIntersecting) {
-        i = slides.indexOf(en.target);
-        count.textContent = `${i + 1} / ${slides.length}`;
+  const stepsOf = slide => {
+    let max = 0;
+    for (const key of ['build', 'dim', 'mark']) {
+      for (const el of slide.querySelectorAll(`[data-${key}]`)) {
+        const r = range(el, key);
+        if (!r) continue;
+        // 有终点的区间要多走一步，才看得到它结束
+        max = Math.max(max, r[0], Number.isFinite(r[1]) ? r[1] + 1 : 0);
       }
     }
-  }, { threshold: 0.6 }).observe(s));
+    return max;
+  };
+  const total = slides.map(stepsOf);
 
-  const root = document.documentElement;
+  const apply = (slide, step) => {
+    for (const el of slide.querySelectorAll('[data-build]')) {
+      const on = within(range(el, 'build'), step);
+      el.classList.toggle('shown', on);
+      if (on) el.removeAttribute('aria-hidden'); else el.setAttribute('aria-hidden', 'true');
+    }
+    for (const el of slide.querySelectorAll('[data-dim]')) el.classList.toggle('dimmed', within(range(el, 'dim'), step));
+    for (const el of slide.querySelectorAll('[data-mark]')) el.classList.toggle('marked', within(range(el, 'mark'), step));
+  };
+
+  // ── 位置 ──────────────────────────────────────────────
+  let i = 0, step = 0, expected = -1, expectTimer = 0;
+
+  const label = () => {
+    count.textContent = `${i + 1} / ${slides.length}` + (total[i] ? ` · ${step}/${total[i]}` : '');
+    history.replaceState(null, '', `#${i + 1}`);
+    presenter.update();
+  };
+
+  const scrollToSlide = (el, smooth) => {
+    deck.style.scrollBehavior = smooth ? 'smooth' : 'auto';
+    deck.scrollTo({ top: el.offsetTop });
+  };
+
+  // 相邻两片上 data-morph 相同的元素，交给 View Transitions 做连续过渡
+  const morph = (from, to, update) => {
+    const olds = new Map();
+    for (const el of from.querySelectorAll('[data-morph]')) if (!olds.has(el.dataset.morph)) olds.set(el.dataset.morph, el);
+    const seen = new Set();
+    const pairs = [];
+    for (const el of to.querySelectorAll('[data-morph]')) {
+      const key = el.dataset.morph;
+      if (!olds.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      pairs.push([olds.get(key), el, `morph-${pairs.length}`]);
+    }
+    for (const [o, , name] of pairs) o.style.viewTransitionName = name;
+    const vt = document.startViewTransition(() => {
+      for (const [o, n, name] of pairs) { o.style.viewTransitionName = ''; n.style.viewTransitionName = name; }
+      update(false);
+    });
+    // 过渡被跳过（页面在后台、状态不对）时 ready 会被拒绝，但 DOM 更新照样执行，这里只是不让它报错
+    vt.ready.catch(() => {});
+    vt.finished.finally(() => { for (const [, n] of pairs) n.style.viewTransitionName = ''; });
+  };
+
+  const jump = (n, s, animate) => {
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    const from = slides[i], to = slides[n];
+    const update = smooth => {
+      i = n; step = s;
+      expected = n;
+      clearTimeout(expectTimer);
+      expectTimer = setTimeout(() => { expected = -1; }, 1200);
+      apply(to, step);
+      scrollToSlide(to, smooth);
+      label();
+    };
+    const canMorph = animate && n !== i && document.startViewTransition && !reduced.matches
+      && document.visibilityState === 'visible';
+    if (canMorph) morph(from, to, update);
+    else update(animate && !reduced.matches);
+  };
+
+  const next = () => {
+    if (step < total[i]) { step += 1; apply(slides[i], step); label(); }
+    else if (i < slides.length - 1) jump(i + 1, 0, true);
+  };
+  const prev = () => {
+    if (step > 0) { step -= 1; apply(slides[i], step); label(); }
+    else if (i > 0) jump(i - 1, total[i - 1], true);
+  };
+
+  // 滚轮或触控板翻到的片，按「浏览」处理：直接给最终状态
+  // 页面在后台标签或隐藏窗口里载入时，每片高度都是 0，观察器会把所有片同时报成可见，
+  // 当前片就被带到最后一张。高度为 0 的回报一律不算。
+  const io = new IntersectionObserver(entries => {
+    if (!deck.clientHeight) return;
+    for (const en of entries) {
+      if (!en.isIntersecting || !en.boundingClientRect.height) continue;
+      const k = slides.indexOf(en.target);
+      if (k === expected) { expected = -1; continue; }
+      if (k === i) continue;
+      i = k; step = total[k];
+      apply(slides[k], step);
+      label();
+    }
+  }, { root: deck, threshold: 0.6 });
+  slides.forEach(s => io.observe(s));
+
+  // ── 黑屏 ──────────────────────────────────────────────
+  const blank = document.createElement('div');
+  blank.className = 'blank';
+  document.body.append(blank);
+
+  // ── 讲者视图：另开一个窗口，只有讲的人看得到 ────────────
+  const presenter = (() => {
+    let win = null, started = 0, timer = 0;
+    const notesOf = s => {
+      const el = s && s.querySelector(':scope > .notes');
+      if (!el) return '';
+      return el.textContent.split('\n').map(l => l.trim()).join('\n').trim();
+    };
+    const headOf = s => {
+      if (!s) return '';
+      const el = s.querySelector('.stage');
+      return (el ? el.innerText : '').split('\n').map(l => l.trim()).find(Boolean) || '';
+    };
+    const alive = () => win && !win.closed;
+    const update = () => {
+      if (!alive()) return;
+      const d = win.document;
+      d.getElementById('pos').textContent =
+        `第 ${i + 1} / ${slides.length} 张` + (total[i] ? ` · 第 ${step} / ${total[i]} 步` : '');
+      d.getElementById('now').textContent = notesOf(slides[i]) || '这张片没有备注';
+      d.getElementById('next').textContent = step < total[i]
+        ? `本片还有 ${total[i] - step} 步`
+        : (slides[i + 1] ? `下一张：${headOf(slides[i + 1])}` : '这是最后一张');
+    };
+    const tick = () => {
+      if (!alive()) { clearInterval(timer); return; }
+      const sec = Math.floor((Date.now() - started) / 1000);
+      win.document.getElementById('clock').textContent =
+        `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    };
+    const open = () => {
+      if (alive()) { win.focus(); return; }
+      win = window.open('', 'keynote-deck-presenter', 'width=960,height=640');
+      if (!win) { alert('浏览器拦截了弹窗。允许弹窗后再按 P。'); return; }
+      const d = win.document;
+      d.open();
+      d.write(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>讲者视图</title>
+<style>
+  body{margin:0;padding:32px 40px;background:#111;color:#eee;
+       font:22px/1.6 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  .bar{display:flex;justify-content:space-between;color:#9a9aa0;margin-bottom:20px}
+  #clock{font-variant-numeric:tabular-nums}
+  h2{font-size:15px;color:#9a9aa0;margin:26px 0 8px;font-weight:500}
+  #now{font-size:30px;white-space:pre-wrap}
+  #next{white-space:pre-wrap}
+  .keys{margin-top:28px;font-size:14px;color:#6e6e73}
+</style>
+<div class="bar"><span id="pos"></span><span id="clock">00:00</span></div>
+<h2>备注</h2><div id="now"></div>
+<h2>接下来</h2><div id="next"></div>
+<div class="keys">→ / 空格 下一步 · ← 上一步 · B 黑屏 · 这个窗口里按键同样有效</div></html>`);
+      d.close();
+      d.addEventListener('keydown', onKey);
+      started = Date.now();
+      clearInterval(timer);
+      timer = setInterval(tick, 1000);
+      update();
+    };
+    return { open, update };
+  })();
+
+  // ── 按键 ──────────────────────────────────────────────
+  const onKey = e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (['ArrowRight', 'ArrowDown', ' ', 'PageDown', 'Enter'].includes(k) || e.code === 'Space') { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
+    else if (k === 'Home') { e.preventDefault(); jump(0, 0, false); }
+    else if (k === 'End') { e.preventDefault(); jump(slides.length - 1, total[slides.length - 1], false); }
+    else if (k === 'b' || k === 'B') { e.preventDefault(); blank.classList.toggle('on'); }
+    else if (k === 'p' || k === 'P') { e.preventDefault(); presenter.open(); }
+    else if (k === 'f' || k === 'F') {
+      e.preventDefault();
+      if (document.fullscreenElement) document.exitFullscreen();
+      else root.requestFullscreen?.();
+    }
+  };
+  addEventListener('keydown', onKey);
+
+  // ── 打印：所有步骤都显示、不调暗；打印完回到原来的状态 ──
+  const render = () => slides.forEach((s, k) => apply(s, k < i ? total[k] : k > i ? 0 : step));
+  addEventListener('beforeprint', () => {
+    for (const el of document.querySelectorAll('[data-build]')) el.classList.add('shown');
+    for (const el of document.querySelectorAll('.dimmed')) el.classList.remove('dimmed');
+  });
+  addEventListener('afterprint', render);
+
+  // ── 主题 ──────────────────────────────────────────────
   document.getElementById('theme').onclick = e => {
     const light = root.dataset.theme === 'light';
     root.dataset.theme = light ? 'dark' : 'light';
     e.target.textContent = light ? '浅色' : '深色';
   };
 
-  count.textContent = `1 / ${slides.length}`;
+  // ── 窗口尺寸变了（进出全屏、拖动窗口）────────────────
+  // 每片高 100vh，尺寸一变，原来的滚动位置就对不上片了，滚动吸附会把人带到别的片。
+  // 所以尺寸变化后要把当前片重新对齐，并告诉滚动同步这次移动是自己发起的。
+  addEventListener('resize', () => {
+    fit();
+    expected = i;
+    scrollToSlide(slides[i], false);
+  });
+
+  // ── 起点：地址里带 #5 就从第 5 张开始；手改地址也能跳 ──
+  const fromHash = () => {
+    const n = Number((location.hash.match(/^#(\d+)$/) || [])[1]);
+    return Number.isFinite(n) && n >= 1 ? Math.min(n, slides.length) - 1 : null;
+  };
+  addEventListener('hashchange', () => {
+    const n = fromHash();
+    if (n !== null && n !== i) jump(n, 0, false);
+  });
+  i = fromHash() ?? 0;
+  step = 0;
+  render();
+  expected = i;
+  scrollToSlide(slides[i], false);
+  label();
+})();
 </script>
 
 </body>

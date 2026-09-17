@@ -26,7 +26,11 @@
 | C | 大字的字距处理、多行标题的行高 —— 无公开实测 | — |
 | C | 标题末尾加不加句号 —— 只有 Tim Cook 那张 "71 seconds. Sold out." 一个观察样本，不足以当规则 | — |
 
-**换算**：30pt = 40px（1pt = 1/72 英寸，CSS 里 96dpi）。所以 1920×1080 的 HTML 舞台上，任何文字的 `font-size` 不低于 **40px**。
+**换算要看画布，不能一律按 96dpi**（2026-09-17 更正）。早先写的「30pt = 40px」用的是 CSS 的打印换算
+（1pt = 1/72 英寸、96dpi），但 Keynote 的画布本身以 pt 为单位：1920×1080 的片子导出就是 1920×1080
+（[Apple Community](https://discussions.apple.com/thread/250059356)、[Casey Printing](https://www.caseyprinting.com/blog/how-to-get-a-print-ready-file-out-of-apple-keynote)，B 档），
+所以在这种画布上 30pt 就是 30px。PowerPoint 的 16:9 默认画布是 960×540pt，30pt 相当于 1080 高舞台上的 60px。
+**本 skill 的 40px 下限不靠这条换算成立**，靠的是第 9 节的视角几何；它比苹果 30pt 那条更严，方向一致。
 
 ## 2. 版式原型 / Slide archetypes
 
@@ -66,7 +70,8 @@
 | B | 不用纯白，改用近白或极浅灰，因为纯白投影时刺眼 | [presentation design rules](https://www.pi.inc/blog/presentation-design-rules) |
 | B | 产品居中浮着，留白约占四到五成；图不出血、不压边 | [Keynote 反射与阴影](https://support.apple.com/guide/keynote/add-a-reflection-or-shadow-tan315eaae29/mac) |
 | B | 内容离边留 10–15% | [舞台背景设计](https://elitemultimedia.com/event-backdrop-design-corporate-stage-backgrounds) |
-| B | Magic Move 是招牌转场：对象从上一张平滑移到下一张 | [Magic Move 教程](https://business.tutsplus.com/tutorials/keynote-magic-move--cms-31554) |
+| A | Magic Move 是 Keynote 的一种转场：对象从上一张的位置移到下一张的新位置 | [Apple 支持：给片上对象加动画](https://support.apple.com/guide/keynote/animate-objects-on-a-slide-tanf96d92cb6/mac) |
+| B | 它是发布会的招牌转场 | [Magic Move 教程](https://business.tutsplus.com/tutorials/keynote-magic-move--cms-31554) |
 | B | Apple 不公开发布真正的舞台模板文件；第三方"发布会风格模板"都是仿的 | [Apple 设计资源](https://developer.apple.com/design/resources/) |
 | C | 底色是"灰→深蓝→近黑的渐变加轻噪点" —— 只有一个 Quora 回答说过，方向可信但不能当定论，也没有可靠的十六进制值 | — |
 | C | 动效时长（1.0 秒溶解、0.3–0.5 秒短揭示）—— 这些是 **Keynote 应用的默认值**，不是对真实发布会的实测 | — |
@@ -279,3 +284,73 @@
 这套视觉语言天生鼓励空洞的最高级："革命性"、"魔法般"、"这改变了一切"、"重新定义"。Jobs 用这些词时下面垫着真东西（多点触控、一千首歌、从信封里抽出来的厚度）。**词是垫出来的，不是贴上去的。**
 
 所以：形容词要么有一个能指回材料的数字或事实垫着，要么删掉。这一条与本仓库 `writing-rules` 的立场一致。
+
+## 12. 课堂与讲堂 / Lectures and classrooms
+
+2026-09-17 为扩到课堂与讲堂补查。发布会的做法大多能搬，**有三处与学习研究直接冲突**，按研究改。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | **主张句标题加视觉证据优于「短语标题加项目符号」**。110 名工科本科生随机分两组看同一段 MRI 讲解（同一份 1000 词旁白）：主张句组论述题总分显著更高，t(93.43) = 3.67，p < 0.001，d = 0.81；误解更少，d = 0.47。主张句组的标准是「标题不超过两行、每张配相关图、正文字数尽量少」，平均每片 21.2 词，对照组 41.5 词 | [Garner & Alley 2013, IJEE 29(6)](https://writing.engr.psu.edu/ae_comprehension.pdf) |
+| A | **上面那个效应不能单独归给标题**。主张句组同时减少了字数、每张都有图，而且 11 张里有 8 张的图是讲到才出现，对照组没有动画。是一整套做法的效应 | 同上，2.2 节 |
+| C | 「主张句标题里的要点比项目符号里的更容易被回忆」常被归到 Alley 等 2006 —— 本次只在搜索摘要里见到，没读到原文；[WUSTL 教学中心](https://ctl.wustl.edu/in-powerpoint-its-the-headline-that-makes-the-difference/)那页转述的其实是上面 2013 年那项。不作为依据 | — |
+| A | **课前小测在真实课堂里有效**：学期末考试中，考过的内容与没考过但相关的内容都有提升；机制可能是课上注意力更集中、课后自学更有方向。形式是短、低风险的选择题 | [Soderstrom & Bjork 2023, Educ Psychol Rev 35:88](https://link.springer.com/article/10.1007/s10648-023-09805-6) |
+| A | **在真实讲课录像里，课前提问的效果是正向但有限的**（二十分钟以上的真实课程录像，信号检测论与自传体记忆两门） | [Toftness, Carpenter, Lauber & Mickes 2018, JARMAC](https://pure.royalholloway.ac.uk/en/publications/the-limited-effects-of-prequestions-on-learning-from-authentic-le/) |
+| A | 较短的教学视频里，分段前提问能提升记忆 | [Carpenter & Toftness 2017, JARMAC 6(1)](https://www.sciencedirect.com/science/article/abs/pii/S2211368116301103) |
+| A | **练习测验优于重读与其他对照**（217 项研究的元分析）。所以回顾片要先让人提取，再揭晓 | [Adesope, Trevisan & Sundararajan 2017, RER 87(3)](https://journals.sagepub.com/doi/abs/10.3102/0034654316689306) |
+| A | **先学部件的名称与状态，再学系统怎么运作**，三个实验的迁移测验都更好（预训练原则） | [Mayer, Mathias & Wetzell 2002](https://pubmed.ncbi.nlm.nih.gov/12240927/) |
+| A | 冗余原则：图加旁白优于图加旁白加同样的屏幕文字；信号原则：给要点加提示有益；分段原则：分段呈现有益（原文指学习者自控节奏的分段） | [Mayer《多媒体学习》](https://assets.cambridge.org/97805217/35353/frontmatter/9780521735353_frontmatter.pdf) |
+| A | **信号原则的元分析**：27 项研究、2464 人，理解与迁移的效应 r = 0.17，先验知识少的学习者受益更明显 | [Richter, Scheiter & Eitel 2016](https://www.sciencedirect.com/science/article/abs/pii/S1747938X15000664) |
+| A | **诱惑性细节效应**：有趣但与内容无关的图和细节会拖累学习，68 项研究的元分析 | [Sundararajan & Adesope 2020](https://link.springer.com/article/10.1007/s10648-020-09522-4) |
+| A | 纠正误解时，「指出误解 + 标明它不对 + 给出正确解释」三段式比只讲正确解释更有效 | [Tippett 2010 综述](https://eric.ed.gov/?id=EJ905216) |
+| A | 工作样例的设计原则：好的例题各部分高度整合，**用标注或分段把概念结构显出来**；一类问题配多个例题。推演片右栏写「这一步凭什么成立」就是这条的做法 | [Atkinson, Derry, Renkl & Wortham 2000, RER 70(2) 181–214](https://journals.sagepub.com/doi/10.3102/00346543070002181) |
+| A | 苹果自己的演示课：「一场演示应当是对话……问他们问题，让他们一直在线」；「先勾画叙事」；「对比今天的现实与可能的未来」 | [WWDC18「Presenting Design Work」](https://developer.apple.com/videos/play/wwdc2018/811/) |
+| B | **拿在手里读的文档与投影片是两种东西**：前者要能脱离讲的人独立读懂，后者不行。Duarte 称前者为 slidedoc | [Duarte, Slidedocs](https://www.duarte.com/resources/guides-tools/slidedocs-visual-documents/) |
+| B | 2007 年 iPhone 发布会有「给路标」与「段间回顾」两个动作 | [Gong](https://www.gong.io/blog/steve-jobs-iphone-keynote) |
+| C | 苹果发布会结尾有一张汇总所有发布内容的回顾片 —— 没找到可引的一手描述，不作为依据 | — |
+| C | 提问片一节课放几道最合适 —— 没有找到直接实测。「两三道、放在最要紧的概念前后」是据上面两项研究的效应大小做的判断 | — |
+
+**结论性判断**：课堂与讲堂的证据片用主张句；允许真要作答、当场揭晓的提问片，少而准；
+回顾先提取后揭晓；名字先于机制；图必须是证据；讲义与投影分开。
+主张句那条的效应量大，但要记住它是一整套做法的效应。
+
+## 13. 出场顺序与跨片连续 / Builds and continuity
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | Keynote 的出场时机有四种：转场之后、点击时、与第 N 个同时、第 N 个之后；可在「出场顺序」窗口里拖动调整 | [Apple 支持：更改出场顺序与时间](https://support.apple.com/guide/keynote/change-build-order-and-timing-tan3ad5f8d82/mac) |
+| A | 苹果动效准则：有目的地加动效，不为动而动；让动效可选，不能只靠它传达重要信息；反馈动画简短精确；让人能打断动效，不必等它放完 | [Apple HIG · Motion](https://developer.apple.com/design/human-interface-guidelines/motion) |
+| A | **动画未必比静图好**：动画常常太快太复杂，违反「可理解性原则」；许多连续过程在人的理解里本来就是一串离散步骤 | [Tversky, Morrison & Bétrancourt 2002](https://hci.stanford.edu/courses/cs448b/papers/Tversky_AnimationFacilitate_IJHCS02.pdf) |
+| A | Chrome 109（2023 年 1 月）起默认启用 MathML Core 的原生渲染 | [Igalia](https://www.igalia.com/2023/01/10/Igalia-Brings-MathML-Back-to-Chromium.html)、[Frédéric Wang](https://frederic-wang.fr/2023/01/31/mathml-in-chrome-109/) |
+| A | WCAG 2.3.3：由交互触发的动效应能关闭；`prefers-reduced-motion` 是对应的系统设置 | WCAG 2.1 |
+| C | 发布会里文字出场的具体效果与时长 —— 没有公开实测，模板的 320ms 是本仓库的取值 | — |
+
+**本仓库实测**（2026-09-17，macOS 上的 Chrome，STIX Two Math）：
+
+- 120px 的公式，一级上下标 84px、二级 66px，顶层分式的分子分母保持 120px，嵌套分式 84px
+- 72px 的行内公式，分式的分子分母 50.4px，再往里一层 39.6px，破 40px 下限
+- 缩放比例来自字体的 MATH 表（约 70% 与 55%），换字体会变，换了要重测
+- 调暗用透明度叠乘时，深色主题下次要字从 0.62 乘到约 0.28，对比度掉到 1.7:1；
+  改成统一换到 `--faint`，最坏底色下深色 3.99:1、浅色 3.40:1
+
+## 14. 照片与叠字 / Photographs and overlays
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | 文字压在背景图上时，对比度按字下面最不利的那部分算；背景图让对比度不足属于 WCAG 1.4.3 的失败情形 | [W3C F83](https://www.w3.org/TR/WCAG20-TECHS/F83.html) |
+| B | 常用做法是在图与字之间加一层半透明的纯色遮罩，让字下面的底色可控、可计算 | [W3C 1.4.3 理解文档](https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast-contrast.html) |
+| C | 「60% 黑遮罩对任何照片都够 4.5:1」这类说法 —— 来源是工具网站，本仓库不引，自己算 |
+
+**本仓库自行计算**（按浏览器在 sRGB 空间做透明度合成，最坏情况是遮罩下为纯白像素）：
+
+| 目标对比度 | 纯黑遮罩至少 |
+|---|---|
+| 3:1（大字底线） | 0.420 |
+| 4.5:1（正文底线） | 0.540 |
+| 7:1（本 skill 的投影目标） | 0.650 |
+
+模板取 0.72：白字 9.29:1，0.78 白的小字 6.46:1。
+
+**照片的隐私**：手机照片的 EXIF 常带 GPS 坐标（EXIF 标签 0x8825）。`inline_images.py` 重新编码 JPEG 与 PNG 时不带原元数据，
+自检里用一张写了 GPS 的图验证过内联后已清除。
+

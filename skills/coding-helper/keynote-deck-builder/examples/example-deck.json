@@ -7,7 +7,7 @@
     {"type": "title", "value": "Cadence", "caption": "练琴时间的记录器"},
     {"type": "phrase", "value": "练了多久，没人说得清"},
     {"type": "num", "value": "38 分钟", "caption": "自述练琴时长与实测的平均差距"},
-    {"type": "section", "value": "它怎么工作"},
+    {"type": "section", "value": "记录"},
     {"type": "feature", "value": "夹上就开始", "caption": "夹在谱架上，不用开机也不用配对"},
     {"type": "feature", "value": "只听节奏", "caption": "识别击弦与换气的节奏，不录音频"},
     {"type": "feature", "value": "断开也记", "caption": "机上存 30 天，回到网络再同步"},
