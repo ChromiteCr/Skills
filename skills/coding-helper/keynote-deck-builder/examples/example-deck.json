@@ -20,7 +20,7 @@
       ["同步", "蓝牙 5.3"],
       ["防护", "IPX4"]
     ]},
-    {"type": "versus", "value": "识别准确率", "items": [
+    {"type": "versus", "value": "识别准确率", "build": true, "items": [
       ["纯麦克风方案", "71%"],
       ["Cadence", "94%"]
     ]},

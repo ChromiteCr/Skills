@@ -21,3 +21,7 @@ test-results/
 
 # Packaging output (per-skill zips, regenerated on demand)
 dist/
+
+# Python
+__pycache__/
+*.pyc

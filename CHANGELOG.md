@@ -5,6 +5,22 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.22.3 — 2026-09-18
+
+`keynote-deck-builder` 升到 0.7.0：pptx 导出带上动画。Library 层只动了索引与 README 的描述，按规则记 PATCH；
+skill 本身的改动细节记在它自己的变更记录里。要点：
+
+- 新脚本 `pptx_motion.py` 直接写 PresentationML 的 `<p:timing>`：逐项浮入、淡出、调暗与点名（字体颜色）、
+  相邻两片的 Morph 平滑切换（靠 `!!` 对象名配对，旧版本回退成淡入淡出），时长沿用 HTML 模板的 320ms 与 480ms
+- **XML 的写法是让 PowerPoint 16.112 自己加动画再存盘、照它写出来的抄的**，不是凭规范推的。
+  实测它读回再存出来，17 张片里 16 张一字不差；导出视频逐帧确认了换色能盖住写死的字色、
+  Morph 过渡中只有配对对象留在屏上移动
+- 提问片因此不再拆两张，在原地揭晓；误解片的划线改成把误解调暗；回顾逐条揭晓；新增 `derive` 推演片型
+- 新增三条自检（被截掉的项、放不下的行、折行后的孤行）与调暗色／重点色的 WCAG 3:1 核对；`--static` 保留旧行为
+- 更正两处旧说法：python-pptx 只是没有动画接口，XML 可以直接写；Keynote 的 AppleScript 能新建片也能存 .key，
+  但字典里没有出场顺序相关的类，所以动画建不出来。**Keynote 导入 pptx 后动画剩多少，本轮未验证**
+- 顺带修掉 0.22.2 留下的不一致：`SKILL_INDEX.md` 里的 Library Version 当时没跟着升
+
 ## 0.22.2 — 2026-09-17
 
 合并 Downloads 副本中滞留的未提交更改。这些改动写于 0.22.0 前后（9/10–9/15），各 skill 的 PATCH 版本与变更记录当时已写好，只是一直没有入库；Library 层按规则补记 PATCH：

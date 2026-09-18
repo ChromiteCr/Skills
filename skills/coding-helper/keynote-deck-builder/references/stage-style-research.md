@@ -113,9 +113,13 @@
 
 由此定的事：
 
-1. **`.key` 不可能程序化生成**。格式私有无文档，没有库支持写入。AppleScript 只能控制 Keynote（打开、导出、放映），不能建片。唯一通路是生成 `.pptx` 再由 Keynote 导入。来源：[iWork 自动化文档](https://iworkautomation.com/keynote/document-export.html)
+1. **`.key` 不可能程序化生成**。格式私有无文档，没有库支持写入。唯一通路是生成 `.pptx` 再由 Keynote 导入。来源：[iWork 自动化文档](https://iworkautomation.com/keynote/document-export.html)
+
+   **0.7.0 更正**：原来这条写成「AppleScript 只能控制 Keynote，不能建片」，不准确。本机 Keynote 14.5 的脚本字典里有 `make`（能新建 slide、text item、image）、`save ... as Keynote`（能存 .key）、以及 `transition properties`（含 `magic move` 枚举值）。字典里**没有任何跟出场顺序／build 有关的类**，只有 `show next`（"Advance one build or slide"）和导出选项 `all stages`（"print each stage of builds"）这两处提到 build。所以准确的说法是：片能建，转场能设，**动画建不出来**。依据是 `sdef /Applications/Keynote.app` 的输出本身。
 2. **CSS 里不要写 `"SF Pro Display"`**。本机文件名是 `SFNS.ttf`，按 "SF Pro Display" 引不可靠。用 `system-ui, -apple-system` 让系统解析，既拿到 SF 又不涉及分发字体文件。
-3. **python-pptx 完全不支持动画**：无进入退出效果、无转场、无动作路径。来源：[slideforge 整理](https://slideforge.dev/blog/python-pptx-limitations-we-solved)。所以 pptx 那条路要如实告诉使用者没有转场。
+3. **python-pptx 没有动画接口**：库里没有进入退出效果、转场、动作路径的 API。来源：[slideforge 整理](https://slideforge.dev/blog/python-pptx-limitations-we-solved)。
+
+   **0.7.0 更正**：原来这条写成「完全不支持动画」并据此告诉使用者 pptx 没有转场，那是把「库没有接口」说成了「格式做不到」。PresentationML 本身有完整的动画模型（`<p:timing>`），python-pptx 又允许直接操作底层 XML，所以动画可以自己写。做法与取证见第 15 节。
 4. **reveal.js 没有单文件导出**，要手工内联；Slidev 产出多文件 dist 且需要 Node。都不满足"不装东西、单文件、离线"。来源：[reveal.js issue 788](https://github.com/hakimel/reveal.js/issues/788)、[Slidev 导出文档](https://sli.dev/guide/exporting.html)
 5. **手写 HTML+CSS 最合适**：一屏一片、`scroll-snap`、零依赖、离线一致、浏览器直接打印成 PDF。
 
@@ -354,3 +358,60 @@
 **照片的隐私**：手机照片的 EXIF 常带 GPS 坐标（EXIF 标签 0x8825）。`inline_images.py` 重新编码 JPEG 与 PNG 时不带原元数据，
 自检里用一张写了 GPS 的图验证过内联后已清除。
 
+## 15. pptx 里的动画 / Animation in pptx
+
+pptx 那条路要不要动画，卡在「XML 到底怎么写」上。规范只说了元素和属性，没说 PowerPoint 认什么组合，
+所以这一节的 A 档事实分两种来源：**微软的规格文档**，和**让 PowerPoint 自己写一遍**。
+
+### 15a. 让 PowerPoint 自己写（本机取证，2026-09-17）
+
+做法：python-pptx 生成一份只有文本框的 pptx，用 AppleScript 让 PowerPoint for Mac 16.112 给这些文本框
+加上各种动画与转场，再存回 .pptx，然后读它写出来的 XML。这比照规范推可靠，因为写出来的就是它自己认的。
+
+| 档 | 效果（PowerPoint 的名字） | XML |
+|---|---|---|
+| A | 淡入 | `presetID="10" presetClass="entr"`：`<p:set>` 置 `style.visibility` 为 visible，加 `<p:animEffect transition="in" filter="fade">` |
+| A | 浮入（上浮） | `presetID="42" presetClass="entr"`：同上再加两条 `<p:anim>`，`ppt_x` 原地不动，`ppt_y` 从 `#ppt_y+.1` 到 `#ppt_y` |
+| A | 淡化（退场） | `presetID="10" presetClass="exit"`：`<p:animEffect transition="out" filter="fade">`，末尾把 `style.visibility` 置 hidden |
+| A | 字体颜色 | `presetID="3" presetClass="emph" presetSubtype="2"`：`<p:animClr clrSpc="rgb" dir="cw">` 打在 `style.color` 上，`<p:cBhvr override="childStyle">` |
+| A | 点击才开始 | 每次点击是一层 `<p:par>`，外层 `<p:cond delay="indefinite"/>`，内层 `delay="0"`；这一步的第一个效果 `nodeType="clickEffect"`，其余 `withEffect` |
+| A | 与上一步同时／上一步之后 | 同时是 `withEffect`；之后是另起一组并把 `delay` 设成前面的总时长，`nodeType="afterEffect"` |
+| A | 构建列表 | `<p:bldLst>` 里每个 (`spid`, `grpId`) 一条 `<p:bldP>`，同一个形状上第 n 个效果的 `grpId` 是 n − 1；存盘时按 spid、grpId 排序 |
+| A | 下一次点击时调暗 | 挂在效果自己的 `<p:subTnLst>` 里：`<p:animClr>` 打在 `ppt_c` 上，`<p:cTn ... masterRel="nextClick" afterEffect="1">` |
+| A | 淡入淡出转场 | `<mc:AlternateContent>` → `<mc:Choice Requires="p14">` → `<p:transition p14:dur="320"><p:fade/></p:transition>`，`<mc:Fallback>` 里是不带时长的同一个转场 |
+| A | 平滑（Morph）转场 | `<mc:Choice Requires="p159">` → `<p:transition p14:dur="480"><p159:morph option="byObject"/></p:transition>`，Fallback 是 `<p:fade/>` |
+
+顺带两个坑，都是实测撞出来的：
+
+- **旧版的「动画设置」接口会毁掉整条时间线**。用 AppleScript 的 `animation settings`（`after effect`、`dim color`
+  那一套，对应 PowerPoint 2003 的模型）设一次调暗，PowerPoint 会把这张片上已有的动画全部重建成最简单的
+  「出现」，淡入、上浮、字体颜色全丢。所以调暗不用这个接口，用一条独立的字体颜色效果。
+- **读动画属性会让 PowerPoint 崩退**。`repeat with e in (effects of ...)` 里取 `name of e`、`timing of e`
+  时，PowerPoint 16.112 直接退出（AppleScript 收到 -609）。统计 `count of effects` 没问题。
+
+### 15b. 微软与苹果的文档
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | `morph` 元素在 `p159` 命名空间，类型 `CT_MorphTransition`，`option` 属性必填 | [MS-PPTX 2.6.1.1 morph](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-pptx/68d26d78-f7f5-47ab-835d-4e6c82ff39f0)、[CT_MorphTransition](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-pptx/41ca8fbf-efc8-49ac-8a32-7bd0856544bd) |
+| A | `option` 三个取值：`byObject`（对象）、`byWord`（词）、`byChar`（字符） | [ST_TransitionMorphOption](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-pptx/22e711ee-35a7-42cb-b87c-1c277ec11070) |
+| A | 转场扩展元素挂在 `sld` 的 `AlternateContent` 下，Choice 按命名空间分 p14 / p15 / p159，另有 Fallback | [MS-PPTX 2.2.1 Slide Transition Extensions](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-pptx/22ebe6b5-2ade-43d9-977a-98fa194725c2) |
+| A | `p14:dur` 指定「转场从开始到结束的时间」 | [MS-PPTX 2.3.2.3 dur](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-pptx/9032bdb2-b273-470b-8ac4-c98a8c944494) |
+| A | Morph 配对规则：相邻两片上**同类型**的两个对象，名字以 `!!` 开头且相同，就会被强制配成一对；一个 `!!名字` 在一张片上要唯一；`!!` 对象不会和非 `!!` 对象配对 | [微软支持：Morph transition tips and tricks](https://support.microsoft.com/en-us/office/morph-transition-tips-and-tricks-bc7f48ff-f152-4ee8-9081-d3121788024f) |
+| B | Keynote 导入 PowerPoint 时「支持大多数对象 build」「支持大多数转场」，转场时长支持 | [Apple：Keynote 兼容性](https://www.apple.com/uk/keynote/compatibility/) |
+| C | Keynote 导入后 Morph 会不会变成 Magic Move、字体颜色效果还剩不剩 —— **本轮没有验证**，苹果那页也没提 Morph | — |
+
+### 15c. 本仓库实测（2026-09-18，PowerPoint for Mac 16.112）
+
+- **对 ECMA-376 的 `pml.xsd` 校验**：生成的三份示例共 49 张片全部通过。同时做了反面对照
+  （把 `presetClass` 改成非法值、`morph option` 改成非法值、`bldLst` 里插一个非法元素），都能被拦下，
+  说明校验确实在查这些地方。另注：pptx 技能自带的 `validate.py` 对这三个错误都判通过，**不能用它验动画**
+- **PowerPoint 读回再存出来**：17 张片的课堂示例，16 张的动画 XML 与我们生成的一字不差，
+  第 17 张只差 `xmlns:p159` 声明在哪一层（PowerPoint 提到了 `AlternateContent` 上）。
+  它读到的效果数量与转场也对得上（第 9 张读成 `morph by object`，时长 0.48 秒）
+- **导出视频逐帧看**：提问片点击后，正确选项转成重点色、其余两个掉到 faint、依据那行淡入——
+  说明 `override="childStyle"` 的换色能盖住我们给每个 run 写死的颜色（这一点从 XML 看不出来）。
+  Morph 过渡中间那一帧，屏幕上只剩配对的那个符号在移动，两张片的其余部分都在溶解
+- **本仓库的取值**（不是苹果或微软的参数）：出现／退场／换色 320ms、Morph 480ms、上移舞台高度的 16/1080。
+  PowerPoint 自己的默认值分别是浮入 1 秒、字体颜色 2 秒、Morph 2 秒、上移 10%
+- **没验证的**：Keynote 导入、Google Slides 导入、Windows 版 PowerPoint、LibreOffice（本机没装）

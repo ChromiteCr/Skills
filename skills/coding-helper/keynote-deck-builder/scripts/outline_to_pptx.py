@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
-"""从片单 JSON 生成可编辑的 .pptx。
+"""从片单 JSON 生成可编辑的 .pptx，带动画。
 
     python3 outline_to_pptx.py deck.json [out.pptx]
+    python3 outline_to_pptx.py deck.json --static     不写任何动画
 
-这条路的价值是「能在 Keynote 或 PowerPoint 里继续改」。**它会丢东西，要如实告诉使用者**：
+这条路的价值是「能在 Keynote 或 PowerPoint 里继续改」。动画由 `pptx_motion.py` 写入
+（PresentationML 的 <p:timing>），HTML 模板的四件事都做得到：
 
-  - python-pptx 完全不支持动画与转场，导出来的片子没有任何动效
+  讲到才出现  逐项浮入（淡入 + 上移），一步一次点击
+  讲过的调暗  换成 faint 色
+  讲到的点名  换成重点色
+  跨片连续    相邻两片的同一个对象用 Morph（平滑）切换，旧版本回退成淡入淡出
+
+**仍然会丢东西，要如实告诉使用者**：
+
   - 底色只能是纯色，做不到 HTML 模板里那种多层渐变
+  - 公式退成纯文本，要在 PowerPoint 或 Keynote 的公式编辑器里重排
   - 颗粒、圆角容器、bento 的大小分层都被简化
+  - 图表不做，在 PowerPoint 里手工摆更快
+  - 公式里逐项点名做不到（一个文本框只能整体换色），改成下方的项逐个出现
+  - 误解片的划线做不到，改成把误解调暗
 
 要视觉精度就用 templates/deck.html；要可编辑就用这个。两者不冲突，可以都给。
 
@@ -16,8 +28,6 @@
 小字这里用 30pt，比 HTML 的 40px（对应 20pt）相对更大，是有意偏严。塞不下就删字，不要调低。
 
 每张片都可以带 "notes"，写进 pptx 的演讲者备注。
-逐步出现在 pptx 里做不出来，所以提问片会拆成两张：题目一张、揭晓一张。
-图片会先转正、重新编码再放进去，照片里的 GPS 等元数据不会跟着进 pptx。
 
 片单格式（type 决定版式，其余字段按类型取用）：
 
@@ -54,6 +64,9 @@
         {"type": "claim",      "value": "一句主张", "caption": "出处",
                                "src": "figures/evidence.png"},
         {"type": "definition", "value": "术语", "symbol": "T", "caption": "一句定义"},
+        {"type": "derive",     "value": "这一段要证明什么",
+                               "items": [["式子", "凭什么这一步成立"], ["式子", "凭什么"]],
+                               "caption": "出处", "caption_at": 2},
         {"type": "formula",    "value": "T = 2π √(L / g)", "caption": "可省",
                                "items": ["L 摆长", "g 重力加速度"]},
         {"type": "myth",       "value": "误解原话", "caption": "正确说法"},
@@ -61,15 +74,19 @@
         {"type": "refs",       "items": ["作者（年份）. 题名. 出处."]},
 
         每张都可以加 "notes": "讲者备注"
+        每张都可以加 "build": false 让这张片一次出完；分步走的片型还认 "dim": false
+        相邻两片上同一个东西写同一个 "morph": "T"，翻页时用 Morph 平滑切换
       ]
     }
+
+出场顺序按片型定（`BUILD` 与 `DIM` 两张表），不用逐片写步数：
+流程条、推演逐步走并调暗；回顾、公式的项、规格密排逐个出；提问片在原地揭晓；误解片在原地改正。
 """
 
+import io
 import json
 import sys
 from pathlib import Path
-
-import io
 
 try:
     from pptx import Presentation
@@ -80,6 +97,11 @@ try:
     from pptx.util import Inches, Pt
 except ImportError:
     sys.exit("缺 python-pptx。装：pip3 install python-pptx")
+
+try:
+    import pptx_motion as motion
+except ImportError:
+    sys.exit("找不到 pptx_motion.py，它应该和本脚本在同一个目录")
 
 try:
     from PIL import Image, ImageOps
@@ -97,17 +119,76 @@ SIZE = {"num": 160, "phrase": 90, "feature": 60, "title": 48,
         "sub": 30, "label": 30}
 
 THEME = {
-    "dark":  {"bg": "0A0B0E", "ink": "F5F5F7", "muted": "8E8E93"},
-    "light": {"bg": "F5F5F7", "ink": "1D1D1F", "muted": "6E6E73"},
+    "dark":  {"bg": "0A0B0E", "ink": "F5F5F7", "muted": "8E8E93", "faint": 0.45},
+    "light": {"bg": "F5F5F7", "ink": "1D1D1F", "muted": "6E6E73", "faint": 0.52},
 }
+
+# 哪些片型默认逐个出现。片单里可以用 "build": false 关掉
+BUILD = {"steps": True, "derive": True, "recap": True, "formula": True,
+         "question": True, "myth": True, "specs": False, "versus": False}
+# 哪些片型默认把讲过的调暗：只有一步接一步往下走的才调暗
+DIM = {"steps": True, "derive": True}
+
+# 能跨片配对的片型：值是「哪个对象参与 Morph」
+MORPH_OK = {"title", "phrase", "close", "num", "section", "feature",
+            "definition", "formula", "image", "claim"}
 
 
 def rgb(hex_str: str) -> RGBColor:
     return RGBColor.from_string(hex_str.lstrip("#").upper())
 
 
+def blend(fg: RGBColor, bg: RGBColor, alpha: float) -> RGBColor:
+    """把带透明度的前景色合成成实色。HTML 模板的 --muted / --faint 是透明度，
+    pptx 的底色是纯色，所以这里按同样的透明度算出实色，不靠眼睛调。"""
+    return RGBColor(*(round(f * alpha + b * (1 - alpha)) for f, b in zip(fg, bg)))
+
+
+def luminance(color: RGBColor) -> float:
+    def channel(v):
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = (channel(c) for c in color)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast(a: RGBColor, b: RGBColor) -> float:
+    la, lb = luminance(a), luminance(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+# 各类字符占多少 em，按 Helvetica Neue 的字宽取的近似值。中日韩字是全宽，恒为 1 em
+WIDTH = {"cjk": 1.0, "space": 0.28, "thin": 0.3, "narrow": 0.35,
+         "digit": 0.56, "lower": 0.52, "upper": 0.68, "math": 0.6}
+
+
+def est_width(text: str, size_pt: float) -> int:
+    """粗估一行字的宽度（EMU）。实测偏差约 ±8%，够用来把两个文本框拼在一起居中，
+    也够用来判断一行放不放得下（判断时留了余量）。"""
+    em = 0.0
+    for ch in str(text):
+        if ord(ch) > 0x2E80:
+            em += WIDTH["cjk"]
+        elif ch == " ":
+            em += WIDTH["space"]
+        elif ch in "/|ilt’'":
+            em += WIDTH["thin"]
+        elif ch in ".,:;()[]-–−¹²³":
+            em += WIDTH["narrow"]
+        elif ch.isdigit():
+            em += WIDTH["digit"]
+        elif ch in "π√θ=+×÷≈≥≤":
+            em += WIDTH["math"]
+        elif ch.isupper():
+            em += WIDTH["upper"]
+        else:
+            em += WIDTH["lower"]
+    return int(Pt(size_pt * em))
+
+
 class Deck:
-    def __init__(self, spec: dict):
+    def __init__(self, spec: dict, animate: bool = True):
         self.prs = Presentation()
         self.prs.slide_width, self.prs.slide_height = W, H
         self.blank = self.prs.slide_layouts[6]
@@ -115,20 +196,36 @@ class Deck:
         self.bg = rgb(pal["bg"])
         self.ink = rgb(pal["ink"])
         self.muted = rgb(pal["muted"])
+        self.faint = blend(self.ink, self.bg, pal["faint"])
         self.accent = rgb(spec.get("accent", "#5A8DEE"))
         self.font = spec.get("font", "Helvetica Neue")
         self.base = Path(spec.get("_base", "."))
+        self.animate = animate
+        self.motions = []
+        self.m = None            # 当前这张片的出场顺序
+        self.anchor = None       # 当前这张片参与 Morph 的对象
         self.warnings = []
+        # 调暗色与重点色的对比度按 WCAG 大字下限 3:1 核一遍，改配色后这里会报
+        for name, color in (("调暗色", self.faint), ("重点色", self.accent)):
+            ratio = contrast(color, self.bg)
+            if ratio < 3.0:
+                self.warnings.append(
+                    f"{name} #{color} 在底色 #{self.bg} 上只有 {ratio:.2f}:1，"
+                    f"大字下限是 3:1（WCAG 1.4.3），换一个")
 
     def slide(self):
         s = self.prs.slides.add_slide(self.blank)
         fill = s.background.fill
         fill.solid()
         fill.fore_color.rgb = self.bg
+        self.m = motion.Motion(s)
+        self.motions.append(self.m)
+        self.anchor = None
         return s
 
     def text(self, slide, body, *, top, height, size, color=None,
-             bold=False, align=PP_ALIGN.CENTER, left=None, width=None):
+             bold=False, align=PP_ALIGN.CENTER, left=None, width=None,
+             wrap=True, inset=True):
         box = slide.shapes.add_textbox(
             left if left is not None else PAD_X,
             top,
@@ -136,36 +233,88 @@ class Deck:
             height,
         )
         tf = box.text_frame
-        tf.word_wrap = True
+        tf.word_wrap = wrap
         tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        if not inset:
+            # 两个文本框要拼在一起时，去掉自带的内边距，接缝才准
+            tf.margin_left = tf.margin_right = 0
         p = tf.paragraphs[0]
         p.alignment = align
-        run = p.add_run()
-        run.text = str(body)
-        run.font.size = Pt(size)
-        run.font.bold = bold
-        run.font.name = self.font
-        run.font.color.rgb = color or self.ink
+        for n, line in enumerate(str(body).split("\n")):
+            if n:
+                p.add_line_break()
+            run = p.add_run()
+            run.text = line
+            run.font.size = Pt(size)
+            run.font.bold = bold
+            run.font.name = self.font
+            run.font.color.rgb = color or self.ink
         return box
+
+    def _build(self, d, kind):
+        """这张片要不要逐个出现。"""
+        return bool(self.animate and d.get("build", BUILD.get(kind, False)))
+
+    def _dim(self, d, kind):
+        return bool(self._build(d, kind) and d.get("dim", DIM.get(kind, False)))
+
+    def _cap(self, items, limit, what):
+        """超出上限的项不静默丢掉，报出来让使用者自己决定拆片还是删。"""
+        items = list(items)
+        if len(items) > limit:
+            self.warnings.append(f"{what}最多放 {limit} 项，多出来的 {len(items) - limit} 项没上片，"
+                                 f"拆成两张或者删掉")
+        return items[:limit]
+
+    def _fits(self, text, size, width, what, lines=1):
+        """按估宽算这段字会折成几行，超过上限就报。手工换行的那几行一起算进来。
+        估宽有 ±8% 的偏差，所以判断时按 1.08 倍放宽，宁可漏报也不误报。"""
+        usable = width - Inches(0.2)
+        budget = max(1, int(usable / Pt(size)))
+        shown = str(text).replace(chr(10), " / ")
+        rendered = 0
+        orphan = False
+        for line in str(text).split("\n"):
+            wide = int(est_width(line, size) / 1.08)
+            rows = max(1, -(-wide // usable))
+            rendered += rows
+            # 末行只剩一两个字就是孤行，这一条在中文排版里最常出问题
+            if rows > 1 and wide % usable < Pt(size) * 2:
+                orphan = True
+        if rendered > lines:
+            self.warnings.append(
+                f"{what}「{shown}」要占 {rendered} 行，"
+                f"这里只放得下 {lines} 行（每行约 {budget} 个中文字），删字或者拆片")
+        elif orphan:
+            self.warnings.append(
+                f"{what}「{shown}」折行后末行可能只剩一两个字（孤行），"
+                f"用 \\n 在语义处手工断行，或者删字")
+
+    def _step(self, shapes, step, dim_at=None):
+        """一组形状同时出现，可选在某一步一起调暗。"""
+        for shape in shapes:
+            self.m.show(shape, step)
+            if dim_at:
+                self.m.recolor(shape, dim_at, self.faint)
 
     # ── 各片型 ────────────────────────────────────────────
     def title(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=Inches(2.4), height=Inches(1.9),
-                  size=SIZE["phrase"], bold=True)
+        self.anchor = self.text(s, d["value"], top=Inches(2.4), height=Inches(1.9),
+                                size=SIZE["phrase"], bold=True)
         if d.get("caption"):
             self.text(s, d["caption"], top=Inches(4.5), height=Inches(0.8),
                       size=SIZE["sub"], color=self.muted)
 
     def phrase(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=Inches(2.5), height=Inches(2.5),
-                  size=SIZE["phrase"], bold=True)
+        self.anchor = self.text(s, d["value"], top=Inches(2.5), height=Inches(2.5),
+                                size=SIZE["phrase"], bold=True)
 
     def num(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=Inches(2.0), height=Inches(2.6),
-                  size=SIZE["num"], bold=True, color=self.accent)
+        self.anchor = self.text(s, d["value"], top=Inches(2.0), height=Inches(2.6),
+                                size=SIZE["num"], bold=True, color=self.accent)
         if d.get("caption"):
             self.text(s, d["caption"], top=Inches(4.7), height=Inches(0.7),
                       size=SIZE["sub"], color=self.muted)
@@ -176,13 +325,13 @@ class Deck:
 
     def section(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=Inches(3.1), height=Inches(1.3),
-                  size=SIZE["title"], color=self.muted)
+        self.anchor = self.text(s, d["value"], top=Inches(3.1), height=Inches(1.3),
+                                size=SIZE["title"], color=self.muted)
 
     def feature(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=Inches(2.6), height=Inches(1.4),
-                  size=SIZE["feature"], bold=True)
+        self.anchor = self.text(s, d["value"], top=Inches(2.6), height=Inches(1.4),
+                                size=SIZE["feature"], bold=True)
         if d.get("caption"):
             self.text(s, d["caption"], top=Inches(4.2), height=Inches(0.8),
                       size=SIZE["sub"], color=self.muted)
@@ -191,33 +340,39 @@ class Deck:
         s = self.slide()
         self.text(s, d["value"], top=PAD_Y, height=Inches(1.0),
                   size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT)
-        items = d.get("items", [])[:6]
+        items = self._cap(d.get("items", []), 6, "规格密排")
+        build = self._build(d, "specs")
         col_w = BODY_W / 3
         for n, (k, v) in enumerate(items):
             cx = PAD_X + col_w * (n % 3)
             cy = Inches(2.6) + Inches(1.9) * (n // 3)
-            self.text(s, k, top=cy, height=Inches(0.55), size=SIZE["label"],
-                      color=self.muted, align=PP_ALIGN.LEFT,
-                      left=cx, width=col_w - Inches(0.3))
-            self.text(s, v, top=cy + Inches(0.6), height=Inches(0.9), size=64,
-                      bold=True, align=PP_ALIGN.LEFT,
-                      left=cx, width=col_w - Inches(0.3))
+            label = self.text(s, k, top=cy, height=Inches(0.55), size=SIZE["label"],
+                              color=self.muted, align=PP_ALIGN.LEFT,
+                              left=cx, width=col_w - Inches(0.3))
+            value = self.text(s, v, top=cy + Inches(0.6), height=Inches(0.9), size=64,
+                              bold=True, align=PP_ALIGN.LEFT,
+                              left=cx, width=col_w - Inches(0.3))
+            if build:
+                self._step([label, value], n + 1)
 
     def versus(self, d):
         s = self.slide()
         self.text(s, d["value"], top=PAD_Y, height=Inches(1.0),
                   size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT)
         items = d.get("items", [])[:2]
+        build = self._build(d, "versus")
         col_w = BODY_W / 2
         for n, (head, val) in enumerate(items):
             cx = PAD_X + col_w * n
             # 列头必须标明对比的轴，否则「快 3 倍」是没有对象的说法
-            self.text(s, head, top=Inches(2.6), height=Inches(0.7),
-                      size=SIZE["sub"], color=self.muted,
-                      left=cx, width=col_w - Inches(0.4))
-            self.text(s, val, top=Inches(3.4), height=Inches(1.8), size=100,
-                      bold=True, color=self.accent if n else self.ink,
-                      left=cx, width=col_w - Inches(0.4))
+            label = self.text(s, head, top=Inches(2.6), height=Inches(0.7),
+                              size=SIZE["sub"], color=self.muted,
+                              left=cx, width=col_w - Inches(0.4))
+            value = self.text(s, val, top=Inches(3.4), height=Inches(1.8), size=100,
+                              bold=True, color=self.accent if n else self.ink,
+                              left=cx, width=col_w - Inches(0.4))
+            if build:
+                self._step([label, value], n + 1)
 
     def price(self, d):
         s = self.slide()
@@ -251,21 +406,26 @@ class Deck:
         s = self.slide()
         self.text(s, d["value"], top=PAD_Y, height=Inches(1.0),
                   size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT)
-        items = d.get("items", [])[:5]
+        items = self._cap(d.get("items", []), 5, "流程条")
         if not items:
             return
+        build, dim = self._build(d, "steps"), self._dim(d, "steps")
         col_w = BODY_W / len(items)
         for n, (name, desc) in enumerate(items):
             cx = PAD_X + col_w * n
-            self.text(s, f"{n + 1:02d}", top=Inches(2.7), height=Inches(0.6),
-                      size=SIZE["label"], color=self.accent, align=PP_ALIGN.LEFT,
-                      left=cx, width=col_w - Inches(0.2))
-            self.text(s, name, top=Inches(3.3), height=Inches(0.9), size=44,
-                      bold=True, align=PP_ALIGN.LEFT,
-                      left=cx, width=col_w - Inches(0.2))
-            self.text(s, desc, top=Inches(4.2), height=Inches(1.2),
-                      size=SIZE["label"], color=self.muted, align=PP_ALIGN.LEFT,
-                      left=cx, width=col_w - Inches(0.2))
+            group = [
+                self.text(s, f"{n + 1:02d}", top=Inches(2.7), height=Inches(0.6),
+                          size=SIZE["label"], color=self.accent, align=PP_ALIGN.LEFT,
+                          left=cx, width=col_w - Inches(0.2)),
+                self.text(s, name, top=Inches(3.3), height=Inches(0.9), size=44,
+                          bold=True, align=PP_ALIGN.LEFT,
+                          left=cx, width=col_w - Inches(0.2)),
+                self.text(s, desc, top=Inches(4.2), height=Inches(1.2),
+                          size=SIZE["label"], color=self.muted, align=PP_ALIGN.LEFT,
+                          left=cx, width=col_w - Inches(0.2)),
+            ]
+            if build:
+                self._step(group, n + 1, n + 2 if dim and n + 1 < len(items) else None)
 
     def close(self, d):
         self.phrase(d)
@@ -313,17 +473,35 @@ class Deck:
             cut = 1 - img / box
             pic.crop_top = cut * fy
             pic.crop_bottom = cut * (1 - fy)
-        return w, h
+        return pic
 
     def _contain(self, slide, path, left, top, width, height):
         stream, w, h = self._image_stream(path)
         scale = min(width / w, height / h)
         pw, ph = int(w * scale), int(h * scale)
-        slide.shapes.add_picture(stream, left + (width - pw) // 2, top + (height - ph) // 2, pw, ph)
+        return slide.shapes.add_picture(
+            stream, left + (width - pw) // 2, top + (height - ph) // 2, pw, ph)
+
+    def _pair(self, slide, left_text, right_text, *, top, height, size, gap_em=0.3,
+              left_color=None, right_color=None, bold=False):
+        """左右两块字拼成一行，接缝对齐：左块右对齐、右块左对齐，整体按估宽居中。
+        拆成两个形状是为了让左边那个符号能单独参与 Morph。返回 (左形状, 右形状)。"""
+        lw, rw = est_width(left_text, size), est_width(right_text, size)
+        gap = int(Pt(size * gap_em))
+        seam = int((W - (lw + gap + rw)) / 2) + lw
+        slack = int(Pt(size))          # 估宽偏小也不至于挤掉字
+        left = self.text(slide, left_text, top=top, height=height, size=size,
+                         color=left_color, bold=bold, align=PP_ALIGN.RIGHT,
+                         left=max(0, seam - lw - slack), width=lw + slack,
+                         wrap=False, inset=False)
+        right = self.text(slide, right_text, top=top, height=height, size=size,
+                          color=right_color, bold=bold, align=PP_ALIGN.LEFT,
+                          left=seam + gap, width=rw + slack, wrap=False, inset=False)
+        return left, right
 
     def roadmap(self, d):
         s = self.slide()
-        stops = d.get("items", [])[:4]
+        stops = self._cap(d.get("items", []), 4, "路线的站点")
         cur = d.get("current")
         if not stops:
             return
@@ -333,26 +511,47 @@ class Deck:
             self.text(s, name, top=Inches(3.1), height=Inches(1.2), size=SIZE["title"],
                       bold=(n == cur), color=color, left=PAD_X + col_w * n, width=col_w)
 
+    def _question_page(self, d, answer, reveal):
+        """画一张提问片。reveal 为真时直接画成揭晓后的样子（没有动画时用）。
+        返回 (选项形状表, 依据形状)。"""
+        s = self.slide()
+        if d.get("kicker"):
+            self.text(s, d["kicker"], top=Inches(1.3), height=Inches(0.6),
+                      size=SIZE["label"], bold=True, color=self.accent)
+        self.text(s, d["value"], top=Inches(2.0), height=Inches(1.3),
+                  size=SIZE["title"], bold=True)
+        boxes = []
+        options = self._cap(d.get("items", []), 4, "提问的选项")
+        if options:
+            col_w = BODY_W / len(options)
+            for n, opt in enumerate(options):
+                hit = reveal and n == answer
+                color = self.accent if hit else (self.faint if reveal else self.ink)
+                boxes.append(self.text(s, opt, top=Inches(3.6), height=Inches(1.1),
+                                       size=36, bold=True, color=color,
+                                       left=PAD_X + col_w * n, width=col_w - Inches(0.2)))
+        sub = None
+        if d.get("caption") and (reveal or self.animate):
+            sub = self.text(s, d["caption"], top=Inches(5.0), height=Inches(0.7),
+                            size=SIZE["sub"], color=self.muted)
+        return boxes, sub
+
     def question(self, d):
-        options = d.get("items", [])[:4]
         answer = d.get("answer")
-        # 预测题可以不给 answer，那就只出题目这一张，讲完再用另一条片单揭晓
-        for reveal in ((False, True) if answer is not None else (False,)):
-            s = self.slide()
-            if d.get("kicker"):
-                self.text(s, d["kicker"], top=Inches(1.3), height=Inches(0.6),
-                          size=SIZE["label"], bold=True, color=self.accent)
-            self.text(s, d["value"], top=Inches(2.0), height=Inches(1.3), size=SIZE["title"], bold=True)
-            if options:
-                col_w = BODY_W / len(options)
-                for n, opt in enumerate(options):
-                    hit = reveal and n == answer
-                    color = self.accent if hit else (self.muted if reveal else self.ink)
-                    self.text(s, opt, top=Inches(3.6), height=Inches(1.1), size=36, bold=True,
-                              color=color, left=PAD_X + col_w * n, width=col_w - Inches(0.2))
-            if reveal and d.get("caption"):
-                self.text(s, d["caption"], top=Inches(5.0), height=Inches(0.7),
-                          size=SIZE["sub"], color=self.muted)
+        # 预测题不给 answer，只出题目这一张，讲完再用另一条片单揭晓
+        if answer is None:
+            self._question_page(d, None, False)
+            return
+        if self._build(d, "question"):
+            boxes, sub = self._question_page(d, answer, False)
+            for n, box in enumerate(boxes):
+                self.m.recolor(box, 1, self.accent if n == answer else self.faint)
+            if sub:
+                self.m.show(sub, 1)
+            return
+        # 没有动画：拆成题目与揭晓两张，不然答案一上来就摆在那儿
+        self._question_page(d, answer, False)
+        self._question_page(d, answer, True)
 
     def image(self, d):
         s = self.slide()
@@ -360,7 +559,8 @@ class Deck:
             self.warnings.append(f"满版图「{d.get('value', '')}」没有给 src，这张只放了文字")
         else:
             try:
-                self._cover(s, d["src"], 0, 0, W, H, tuple(d.get("focus", (0.5, 0.5))))
+                self.anchor = self._cover(s, d["src"], 0, 0, W, H,
+                                          tuple(d.get("focus", (0.5, 0.5))))
             except FileNotFoundError as exc:
                 self.warnings.append(f"满版图找不到图片 {exc}，这张只放了文字")
         # 底部 32% 恒为 0.72 的黑，与 HTML 模板一致
@@ -381,10 +581,13 @@ class Deck:
 
     def claim(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=PAD_Y, height=Inches(1.4), size=40, bold=True, align=PP_ALIGN.LEFT)
+        claim = self.text(s, d["value"], top=PAD_Y, height=Inches(1.4), size=40,
+                          bold=True, align=PP_ALIGN.LEFT)
+        self.anchor = claim
         if d.get("src"):
             try:
-                self._contain(s, d["src"], PAD_X, Inches(2.4), BODY_W, Inches(3.9))
+                self.anchor = self._contain(s, d["src"], PAD_X, Inches(2.4),
+                                            BODY_W, Inches(3.9))
             except FileNotFoundError as exc:
                 self.warnings.append(f"证据图找不到：{exc}")
         if d.get("caption"):
@@ -393,47 +596,113 @@ class Deck:
 
     def definition(self, d):
         s = self.slide()
-        term = d["value"] + (f"  {d['symbol']}" if d.get("symbol") else "")
-        self.text(s, term, top=Inches(2.5), height=Inches(1.4), size=SIZE["feature"], bold=True)
+        if d.get("symbol"):
+            # 术语与符号分成两个形状：符号要能单独跟下一张公式里的同一个符号配对
+            term, sym = self._pair(s, d["value"], d["symbol"], top=Inches(2.5),
+                                   height=Inches(1.4), size=SIZE["feature"], bold=True)
+            self.anchor = sym
+        else:
+            self.anchor = self.text(s, d["value"], top=Inches(2.5), height=Inches(1.4),
+                                    size=SIZE["feature"], bold=True)
         if d.get("caption"):
             self.text(s, d["caption"], top=Inches(4.1), height=Inches(1.0),
                       size=SIZE["sub"], color=self.muted)
 
+    def derive(self, d):
+        s = self.slide()
+        self.text(s, d["value"], top=PAD_Y, height=Inches(1.2), size=40,
+                  bold=True, align=PP_ALIGN.LEFT)
+        rows = self._cap(d.get("items", []), 4, "推演")
+        build, dim = self._build(d, "derive"), self._dim(d, "derive")
+        # 右栏先按「30pt 下每行 9 个中文字、两行封顶」定宽，式子列拿剩下的。
+        # HTML 那边右栏是 44px / 每行 11 字，pptx 的 30pt 下限相对更大，所以一行放得少
+        gap, why_w = int(Pt(18)), int(Pt(9 * SIZE["label"]) + Inches(0.2))
+        expr_w = BODY_W - why_w - gap
+        why_left = PAD_X + expr_w + gap
+        for n, row in enumerate(rows):
+            expr, why = (list(row) + [""])[:2] if isinstance(row, (list, tuple)) else (row, "")
+            y = Inches(2.2) + Inches(1.15) * n
+            self._fits(expr, 36, expr_w, "推演的式子")
+            group = [self.text(s, expr, top=y, height=Inches(1.0), size=36,
+                               align=PP_ALIGN.LEFT, left=PAD_X, width=expr_w)]
+            if why:
+                # 右栏 30pt 比 HTML 的 44px 相对更大，所以一行放得少，两行封顶
+                self._fits(why, SIZE["label"], why_w, "推演右栏", lines=2)
+                group.append(self.text(s, why, top=y, height=Inches(1.0),
+                                       size=SIZE["label"], color=self.muted,
+                                       align=PP_ALIGN.LEFT, left=why_left, width=why_w))
+            if build:
+                self._step(group, n + 1, n + 2 if dim and n + 1 < len(rows) else None)
+        if d.get("caption"):
+            cite = self.text(s, d["caption"], top=Inches(6.85), height=Inches(0.5),
+                             size=SIZE["label"], color=self.muted, align=PP_ALIGN.LEFT)
+            at = d.get("caption_at")
+            if build and at:
+                self.m.show(cite, min(int(at), max(len(rows), 1)))
+        self.warnings.append(f"推演「{d['value']}」的式子是纯文本，"
+                             f"要在 PowerPoint 或 Keynote 的公式编辑器里重排")
+
     def formula(self, d):
         s = self.slide()
-        self.text(s, d["value"], top=Inches(2.2), height=Inches(1.6), size=SIZE["feature"])
-        items = d.get("items", [])[:4]
+        value = str(d["value"])
+        head, sep, tail = value.partition("=")
+        if d.get("morph") and sep and head.strip():
+            # 等号左边单独成一个形状，才能跟上一张概念片里的同一个符号配对
+            left, _ = self._pair(s, head.strip(), "=" + tail, top=Inches(2.2),
+                                 height=Inches(1.6), size=SIZE["feature"], gap_em=0.22)
+            self.anchor = left
+        else:
+            self.anchor = self.text(s, value, top=Inches(2.2), height=Inches(1.6),
+                                    size=SIZE["feature"])
+        items = self._cap(d.get("items", []), 4, "公式下面的项")
+        build = self._build(d, "formula")
         if items:
             col_w = BODY_W / len(items)
             for n, item in enumerate(items):
-                self.text(s, item, top=Inches(4.3), height=Inches(0.7), size=SIZE["label"],
-                          color=self.muted, left=PAD_X + col_w * n, width=col_w)
+                box = self.text(s, item, top=Inches(4.3), height=Inches(0.7),
+                                size=SIZE["label"], color=self.muted,
+                                left=PAD_X + col_w * n, width=col_w)
+                if build:
+                    self.m.show(box, n + 1)
         if d.get("caption"):
             self.text(s, d["caption"], top=Inches(5.3), height=Inches(0.7),
                       size=SIZE["sub"], color=self.muted)
-        self.warnings.append(f"公式「{d['value']}」是纯文本，要在 PowerPoint 或 Keynote 的公式编辑器里重排")
+        self.warnings.append(f"公式「{value}」是纯文本，"
+                             f"要在 PowerPoint 或 Keynote 的公式编辑器里重排")
 
     def myth(self, d):
         s = self.slide()
+        reveal = self._build(d, "myth")
         self.text(s, "常见误解", top=Inches(1.5), height=Inches(0.6), size=SIZE["label"],
                   bold=True, color=self.muted, align=PP_ALIGN.LEFT)
-        self.text(s, d["value"], top=Inches(2.1), height=Inches(1.1), size=44,
-                  bold=True, color=self.muted, align=PP_ALIGN.LEFT)
-        self.text(s, "实际上", top=Inches(3.7), height=Inches(0.6), size=SIZE["label"],
-                  bold=True, color=self.accent, align=PP_ALIGN.LEFT)
-        self.text(s, d.get("caption", ""), top=Inches(4.3), height=Inches(1.1), size=44,
-                  bold=True, align=PP_ALIGN.LEFT)
+        said = self.text(s, d["value"], top=Inches(2.1), height=Inches(1.1), size=44,
+                         bold=True, color=self.ink if reveal else self.muted,
+                         align=PP_ALIGN.LEFT)
+        tag = self.text(s, "实际上", top=Inches(3.7), height=Inches(0.6), size=SIZE["label"],
+                        bold=True, color=self.accent, align=PP_ALIGN.LEFT)
+        fact = self.text(s, d.get("caption", ""), top=Inches(4.3), height=Inches(1.1),
+                         size=44, bold=True, align=PP_ALIGN.LEFT)
+        if reveal:
+            # HTML 里揭晓时给误解划线，pptx 划不了线，改成把误解调暗
+            self.m.recolor(said, 1, self.faint)
+            self.m.show(tag, 1)
+            self.m.show(fact, 1)
 
     def recap(self, d):
         s = self.slide()
         self.text(s, d.get("value", "回顾"), top=PAD_Y, height=Inches(1.0),
                   size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT)
-        for n, (cue, point) in enumerate(d.get("items", [])[:4]):
+        build = self._build(d, "recap")
+        for n, (cue, point) in enumerate(self._cap(d.get("items", []), 4, "回顾")):
             y = Inches(2.3) + Inches(1.15) * n
-            self.text(s, cue, top=y, height=Inches(0.9), size=32, bold=True, align=PP_ALIGN.LEFT,
-                      left=PAD_X, width=Inches(2.6))
-            self.text(s, point, top=y, height=Inches(0.9), size=SIZE["sub"], color=self.muted,
-                      align=PP_ALIGN.LEFT, left=PAD_X + Inches(2.8), width=BODY_W - Inches(2.8))
+            self.text(s, cue, top=y, height=Inches(0.9), size=32, bold=True,
+                      align=PP_ALIGN.LEFT, left=PAD_X, width=Inches(2.6))
+            box = self.text(s, point, top=y, height=Inches(0.9), size=SIZE["sub"],
+                            color=self.muted, align=PP_ALIGN.LEFT,
+                            left=PAD_X + Inches(2.8), width=BODY_W - Inches(2.8))
+            if build:
+                # 提示词一直在，要点点一下出一条：先让听众自己想
+                self.m.show(box, n + 1)
 
     def refs(self, d):
         items = d.get("items", [])
@@ -449,10 +718,15 @@ class Deck:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    flags = {a for a in sys.argv[1:] if a.startswith("--")}
+    unknown_flags = flags - {"--static"}
+    if unknown_flags:
+        sys.exit(f"不认识的选项: {', '.join(sorted(unknown_flags))}")
+    if not args:
         sys.exit(__doc__.split("片单格式")[0].strip())
 
-    src = Path(sys.argv[1])
+    src = Path(args[0])
     if not src.is_file():
         sys.exit(f"找不到文件: {src}")
 
@@ -462,36 +736,68 @@ def main() -> int:
         sys.exit("片单里没有 slides")
 
     spec["_base"] = str(src.parent)
-    deck = Deck(spec)
+    animate = "--static" not in flags
+    deck = Deck(spec, animate=animate)
     handlers = {name: getattr(deck, name) for name in
                 ("title", "phrase", "num", "section", "feature",
                  "specs", "versus", "price", "close", "quote", "steps",
                  "roadmap", "question", "image", "claim", "definition",
-                 "formula", "myth", "recap", "refs")}
+                 "derive", "formula", "myth", "recap", "refs")}
 
-    unknown = set()
+    unknown, morphs, prev_key, paired = set(), 0, None, {}
     for d in slides:
-        fn = handlers.get(d.get("type"))
+        kind = d.get("type")
+        fn = handlers.get(kind)
         if fn is None:
-            unknown.add(d.get("type"))
+            unknown.add(kind)
             continue
         before = len(deck.prs.slides)
         fn(d)
+        made = [deck.prs.slides[k] for k in range(before, len(deck.prs.slides))]
         # 一张片单可能生成多张（提问、参考文献续页），备注每张都写
         if d.get("notes"):
-            for k in range(before, len(deck.prs.slides)):
-                deck.prs.slides[k].notes_slide.notes_text_frame.text = str(d["notes"])
+            for s in made:
+                s.notes_slide.notes_text_frame.text = str(d["notes"])
+
+        key = d.get("morph")
+        this_key = None
+        if key and animate:
+            if kind not in MORPH_OK or deck.anchor is None or len(made) != 1:
+                deck.warnings.append(f"「{kind}」这类片没有可配对的对象，morph「{key}」没做")
+            else:
+                motion.morph(deck.anchor, key)
+                this_key = key
+                paired.setdefault(key, False)
+                if prev_key == key:
+                    motion.transition(made[0], "morph", motion.MORPH_MS)
+                    paired[key] = True
+                    morphs += 1
+        prev_key = this_key
+
+    for key, done in paired.items():
+        if not done:
+            deck.warnings.append(f"morph「{key}」没有配对成功："
+                                 f"要相邻两张片各有一个同名的对象，隔着别的片配不上")
+
+    clicks = sum(m.write() for m in deck.motions)
+    stepped = sum(1 for m in deck.motions if m.cues)
     made = len(deck.prs.slides)
 
-    out = Path(sys.argv[2]) if len(sys.argv) > 2 else src.with_suffix(".pptx")
+    out = Path(args[1]) if len(args) > 1 else src.with_suffix(".pptx")
     deck.prs.save(str(out))
 
     print(f"已生成: {out}  ({made} 页)")
+    if animate:
+        print(f"动画：{stepped} 张片分步，共 {clicks} 次点击"
+              f"{f'；{morphs} 处 Morph 平滑切换' if morphs else ''}")
+        print("看每张片分几步：python3 pptx_motion.py --inspect " + out.name)
+    else:
+        print("没有写动画（--static）：提问片拆成了题目与揭晓两张")
     if unknown:
         print(f"跳过了不认识的片型: {', '.join(sorted(map(str, unknown)))}")
     for w in deck.warnings:
         print(f"注意：{w}")
-    print("这份 pptx 没有动画与转场，底色是纯色 —— python-pptx 做不到这些。")
+    print("pptx 仍然丢的东西：底色只能纯色、公式是纯文本、图表要手工摆、bento 的大小分层被简化。")
     print("要那个层次的视觉就用 templates/deck.html。")
     return 0
 
