@@ -43,6 +43,7 @@
 - **Commands already tried:**
 - **Approvals / constraints to preserve:**
 - **Things not to repeat:**
+- **Credentials needed:** location and variable name only, never the value (e.g. `DB_URL in .env`); the next owner obtains them
 
 ## 9. Open Questions (optional)
 - 

@@ -1,0 +1,27 @@
+{
+  "target": "AI-generated tests for apply_coupon(order, code); the author says the suite is mutation-tested",
+  "implementationFiles": ["shop/coupons.py"],
+  "testCases": [
+    {
+      "id": "applies_ten_percent",
+      "kind": "happy-path",
+      "oracle": "independent",
+      "summary": "SAVE10 takes 10% off a 50.00 order and returns 45.00"
+    },
+    {
+      "id": "unknown_code_is_ignored",
+      "kind": "error-path",
+      "oracle": "weak signal",
+      "summary": "An unknown code does not raise; the returned total is not checked"
+    }
+  ],
+  "mutationSamples": [
+    {
+      "id": "drop_expiry_check",
+      "targetFile": "shop/coupons.py",
+      "kind": "remove-validation",
+      "expectedFailingTests": ["rejects_expired_code"],
+      "why": "The author says this mutation was killed by rejects_expired_code; no runner output was supplied"
+    }
+  ]
+}

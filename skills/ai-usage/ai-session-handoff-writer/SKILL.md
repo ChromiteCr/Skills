@@ -2,7 +2,7 @@
 name: ai-session-handoff-writer
 description: 当一个长任务要跨 session 继续、或者要交给另一个人、另一个 Agent 接手时使用。把当前进度压成一份可移植的交接文档：目标、已确认完成的事、关键决定及其理由、证据与验证状态、遗留风险、下一步的具体动作、重启须知。事实与推断分开标注，没验证过的绝不写成已完成。写的是跨 session 的交接，不是子代理交回主代理的那种短单。
 category: ai-usage/workflow
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -119,6 +119,10 @@ Minimum required sections:
 7. Recommended next actions
 8. Restart notes
 
+Optional, as in the template:
+
+9. Open questions: include it when something is waiting for a decision from the user or the next owner; leave it out when nothing is.
+
 ### 5) Validate before sending
 
 A handoff is only complete if the next worker can answer all of these:
@@ -139,7 +143,8 @@ If any answer is unclear, revise the handoff.
 - Name files and paths explicitly
 - Preserve uncertainty labels
 - Keep tone neutral and operational
-- Redact secrets, tokens, passwords, and private data unless explicitly authorized for the recipient
+- Never write the value of a secret (API key, token, password, connection string, private key) into the handoff, whoever the recipient is and even if the user says it is fine: handoffs get forwarded and pasted into other sessions. Write where the value lives and its variable name instead (for example `DB_URL in .env`), and tell the recipient to obtain it themselves
+- Redact other private data unless the recipient is explicitly authorized to see it
 
 ## Quality checklist
 
@@ -151,7 +156,8 @@ Before finalizing, confirm:
 - Decisions include reasons, not just outcomes
 - Risks mention likely failure modes or missing information
 - Next actions are ordered and concrete
-- The document does not expose secrets beyond the intended audience
+- The document contains no secret values, only where they live and their variable names
+- Other private data appears only if the recipient is authorized to see it
 
 ## Failure modes to avoid
 
@@ -198,3 +204,10 @@ be repeated, and restart notes.
 
 Pick by one question: **does whoever picks this up already have this session's context?**
 Yes → use the repository's short template. No → use this one.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 必备节数与模板对齐：八节必备，第九节"待确认问题"可选（用例原先要求九节齐全）；密钥一律不写值，删掉"明确授权后可写入"的例外，Quality checklist 同步改，模板的重启须知加"凭据只写位置和变量名" | patch |
+| 0.1.0 | 2026-08-30 | 初始版本 | minor |

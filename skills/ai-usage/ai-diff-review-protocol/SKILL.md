@@ -1,8 +1,8 @@
 ---
 name: ai-diff-review-protocol
-description: 当 AI 改完代码、要决定这份 diff 放不放行时使用。不逐行精读，按四步走查高风险点——意图是否匹配、有没有碰到边界条件、副作用面有多大、能不能回滚——每步有明确的放过与打回判据。改动文件数、增删行数、有没有动到测试与配置迁移文件这类统计先由脚本出，超阈值时强制人工逐段过。
+description: 当 AI 改完代码、要决定这份 diff 放不放行时使用。不逐行精读，按四步走查高风险点——意图是否匹配、有没有碰到边界条件、副作用面有多大、能不能回滚——每步有明确的放过与打回判据。改动文件数、增删行数、动到的迁移/锁文件/CI/配置/鉴权/测试文件和危险 hunk 先由 scripts/diff_risk.py 统计（粘贴进来的 diff 文本也能读，不需要 Git），越过固定阈值时必须人工逐段过。只有口头描述、没有改动内容时不给结论，只列要补的材料。diff 里新写的测试可不可信交给 ai-generated-test-auditor；没有基线的整段新代码走 ai-code-onboarding-checklist。
 category: ai-usage/code-review
-version: 0.1.0
+version: 0.2.0
 status: draft
 priority: P1
 compatible_agents:
@@ -42,9 +42,11 @@ The goal is not to replace deep code review. The goal is to answer four question
 
 ## Do not use when
 
-- You do not have the actual change content yet.
+- You only have a description of the change, not the change itself. Give no verdict; list the materials to provide (see *When there is no unified diff*).
 - You need proof of behavioral correctness; this skill can flag risk, not prove the code works.
 - The task is primarily architectural redesign rather than change review.
+- The code is new and there is no baseline to diff against: use `ai-code-onboarding-checklist`.
+- The only question is whether the tests in the change can be trusted: use `ai-generated-test-auditor`.
 
 ## Required inputs
 
@@ -62,16 +64,17 @@ If any required input is missing, say so explicitly and downgrade confidence.
 
 Return these sections in order:
 
-1. **Verdict**: `pass`, `caution`, or `stop`
+1. **Verdict**: `pass`, `caution`, or `stop`. With only a prose description of the change there is no verdict (see *When there is no unified diff*).
 2. **One-sentence rationale**
-3. **Risk summary**
+3. **Diff stats**: the summary from `scripts/diff_risk.py`: files changed, +/− lines, renames and mode changes, boundary files, hunk signals, new lock-file packages, the thresholds crossed, and "manual hunk-by-hunk pass: required / not required". Without a unified diff write "Diff stats: not computed (no unified diff)"; numbers counted by reading the diff are labelled "counted by hand".
+4. **Risk summary**
    - intent match
    - risky boundaries touched
    - likely side effects
    - reversibility
-4. **High-priority review targets** (up to 5)
-5. **Required follow-up before merge/apply**
-6. **Confidence**: high / medium / low
+5. **High-priority review targets** (up to 5)
+6. **Required follow-up before merge/apply**, including the hunks a person must read when a manual pass is required
+7. **Confidence**: high / medium / low
 
 ## Review protocol
 
@@ -87,6 +90,8 @@ Check:
 - Are names, comments, and tests aligned with the claimed intent?
 
 If the change solves a different problem than requested, mark **stop**.
+
+If most of the validation evidence is tests written in this same diff, those tests still have to earn trust: hand them to `ai-generated-test-auditor` (or apply its oracle and mutation questions yourself) before counting them as evidence.
 
 ### Step 2 — Boundary safety
 
@@ -161,28 +166,47 @@ Classify reversibility as:
 
 Hard-to-reverse changes need explicit rollback notes before approval.
 
-## Deterministic checks from the diff itself
+## Diff stats and thresholds (`scripts/diff_risk.py`)
 
-When a unified diff or patch is available, extract these objective signals:
+Run the script on the diff before the four steps. It needs only Python 3, no Git and no packages:
 
-- number of changed files
-- files added / deleted / renamed
-- total additions and deletions
-- whether tests changed
-- whether config, migration, lockfile, or secrets-related files changed
-- whether the patch mixes code, tests, and infra in one batch
-- whether there are large deletions or mechanical renames
+```bash
+python3 scripts/diff_risk.py change.diff           # a saved diff, or a pasted chat message saved to a file
+git diff main... | python3 scripts/diff_risk.py     # when Git is available
+python3 scripts/diff_risk.py --json change.diff     # machine-readable report
+python3 scripts/diff_risk.py --selftest             # regression cases
+```
 
-Use these thresholds as defaults, not laws:
+It reads any unified diff text: `git diff`, `git show`, `git format-patch`, `diff -u` / `diff -ruN`, or a diff pasted into a chat together with the prose and code fences around it. It reports:
 
-- **1–3 files** changed: usually local, keep reviewing
-- **4–8 files** changed: check for scope creep
-- **9+ files** changed: assume broader risk until shown otherwise
-- **200+ changed lines**: require a clearer side-effect summary
-- **touches tests only minimally while production code changes a lot**: ask why
-- **touches config/migrations/public API**: raise boundary risk
+- files changed; files added, deleted, renamed or copied; binary files; mode changes (a file becoming executable, symlinks, submodules);
+- additions and deletions per file and in total;
+- the boundary category of every path: `migration`, `lockfile`, `deps`, `ci`, `config`, `auth`, `secrets`, `test`, `docs`, `data`, `code`;
+- hunk signals on changed lines: NOT NULL without DEFAULT outside CREATE TABLE, DROP / TRUNCATE / ORM drops, assertions deleted from tests, tests skipped or focused, `shell=True`, `os.system`, a download piped into `sh`, `eval` / `exec`, recursive deletes, unsafe deserialization, privilege changes, and literals that look like credentials (values redacted);
+- packages added, removed or bumped in lock files (npm, yarn, pnpm, Pipfile, poetry, uv, Cargo, pdm, composer, go.sum, Gemfile, Gradle); other lock formats are reported as not parsed;
+- the thresholds it applied, whether a manual hunk-by-hunk pass is required, and which hunks to read.
 
-If no diff is provided and only a prose summary exists, say the deterministic layer could not run.
+Exit code 0 means no manual pass is required, 1 means a manual pass is required, 2 means the input holds no unified diff or cannot be read. If you cannot run Python, take the same numbers from the diff by reading it, apply the same table, and label the Diff stats "counted by hand".
+
+The script and this table use the same numbers:
+
+| Rule | Effect |
+|---|---|
+| 1–3 files changed | local; keep reviewing |
+| 4–8 files changed | check for scope creep |
+| 9+ files changed | manual hunk-by-hunk pass of every hunk |
+| 200+ changed lines (additions + deletions, lock files excluded) | manual pass of every hunk, and a clearer side-effect summary |
+| any `migration`, `auth`, `secrets`, `ci`, `config` or `deps` file | manual pass of that file's hunks; raise boundary risk in Step 2 |
+| a lock file adds packages, or its format is not parsed | manual pass; confirm each new package is real and intended |
+| any hunk signal | manual pass of that hunk |
+| production code changes by 100+ lines while test lines stay under 10 % of that | ask why (no manual pass by itself) |
+
+A manual hunk-by-hunk pass means a person reads each listed hunk (every hunk when a size rule is crossed) and says whether it belongs to the requested change. You may pre-read and annotate the hunks, but that does not replace the person's pass. Until the person confirms it, the verdict cannot be `pass`. Staying under every threshold does not make a diff safe: a one-line change to a config default can still be `stop`. Public API changes cannot be recognized from paths; Step 2 asks about them regardless.
+
+## When there is no unified diff
+
+- **Before/after snippets, whole changed files, or an excerpt, but no unified diff**: run the four steps on what you have. Write "Diff stats: not computed (no unified diff)", or count what you can and label it "counted by hand". Confidence is at most medium; name the files or hunks you did not see.
+- **Only a prose description of the change** ("it optimised the cache and fixed a few small things"): give no verdict. Say which steps cannot run (Steps 2 and 3 need the change itself; Step 1 can only compare two descriptions) and list the smallest set of materials to provide: the `git diff` or `git show <commit>` output, the list of changed files, and whether tests, config or migrations changed. A phrase like "and fixed a few small things" is itself a scope-creep signal worth naming.
 
 ## Decision rules
 
@@ -193,6 +217,7 @@ Return `pass` only when all are true:
 - side-effect surface is narrow or well-justified
 - rollback is easy or documented
 - validation evidence is proportional to risk
+- every manual hunk-by-hunk pass the thresholds require has been done by a person
 
 Return `caution` when:
 
@@ -200,6 +225,7 @@ Return `caution` when:
 - the change touches shared code or config
 - tests/evidence are partial
 - the patch is larger than the request suggests
+- a required manual hunk-by-hunk pass has not been done yet (list the hunks under Required follow-up)
 
 Return `stop` when any of these occur:
 
@@ -240,6 +266,9 @@ Verdict: caution
 
 Rationale: The patch mostly matches the request, but it also changes shared request validation and a runtime config default.
 
+Diff stats (scripts/diff_risk.py): 3 files, +48 / -12; boundary files: config (config/defaults.yaml); hunk signals: none; new lock-file packages: none.
+Manual hunk-by-hunk pass: required (config file touched): config/defaults.yaml @@ -10,4 +10,4 @@
+
 Risk summary:
 - Intent match: partial match; bug fix is present, config expansion is extra
 - Risky boundaries: runtime config, shared validator
@@ -252,6 +281,7 @@ High-priority review targets:
 3. Test coverage for invalid/edge cases
 
 Required follow-up before merge/apply:
+- A person reads the config/defaults.yaml hunk (manual pass required by the config boundary)
 - Add one regression test for the original bug
 - Show behavior before/after for invalid input
 - Confirm whether changing the default is intentional
@@ -261,7 +291,14 @@ Confidence: medium
 
 ## Notes for agent implementations
 
-- Accept diff text from any source; do not assume Git is available.
-- If objective diff stats cannot be computed, still run the four-step reasoning protocol and lower confidence.
+- Accept diff text from any source; do not assume Git is available. `scripts/diff_risk.py` parses pasted text directly.
+- If you have the change content but cannot compute objective stats (no unified diff, or no way to run Python), still run the four-step reasoning protocol, label any numbers "counted by hand", and lower confidence. If you only have a prose description, give no verdict (see *When there is no unified diff*).
 - Do not claim code is correct unless validation evidence is supplied.
 - Prefer quoting exact changed paths or hunks when present.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.2.0 | 2026-09-26 | 补上 description 承诺却不存在的统计脚本：新增 scripts/diff_risk.py（纯标准库，能读粘贴的 diff；统计文件与增删行、重命名与权限变化，按边界分类路径，标出危险 hunk，数锁文件新增包，给出阈值与是否必须人工逐段过，带 --selftest），输出契约加 Diff stats 一段；阈值改成脚本与正文同一张表，越线必须人工逐段过；没有 diff 时分两种：有前后片段照常走并降置信度，只有口头描述不给结论只列补材料；与 ai-generated-test-auditor、ai-code-onboarding-checklist 互相点名 | minor |
+| 0.1.0 | 2026-08-30 | 初始版本 | minor |

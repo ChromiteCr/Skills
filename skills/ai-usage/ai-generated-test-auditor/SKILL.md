@@ -1,8 +1,8 @@
 ---
 name: ai-generated-test-auditor
-description: 当 AI 写完测试、要决定信不信这份测试时使用。查四类假信心：断言与实现是否同源复制、有没有边界与异常用例、失败信号够不够强、以及把被测代码改坏之后测试会不会真的变红（突变抽样）。测试全绿不等于代码对，也可能是测试根本抓不住错。
+description: 当 AI 写完测试、要决定信不信这份测试时使用。查三类假信心：断言与实现是否同源复制、有没有边界与异常用例、失败信号够不够强；再规划 2–5 个突变抽样，能执行时再实跑，看把被测代码改坏之后测试会不会变红，没实跑就不声称测试抓得住错。测试全绿不等于代码对，也可能是测试根本抓不住错。要决定整份 diff 能不能合并时走 ai-diff-review-protocol。
 category: ai-usage/code-review
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -16,7 +16,7 @@ display_name: AI 测试体检
 outputs:
   - chat
 max_rounds: 20
-suggest_hint: 用「AI 测试体检」看这份 AI 写的测试删掉实现之后会不会真的变红
+suggest_hint: 用「AI 测试体检」查这份 AI 写的测试是不是照抄实现、缺不缺边界，并规划 2–5 个突变抽样，能执行时再实跑
 ---
 
 # ai-generated-test-auditor
@@ -35,7 +35,7 @@ This skill audits **test quality**, not product correctness. Its job is to find 
   - invalid input / failure paths;
   - state transitions / side effects;
   - regressions for previously known bugs.
-- Plans a small set of **reversible sample mutations** that should make good tests fail.
+- Plans 2–5 **reversible sample mutations** that should make good tests fail, and runs them only when the tests can be executed, the user agrees, and the code can be restored (Step 5). Otherwise the plan is the deliverable and runtime evidence is marked missing.
 - Produces a verdict: **usable / usable with gaps / weak / misleading**.
 
 ## Good fits
@@ -55,7 +55,8 @@ Do **not** use this skill to:
 - claim the underlying implementation is correct;
 - replace real test execution;
 - generate a full production-ready test suite from scratch;
-- approve risky refactors without runtime evidence.
+- approve risky refactors without runtime evidence;
+- decide whether a whole diff can be merged. Use `ai-diff-review-protocol` for that; it sends the tests inside the diff back here.
 
 If the user actually wants new tests written, a test-authoring skill should do that first. Come back to this skill once there is a candidate suite to inspect.
 
@@ -156,6 +157,16 @@ For each mutation, record:
 
 If you cannot run mutations in the current environment, still provide the **plan** and label runtime evidence as missing.
 
+Run the plan only when all of these hold: you can execute the tests, the user has agreed, and every file can be restored exactly. Then:
+
+1. Work where nothing can be lost: a clean working tree (`git status --porcelain` prints nothing) or a separate worktree or copy of the project. Never mutate files that have uncommitted changes you cannot restore.
+2. Run the tests the plan names once without changes. They must pass; otherwise the mutation results mean nothing.
+3. Apply one mutation, run the named tests, record red or green.
+4. Restore the file (`git checkout -- <file>`, `git restore <file>`, or copy the saved original back) and confirm the tree is clean before the next mutation.
+5. Report each mutation as `killed` (a named test turned red), `survived` (the suite stayed green) or `not run`, with the command you used.
+
+If any condition fails, deliver the plan only.
+
 ### Step 6: produce a verdict
 
 Use one of:
@@ -229,7 +240,25 @@ It validates whether a planned audit packet is structurally complete enough to r
 - test case IDs unique;
 - mutation sample IDs unique;
 - every mutation points to declared implementation files and named test cases;
-- warns when happy path, boundary, error, or side-effect coverage is missing from the audit packet.
+- warns when happy path, boundary, error, or side-effect coverage is missing from the audit packet;
+- warns about keys it does not know instead of ignoring them silently.
+
+Allowed values, with the Step 2 and Step 3 wording the script also accepts:
+
+| Field | Canonical value | Also accepted |
+|---|---|---|
+| `oracle` | `independent` | independent oracle |
+| `oracle` | `derived` | derived oracle |
+| `oracle` | `mirrored` | mirrored logic |
+| `oracle` | `weak-signal` | weak signal |
+| `kind` (test case) | `happy-path` | happy path |
+| `kind` (test case) | `boundary` | boundary cases |
+| `kind` (test case) | `error-path` | error / invalid input cases |
+| `kind` (test case) | `side-effect` | stateful or side-effect cases |
+| `kind` (test case) | `state-transition` | state transition |
+| `kind` (test case) | `regression` | regression hooks |
+
+A mutation's `kind` is free text (for example `remove-validation`, `boundary-flip`).
 
 Example manifest shape:
 
@@ -266,8 +295,11 @@ Example manifest shape:
 Run it with any Python 3 environment:
 
 ```bash
-python scripts/check_test_audit_manifest.py path/to/test-audit-manifest.json
+python3 scripts/check_test_audit_manifest.py path/to/test-audit-manifest.json
+python3 scripts/check_test_audit_manifest.py --selftest
 ```
+
+Exit codes: 0 means the manifest is valid (warnings may remain), 1 means it has problems (missing fields, unknown values, a mutation naming a test that is not in the packet), 2 means the file cannot be read as JSON or the arguments are wrong.
 
 ## Heuristics this skill should apply
 
@@ -294,3 +326,10 @@ The skill has done its job when the user can say:
 3. which edge and failure cases are still unprotected;
 4. which 2–5 sample mutations should be tried next;
 5. and how much trust the current suite has earned.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | description 与 suggest_hint 不再承诺"验证测试真会变红"，改成"规划 2–5 个突变抽样，能执行时再实跑"，Step 5 补上实跑的安全步骤（干净工作区或副本、先征得同意、逐个突变、逐个恢复）；脚本接受正文用语（mirrored logic、weak signal 等）并在正文列出枚举，改用 argparse（--help 不再被当成文件名），传入目录、非 UTF-8、坏 JSON 时报错退出 2，不认识的键给警告，补 --selftest；示例命令改为 python3；与 ai-diff-review-protocol 互相点名 | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

@@ -1,8 +1,8 @@
 ---
 name: ai-answer-triage
-description: 当想知道一段 AI 回答"哪些能直接用、哪些必须先验证、哪些只能当建议"时使用。按声明类型分四级——低风险草稿材料、观点与策略建议、可查证的事实声明、会改变状态的可执行指令——每级配一句默认处置动作；再按影响半径排序，给出最小的下一步检查。可执行类一律标"必须先实跑"。教的是一套可复用的复查习惯，不是替使用者把所有内容都核实一遍。
+description: 当想知道一段 AI 回答"哪些能直接用、哪些必须先验证、哪些只能当建议"时使用。按声明类型分四级——低风险草稿材料、观点与策略建议、可查证的事实声明、会改变状态的可执行指令——每级配一句默认处置动作；再按影响半径排序，给出最小的下一步检查。可执行类一律标"不能直接执行；先做代码审阅/沙箱测试/回滚准备"，其中破坏性或提权的命令排在最前。教的是一套可复用的复查习惯，不是替使用者把所有内容都核实一遍：本 skill 只分级、排序、定处置，要逐条核实走 ai-output-fact-checker，整段代码要做入库体检走 ai-code-onboarding-checklist。
 category: ai-usage/verification
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -46,9 +46,10 @@ Typical inputs:
 
 ## Do not use this skill when
 
-- The user wants you to **verify the claims themselves**. Route to a verification or fact-checking skill instead.
-- The user wants you to **improve the prompt before generation**. Use a prompt-brief or prompt-design skill.
-- The user wants a **handoff summary for a long task**. Use a session handoff skill.
+- The user wants you to **verify the claims themselves**. Route to `ai-output-fact-checker`, which gives every claim a verification path; triage can still run first to decide which claims go there.
+- The input is **a whole block of AI-written code** (a script, a module, a small repo) and the question is whether to trust, run or build on it. Use `ai-code-onboarding-checklist`. When code is only one part of a mixed answer, triage the answer here and hand the code blocks marked "test first" to that skill.
+- The user wants you to **improve the prompt before generation**. Use `prompt-brief-builder`.
+- The user wants a **handoff summary for a long task**. Use `ai-session-handoff-writer`.
 - There is **no actual AI answer to inspect yet**. Ask for the answer first, or help the user prepare a request instead.
 
 ## Core rule
@@ -152,6 +153,7 @@ Default handling:
 - **Must be reviewed and tested before use**
 - The bigger the side effect, the stronger the review gate
 - Treat destructive, privileged, or production-facing steps as high risk by default
+- Ordering (Step 4): destructive or privileged D items go first of everything; other D items come after the factual claims that would cause rework
 
 Say:
 
@@ -312,7 +314,7 @@ This skill does **not**:
 
 ## Handoff note
 
-If the user wants verification after triage, pass along:
+If the user wants verification after triage, hand over to `ai-output-fact-checker` (code blocks to `ai-code-onboarding-checklist`) and pass along:
 
 - the extracted high-risk claims
 - the intended use
@@ -320,3 +322,10 @@ If the user wants verification after triage, pass along:
 - the recommended check order
 
 That makes the next verification step faster and more reliable.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 可执行类（D 类）的处置在 description 与正文统一为"不能直接执行；先做代码审阅/沙箱测试/回滚准备"，去掉容易读成"先跑一下看看"的"必须先实跑"，并写明排序：破坏性或提权的排最前，其余 D 类排在会导致返工的事实声明之后；三条泛称路由改成实名（ai-output-fact-checker、prompt-brief-builder、ai-session-handoff-writer），整段代码转 ai-code-onboarding-checklist | patch |
+| 0.1.0 | 2026-08-30 | 初始版本 | minor |
