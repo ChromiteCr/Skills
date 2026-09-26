@@ -7,9 +7,10 @@ status: draft
 priority: P0
 compatible_agents:
   - claude-code
-  - openclaw
+  - codex
   - cursor
   - codebuddy
+  - nestudy
   - generic-llm-agent
 ---
 
@@ -21,7 +22,9 @@ compatible_agents:
 2. frontmatter 的 name 必须等于目录名；category 必须等于所在的分类目录名
 3. 在 tests/cases/<skill-name>.md 添加至少一个用例
 4. 在 SKILL_INDEX.md 登记，并在 README.md 相应集合中补一行
-5. 运行 ./scripts/validate.sh
+5. 新开分类时，把 ./skills/<category> 加进 .claude-plugin/plugin.json 的 skills 列表
+6. 正文点名只有某个运行时才有的工具时，按 CONTRIBUTING.md 3.2 节写降级一节，或缩小 compatible_agents
+7. 运行 ./scripts/validate.sh
 -->
 
 一句话定位：这个 skill 做什么，不做什么。

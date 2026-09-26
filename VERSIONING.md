@@ -66,8 +66,8 @@ PATCH   措辞、示例、边界或文档修正  wording, examples, boundaries, 
 
 发布一个 Library 版本时：
 
-1. 确认 `./scripts/validate.sh` 通过。
+1. 确认 `./scripts/validate.sh` 通过；改过的脚本跑过 `./scripts/run-selftests.sh <skill>`。
 2. 更新 `plugin.json` 与 `marketplace.json` 的 `version`（两处必须一致，脚本会校验）。
-3. 更新 `CHANGELOG.md` 与 `SKILL_INDEX.md`。
-4. 用 `templates/release-note-template.md` 写 release note。
-5. 打 tag：`v<library-version>`。
+3. 更新 `CHANGELOG.md` 与 `SKILL_INDEX.md`（索引的版本列必须与 frontmatter 一致，脚本会校验）。
+4. 需要单技能 zip 时运行 `./scripts/package.sh`，重打 `dist/<skill>-<version>.zip`；`--check` 只报告缺失或过期的包。
+5. 对外发布时（可选）用 `templates/release-note-template.md` 写 release note，并打 tag：`v<library-version>`。

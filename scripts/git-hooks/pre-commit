@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# 提交前自动跑校验，挡住索引漂移、清单漏登记、共享副本不一致这类问题。
+# 启用（每个克隆只需一次）：git config core.hooksPath scripts/git-hooks
+# 临时跳过（不推荐）：git commit --no-verify
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+sh "$root/scripts/validate.sh"
+
+# 只跑这次提交改动到的 skill（以及 _shared）里的脚本自检
+changed=$(git diff --cached --name-only --diff-filter=ACMR \
+  | sed -n 's#^skills/[^/]*/\([^/]*\)/.*#\1#p' | sort -u)
+if [ -n "$changed" ]; then
+  # shellcheck disable=SC2086
+  sh "$root/scripts/run-selftests.sh" $changed
+fi
