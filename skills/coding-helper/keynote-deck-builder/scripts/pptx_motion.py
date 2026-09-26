@@ -366,6 +366,13 @@ def selftest():
         except ValueError:
             checks.append(("同一张片不叠写 timing", True))
 
+    # 审计复现：--help 原来只打出标题那一行，退出 64
+    import subprocess
+    run = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--help"],
+                         capture_output=True, text=True)
+    checks.append(("--help 打印用法（含 --inspect），退出 0",
+                   run.returncode == 0 and "--inspect deck.pptx" in run.stdout))
+
     ok = True
     for name, passed in checks:
         ok &= passed
@@ -385,8 +392,9 @@ def main():
             return 66
         inspect(path)
         return 0
-    print(__doc__.strip().split("\n\n")[0])
-    return 64
+    # 标题加用法两段；--help 是正常请求，退出 0，其余用错的情况照旧退出 64
+    print("\n\n".join(__doc__.strip().split("\n\n")[:2]))
+    return 0 if args in (["--help"], ["-h"]) else 64
 
 
 if __name__ == "__main__":

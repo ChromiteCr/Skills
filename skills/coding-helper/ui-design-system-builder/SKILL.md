@@ -2,7 +2,7 @@
 name: ui-design-system-builder
 description: 当使用者说"帮我做个界面"、"这个页面太丑"、"看着像模板/像 AI 做的"、"给这个项目定个视觉风格"、"配色和字体你来定"、"把这几个页面统一一下"时使用。先从项目本身抠出一个具体意象，据此定出一版完整的 CSS 变量与排版尺度（不是"现代简洁"这种废话），再用这些 token 拼组件；每个非显然的取舍都在代码注释里写清理由、代价和怎么改回去。中文界面必须同时配 CJK 字体。不装 UI 框架来跳过这一步，不改业务逻辑，不为了好看牺牲对比度和可读性。
 category: coding-helper/ui-design
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -207,4 +207,5 @@ label       12px  透明度 55%
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | 参考实例里 `.field-label` 的 ink 比例随 maestrwave-ui-system 由 48% 改为 52%（48% 在 11px 时对比度不到 AA 4.5:1），两边保持逐项一致 | patch |
 | 0.1.0 | 2026-08-10 | 初始草稿，方法总结自 MaestrWave 前端 | minor |

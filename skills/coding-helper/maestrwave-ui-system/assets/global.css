@@ -139,18 +139,24 @@ body {
   white-space: nowrap;
 }
 
-/* 表单字段的小标签，各页面统一用这一个类，不要各自重复定义。 */
+/*
+  表单字段的小标签，各页面统一用这一个类，不要各自重复定义。
+  ink 52% 是 11px 小字在 --bg / --surface / --surface-2 上都过 WCAG AA 4.5:1 的最低整数值
+  （对比度 5.00 / 4.84 / 4.59），不要再往下压。
+*/
 .field-label {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--ink) 48%, transparent);
+  color: color-mix(in srgb, var(--ink) 52%, transparent);
 }
 
 button {
   font-family: var(--font-body);
+  /* 按钮默认不继承字号，浏览器会给 13.33px，等于偷偷多出一档 */
+  font-size: inherit;
   cursor: pointer;
 }
 
@@ -163,7 +169,7 @@ select {
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 12px 14px;
-  font-size: 14.5px;
+  font-size: 14px;
   outline: none;
 }
 

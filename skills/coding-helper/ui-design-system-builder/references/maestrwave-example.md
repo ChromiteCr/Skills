@@ -47,7 +47,7 @@
 
 ```css
 color: color-mix(in srgb, var(--ink) 55%, transparent);   /* 次要文字 */
-color: color-mix(in srgb, var(--ink) 48%, transparent);   /* 表单小标签 */
+color: color-mix(in srgb, var(--ink) 52%, transparent);   /* 表单小标签；源码是 48%，11px 时不到 AA 4.5:1 */
 color: color-mix(in srgb, var(--ink) 38%, transparent);   /* placeholder */
 ```
 
@@ -70,7 +70,7 @@ color: color-mix(in srgb, var(--ink) 38%, transparent);   /* placeholder */
 | `body` | 14px / 1.5 | 400 | — | 正文 |
 | `.eyebrow` | 11px | 500 | `0.14em` uppercase | 标题上方的小标，用 `--accent` |
 | `.label` | 12px | 400 | `0.01em` | 说明文字，55% 透明 |
-| `.field-label` | 11px | 500 | `0.09em` uppercase | 表单字段标签，48% 透明 |
+| `.field-label` | 11px | 500 | `0.09em` uppercase | 表单字段标签，52% 透明 |
 | `.mono-chip` | 12px | 500 | `0.04em` | 元信息胶囊，`tabular-nums` |
 
 这套对比固化在 `PageHeader` 组件里（eyebrow + `display-1` + 右侧小号 meta），

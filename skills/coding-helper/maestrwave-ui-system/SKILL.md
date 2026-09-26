@@ -2,7 +2,7 @@
 name: maestrwave-ui-system
 description: 当使用者说"用 MaestrWave 那套 UI"、"新项目的界面照着 MaestrWave 做"、"用我之前那套暗色衬线的风格"、"把这个项目的样式统一成我常用的那套"时使用。直接套用一套现成的深色衬线视觉系统：暖炭黑底 + 浅水蓝主色、Source Serif 4 配 Noto Serif SC、巨大标题配 11px 小标签的尺度对比，附可直接粘贴的 global.css 与组件层 CSS。先铺 token 再拼组件，颜色只从 token 出。不复用 MaestrWave 的 logo 和图标，那是品牌资产。
 category: coding-helper/ui-design
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -46,6 +46,8 @@ suggest_hint: 新项目要起前端？用「套用 MaestrWave 那套界面」把
    就是漏了。文字层级用 `color-mix(in srgb, var(--ink) N%, transparent)`，不新造灰色变量。
 2. **字号只用已有的五档**（`display-1` / `display-2` / body 14px / 12px label / 11px eyebrow）。
    中间加档会把标题与标签的尺度对比磨平，那个对比是这套系统的性格所在。
+   按钮、输入框、侧栏、计时器这些控件里的字也落在这五档上，不另起 13px、13.5px 这类半档；
+   控件之间的主次靠第 3 条的手法，不靠字号。
 3. **层级换手法，不是调强度**。一级导航用描边+微亮底，二级用实心高亮；
    主切换用实色分段控件，次级用无底小按钮。两级同手法会让视线分不出主次。
 
@@ -58,7 +60,7 @@ npm i @fontsource/source-serif-4 @fontsource/noto-serif-sc
 ```
 
 把 `assets/global.css` 复制到 `src/styles/global.css`，在入口 import 一次。
-这一层给你：字体引入、`:root` token、五个排版类（`.display-1` `.display-2`
+这一层给你：字体引入、`:root` token、六个排版类（`.display-1` `.display-2`
 `.eyebrow` `.label` `.mono-chip` `.field-label`）、表单基础样式、统一焦点态、
 `prefers-reduced-motion`、滚动条。
 
@@ -97,7 +99,8 @@ canvas 里怎么用 token / 图标怎么画）读 `references/recipes.md`，不�
 ### 5. 铺完自查
 
 - [ ] 全项目搜 `#` 开头的颜色字面量，只剩装饰层渐变
-- [ ] 没有新增字号档位，标题仍然是 `.display-1`
+- [ ] 没有新增字号档位：搜 `font-size`，取值只有 `.display-1` / `.display-2` 的 clamp 和 14 / 12 / 11px
+      （自带的两份 CSS 就是这样），标题仍然是 `.display-1`
 - [ ] 焦点态没被 `outline: none` 干掉
 - [ ] 数字（时间码、计数、图表刻度）都有 `tabular-nums`
 - [ ] canvas / SVG 里的字体和颜色是从 computed style 读的，不是抄的字面量
@@ -129,10 +132,11 @@ canvas 里怎么用 token / 图标怎么画）读 `references/recipes.md`，不�
 
 - `assets/global.css` 是复制过去的，不需要读进上下文再改；要改就直接编辑目标文件
 - `references/recipes.md` 按需读，落地哪个组件读哪一节
-- 自查用 grep（搜 `#` 颜色字面量、搜 `outline: none`），不要通读所有 CSS
+- 自查用 grep（搜 `#` 颜色字面量、搜 `font-size`、搜 `outline: none`），不要通读所有 CSS
 
 ## 变更记录 / Changelog
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | 自带 CSS 的 7 处档外字号收回五档（14.5/13.5/13/15→14px，11.5/13→12px，10.5→11px），按钮改为继承字号，去掉浏览器默认的 13.33px；`.field-label` 由 ink 48% 提到 52%，在三层底色上对比度 5.00/4.84/4.59，过 AA 4.5:1；「五个排版类」改为六个；字号自查改成 grep 核对 | patch |
 | 0.1.0 | 2026-08-10 | 初始草稿，从 MaestrWave 前端提取 | minor |

@@ -3,6 +3,7 @@
 
     python3 inline_images.py deck.html [out.html]
     python3 inline_images.py --selftest
+    python3 inline_images.py --help
 
 为什么要内联：模板的硬规则是单文件、不引外部资源，离线打开必须一致。
 图片留成相对路径，文件一挪就断。
@@ -15,7 +16,9 @@
 2. **来源行**。满版与半幅图所在的片必须有非空的 `.credit`，且不能还是 `{{...}}` 占位。
    自己拍的也要写「作者自摄」
 3. **元数据**。手机照片的 EXIF 常带 GPS 坐标，原样内联等于把拍摄地点塞进一份要分发的文件。
-   JPEG 与 PNG 一律重新编码，元数据随之丢弃；重新编码前先按 EXIF 方向转正
+   JPEG 与 PNG 一律重新编码，元数据随之丢弃；重新编码前先按 EXIF 方向转正。
+   相机直出、带大预览图或深度图的 .jpg 会被 Pillow 认成 MPO（多帧 JPEG），按 JPEG 处理：
+   只取第一帧，也就是那张普通照片
 4. **体积**。最长边超过 2560px 的按比例缩小，但不会缩到低于第 1 条的要求
 
 只处理 `<img src="相对路径">`。`data:` 开头的不动；`http(s)://` 开头的报错，
@@ -38,7 +41,10 @@ except ImportError:
 
 MAX_EDGE = 2560
 NEED = {"bleed": (1920, 1080), "half": (960, 1080)}
-REENCODE = {"JPEG": ("image/jpeg", "JPEG"), "PNG": ("image/png", "PNG")}
+# MPO 是多帧 JPEG，第一帧就是普通的 JPEG 照片。exif_transpose 会复制出第一帧，
+# 重新编码时元数据照样丢掉
+REENCODE = {"JPEG": ("image/jpeg", "JPEG"), "MPO": ("image/jpeg", "JPEG"),
+            "PNG": ("image/png", "PNG")}
 PASSTHRU = {"GIF": "image/gif", "WEBP": "image/webp"}
 
 SECTION = re.compile(r"<section\b.*?</section>", re.S)
@@ -177,6 +183,12 @@ def selftest() -> int:
         exif[0x8825] = {2: (31.0, 14.0, 0.0)}      # GPSInfo / GPSLatitude
         big.save(d / "big.jpg", exif=exif)
         Image.new("RGB", (1200, 800), (10, 10, 10)).save(d / "small.jpg")
+        # 审计复现：相机直出的多帧 .jpg，Pillow 认成 MPO。第一帧红、第二帧蓝，第一帧带 GPS
+        first = Image.new("RGB", (3000, 1700), (200, 40, 40))
+        first.save(d / "camera.jpg", format="MPO", save_all=True, exif=exif,
+                   append_images=[Image.new("RGB", (3000, 1700), (40, 40, 200))])
+        with Image.open(d / "camera.jpg") as probe:
+            mpo_ready = probe.format == "MPO" and getattr(probe, "n_frames", 1) == 2
 
         def deck(img, credit):
             return (f'<section class="slide"><div class="stage bleed">'
@@ -191,8 +203,10 @@ def selftest() -> int:
             ("注释里的示例 img 不处理", '<section class="slide"><div class="stage bleed">'
              '<div class="photo"><!-- <img src="nope.jpg" alt=""> --></div>'
              '<div class="credit">{{来源}}</div></div></section>', 0),
+            ("MPO（多帧 .jpg）按 JPEG 收下，只留第一帧并清掉 GPS", deck("camera.jpg", "来源：作者自摄"), 0),
         ]
-        ok = True
+        ok = mpo_ready
+        print(f"  {'pass' if mpo_ready else 'FAIL'}  造出来的 camera.jpg 被 Pillow 认成两帧的 MPO")
         for name, body, want in cases:
             src = d / "deck.html"
             src.write_text(body, encoding="utf-8")
@@ -202,29 +216,50 @@ def selftest() -> int:
             lines = []
             code = process(src, out, log=lines.append)
             extra = ""
-            if want == 0 and "big.jpg" in body and code == 0:
-                uri = re.search(r'src="data:image/jpeg;base64,([^"]+)"', out.read_text()).group(1)
-                with Image.open(io.BytesIO(base64.b64decode(uri))) as im:
-                    gps = im.getexif().get(0x8825)
-                    extra = f"，内联后 {im.size[0]}×{im.size[1]}，GPS {'仍在' if gps else '已清除'}"
-                    if gps or max(im.size) > MAX_EDGE:
-                        code = 99
+            if want == 0 and code == 0 and ("big.jpg" in body or "camera.jpg" in body):
+                uri = re.search(r'src="data:image/jpeg;base64,([^"]+)"', out.read_text())
+                if not uri:
+                    code = 98                           # 应该内联成 image/jpeg
+                else:
+                    with Image.open(io.BytesIO(base64.b64decode(uri.group(1)))) as im:
+                        gps = im.getexif().get(0x8825)
+                        frames = getattr(im, "n_frames", 1)
+                        red = im.convert("RGB").getpixel((10, 10))[0] > 150
+                        extra = (f"，内联后 {im.format} {im.size[0]}×{im.size[1]}，{frames} 帧，"
+                                 f"GPS {'仍在' if gps else '已清除'}")
+                        if gps or max(im.size) > MAX_EDGE or im.format != "JPEG" or frames != 1:
+                            code = 99
+                        if "camera.jpg" in body and not red:     # 留下的得是第一帧
+                            code = 97
             passed = code == want
             ok &= passed
             print(f"  {'pass' if passed else 'FAIL'}  {name}（退出 {code}{extra}）")
             if not passed:
                 print("\n".join("        " + l for l in lines))
-        print("自检" + ("通过" if ok else "未通过"))
-        return 0 if ok else 1
+
+    # 审计要求：--help 给用法并退出 0，不能当成文件名
+    import subprocess
+    run = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--help"],
+                         capture_output=True, text=True)
+    helped = run.returncode == 0 and "inline_images.py deck.html" in run.stdout
+    ok &= helped
+    print(f"  {'pass' if helped else 'FAIL'}  --help 打印用法，退出 0")
+    print("自检" + ("通过" if ok else "未通过"))
+    return 0 if ok else 1
 
 
 def main() -> int:
     args = sys.argv[1:]
     if args == ["--selftest"]:
         return selftest()
+    if "-h" in args or "--help" in args:
+        print(__doc__.strip())
+        return 0
     if not args or args[0].startswith("-"):
+        if args:
+            print(f"不认识的选项：{args[0]}")
         print(__doc__.strip().split("\n\n")[0])
-        print("用法：python3 inline_images.py deck.html [out.html]  |  --selftest")
+        print("用法：python3 inline_images.py deck.html [out.html]  |  --selftest  |  --help")
         return 64
     src = Path(args[0])
     if not src.is_file():

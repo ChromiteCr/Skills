@@ -8,8 +8,12 @@
 ```
 keynote-deck-builder/
 ├── SKILL.md                          技能本体
+├── CHANGELOG.md                      逐版变更记录
 ├── references/
-│   └── stage-style-research.md       取证记录，规则的依据，分 A/B/C 三档
+│   ├── stage-style-research.md       取证记录，规则的依据，分 A/B/C 三档
+│   ├── classroom.md                  十二类课堂片型与课堂另加的五条事实校验，课堂与讲堂才读
+│   ├── non-launch-occasions.md       答辩、汇报、路演、立项评审的拍点改法，这几种场合才读
+│   └── slide-copy-grammar.md         片上文字句式的全文与例句，正文只留每次都守的十三条
 ├── templates/
 │   ├── deck-outline.md               阶段一：场合、叙事拍点、逐片清单、出场顺序、讲义
 │   └── deck.html                     阶段二：单文件演示，三十三类片型各一个实例

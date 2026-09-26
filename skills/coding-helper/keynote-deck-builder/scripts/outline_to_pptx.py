@@ -3,6 +3,10 @@
 
     python3 outline_to_pptx.py deck.json [out.pptx]
     python3 outline_to_pptx.py deck.json --static     不写任何动画
+    python3 outline_to_pptx.py --help                 看这份说明与片单格式
+    python3 outline_to_pptx.py --selftest
+
+依赖 python-pptx（`pip3 install python-pptx`）；image / claim 带图时还要 Pillow（`pip3 install pillow`）。
 
 这条路的价值是「能在 Keynote 或 PowerPoint 里继续改」。动画由 `pptx_motion.py` 写入
 （PresentationML 的 <p:timing>），HTML 模板的四件事都做得到：
@@ -80,7 +84,11 @@
     }
 
 出场顺序按片型定（`BUILD` 与 `DIM` 两张表），不用逐片写步数：
-流程条、推演逐步走并调暗；回顾、公式的项、规格密排逐个出；提问片在原地揭晓；误解片在原地改正。
+流程条、推演逐步走并调暗；回顾、公式的项逐个出；提问片在原地揭晓；误解片在原地改正。
+规格密排与双列对比默认一次出齐，要逐个出就写 "build": true。
+
+自检：每个会折行的文本框都按它自己的高度算能放几行，放不下的行、折行后只剩一两个字的孤行
+都会报出来（只报不改，生成的文件照旧）。片单里不认识的字段也会报，格式不对的片直接报错、不写文件。
 """
 
 import io
@@ -225,13 +233,19 @@ class Deck:
 
     def text(self, slide, body, *, top, height, size, color=None,
              bold=False, align=PP_ALIGN.CENTER, left=None, width=None,
-             wrap=True, inset=True):
+             wrap=True, inset=True, what=None, lines=None):
+        """加一个文本框。会折行的框顺带过一遍 _fits：行数上限默认按框高算
+        （1.2 倍行高，四舍五入，至少一行），要更严就传 lines。"""
+        width = width if width is not None else BODY_W
         box = slide.shapes.add_textbox(
             left if left is not None else PAD_X,
             top,
-            width if width is not None else BODY_W,
+            width,
             height,
         )
+        if wrap:
+            cap = lines or max(1, round(height / (Pt(size) * 1.2)))
+            self._fits(body, size, width, what or f"第 {len(self.prs.slides)} 张", cap)
         tf = box.text_frame
         tf.word_wrap = wrap
         tf.vertical_anchor = MSO_ANCHOR.MIDDLE
@@ -269,7 +283,7 @@ class Deck:
     def _fits(self, text, size, width, what, lines=1):
         """按估宽算这段字会折成几行，超过上限就报。手工换行的那几行一起算进来。
         估宽有 ±8% 的偏差，所以判断时按 1.08 倍放宽，宁可漏报也不误报。"""
-        usable = width - Inches(0.2)
+        usable = int(width - Inches(0.2))      # 栏宽按三等分算出来是小数，取整才好数行
         budget = max(1, int(usable / Pt(size)))
         shown = str(text).replace(chr(10), " / ")
         rendered = 0
@@ -622,15 +636,16 @@ class Deck:
         for n, row in enumerate(rows):
             expr, why = (list(row) + [""])[:2] if isinstance(row, (list, tuple)) else (row, "")
             y = Inches(2.2) + Inches(1.15) * n
-            self._fits(expr, 36, expr_w, "推演的式子")
+            # 式子一行：行距 1.15 英寸，折成两行就压到下一行
             group = [self.text(s, expr, top=y, height=Inches(1.0), size=36,
-                               align=PP_ALIGN.LEFT, left=PAD_X, width=expr_w)]
+                               align=PP_ALIGN.LEFT, left=PAD_X, width=expr_w,
+                               what="推演的式子", lines=1)]
             if why:
                 # 右栏 30pt 比 HTML 的 44px 相对更大，所以一行放得少，两行封顶
-                self._fits(why, SIZE["label"], why_w, "推演右栏", lines=2)
                 group.append(self.text(s, why, top=y, height=Inches(1.0),
                                        size=SIZE["label"], color=self.muted,
-                                       align=PP_ALIGN.LEFT, left=why_left, width=why_w))
+                                       align=PP_ALIGN.LEFT, left=why_left, width=why_w,
+                                       what="推演右栏", lines=2))
             if build:
                 self._step(group, n + 1, n + 2 if dim and n + 1 < len(rows) else None)
         if d.get("caption"):
@@ -717,42 +732,63 @@ class Deck:
                           size=SIZE["label"], color=self.muted, align=PP_ALIGN.LEFT)
 
 
-def main() -> int:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    flags = {a for a in sys.argv[1:] if a.startswith("--")}
-    unknown_flags = flags - {"--static"}
-    if unknown_flags:
-        sys.exit(f"不认识的选项: {', '.join(sorted(unknown_flags))}")
-    if not args:
-        sys.exit(__doc__.split("片单格式")[0].strip())
+KINDS = ("title", "phrase", "num", "section", "feature",
+         "specs", "versus", "price", "close", "quote", "steps",
+         "roadmap", "question", "image", "claim", "definition",
+         "derive", "formula", "myth", "recap", "refs")
+# 片单里认的字段。以 _ 开头的是注释（如 "_note"），不查
+TOP_KEYS = {"accent", "theme", "font", "slides"}
+SLIDE_KEYS = {"type", "value", "caption", "items", "notes", "build", "dim", "morph",
+              "unverified", "kicker", "answer", "current", "src", "credit", "focus",
+              "symbol", "caption_at"}
 
-    src = Path(args[0])
-    if not src.is_file():
-        sys.exit(f"找不到文件: {src}")
 
-    spec = json.loads(src.read_text(encoding="utf-8"))
-    slides = spec.get("slides") or []
-    if not slides:
-        sys.exit("片单里没有 slides")
+class SpecError(Exception):
+    """片单格式不对。报出来就停，不写文件。"""
 
-    spec["_base"] = str(src.parent)
-    animate = "--static" not in flags
-    deck = Deck(spec, animate=animate)
-    handlers = {name: getattr(deck, name) for name in
-                ("title", "phrase", "num", "section", "feature",
-                 "specs", "versus", "price", "close", "quote", "steps",
-                 "roadmap", "question", "image", "claim", "definition",
-                 "derive", "formula", "myth", "recap", "refs")}
+
+def unknown_keys(spec):
+    """拼错的字段会被静默忽略（比如 "bulid": true 就不分步），所以逐个报出来。"""
+    notes = []
+    extra = sorted(k for k in spec if k not in TOP_KEYS and not str(k).startswith("_"))
+    if extra:
+        notes.append(f"片单最外层有不认识的字段 {', '.join(extra)}，没用上")
+    for n, d in enumerate(spec["slides"], 1):
+        extra = sorted(k for k in d if k not in SLIDE_KEYS and not str(k).startswith("_"))
+        if extra:
+            notes.append(f"片单第 {n} 张（{d.get('type')}）有不认识的字段 {', '.join(extra)}，没用上")
+    return notes
+
+
+def build(spec, animate=True):
+    """按片单把整份 pptx 建好，不存盘。
+    返回 (deck, 不认识的片型, Morph 处数, 点击次数, 分步的片数)；格式不对抛 SpecError。"""
+    slides = spec.get("slides")
+    if not isinstance(slides, list) or not all(isinstance(d, dict) for d in slides):
+        raise SpecError("slides 要是一个列表，每张片是一个 {...}")
+    if spec.get("theme", "dark") not in THEME:
+        raise SpecError(f"theme 只认 {' 或 '.join(THEME)}，收到 {spec.get('theme')!r}")
+    try:
+        deck = Deck(spec, animate=animate)
+    except ValueError as exc:
+        raise SpecError(f"accent 要写成 #RRGGBB，收到 {spec.get('accent')!r}（{exc}）") from exc
+    deck.warnings.extend(unknown_keys(spec))
+    handlers = {name: getattr(deck, name) for name in KINDS}
 
     unknown, morphs, prev_key, paired = set(), 0, None, {}
-    for d in slides:
+    for n, d in enumerate(slides, 1):
         kind = d.get("type")
-        fn = handlers.get(kind)
+        fn = handlers.get(kind) if isinstance(kind, str) else None
         if fn is None:
-            unknown.add(kind)
+            unknown.add(str(kind))
             continue
         before = len(deck.prs.slides)
-        fn(d)
+        try:
+            fn(d)
+        except (KeyError, ValueError, TypeError, IndexError, AttributeError) as exc:
+            what = f"缺字段 {exc}" if isinstance(exc, KeyError) else f"{type(exc).__name__}: {exc}"
+            raise SpecError(f"片单第 {n} 张（{kind}）格式不对：{what}。"
+                            f"对照 --help 里的片单格式改") from exc
         made = [deck.prs.slides[k] for k in range(before, len(deck.prs.slides))]
         # 一张片单可能生成多张（提问、参考文献续页），备注每张都写
         if d.get("notes"):
@@ -781,6 +817,134 @@ def main() -> int:
 
     clicks = sum(m.write() for m in deck.motions)
     stepped = sum(1 for m in deck.motions if m.cues)
+    return deck, unknown, morphs, clicks, stepped
+
+
+def selftest() -> int:
+    """审计复现的几个输入当回归用例，外加一份正常片单。通过退出 0，否则 1。"""
+    import subprocess
+    import tempfile
+
+    def texts(prs):
+        return {sh.text_frame.text for s in prs.slides for sh in s.shapes if sh.has_text_frame}
+
+    def fit_notes(deck):
+        return [w for w in deck.warnings if "要占" in w or "孤行" in w]
+
+    checks = []
+    with tempfile.TemporaryDirectory() as tmp:
+        def deck_of(*slides, **extra):
+            return build(dict({"slides": list(slides), "_base": tmp}, **extra))
+
+        # 审计复现：36 个字的单句大字要排五行，原来只在推演片上查，这里一声不吭
+        long = "这是一句为了测试而故意写得非常长的单句大字，一共三十六个字，排出来超出画"
+        deck = deck_of({"type": "phrase", "value": long})[0]
+        checks.append((f"{len(long)} 字的单句大字报放不下", any("要占" in w for w in deck.warnings)))
+        deck = deck_of({"type": "phrase", "value": "练了多久，没人说得清"})[0]
+        checks.append(("逗号连着的十个字自己折行，报孤行", any("孤行" in w for w in deck.warnings)))
+        deck = deck_of({"type": "phrase", "value": "练了多久\n没人说得清"})[0]
+        checks.append(("手工断成两行的单句大字不报", not deck.warnings))
+
+        # 规格密排默认一次出齐，写 "build": true 才逐个出（与 SKILL.md 阶段三一致）
+        specs = {"type": "specs", "value": "规格", "items": [["续航", "30 天"], ["重量", "24 克"]]}
+        plain, stepped = deck_of(specs)[3], deck_of(dict(specs, build=True))[3]
+        checks.append(("规格密排默认 0 步，写 build: true 才 2 步", (plain, stepped) == (0, 2)))
+
+        # 降级表补上的五类：时刻、信号汇入、取舍、one more thing、环保，都要真的导出来
+        five = [
+            {"type": "feature", "value": "就地取材", "caption": "整屏只剩一张照片和一个光标"},
+            {"type": "steps", "value": "建议的来处", "build": False,
+             "items": [["照片", ""], ["地点", ""], ["写作建议", "在设备上处理"]]},
+            {"type": "steps", "value": "取舍",
+             "items": [["不做社交", "有人看就会表演"], ["不做排行", "记录不是比赛"]]},
+            {"type": "phrase", "value": "One more thing"},
+            {"type": "feature", "value": "环保", "caption": "外壳用回收铝"},
+        ]
+        deck, unknown, _, clicks, _ = deck_of(*five)
+        out = Path(tmp) / "five.pptx"
+        deck.prs.save(str(out))
+        again = Presentation(str(out))
+        want = {"就地取材", "整屏只剩一张照片和一个光标", "写作建议", "在设备上处理",
+                "不做排行", "记录不是比赛", "One more thing", "外壳用回收铝"}
+        checks.append(("降级表的五类都导出了，字一个不少",
+                       not unknown and len(again.slides) == 5 and want <= texts(again)))
+        checks.append(("信号汇入一次出齐，取舍逐条出（共 2 次点击）", clicks == 2))
+        checks.append(("这五张没有放不下的字", not fit_notes(deck)))
+        checks.append(("不认识的片型报出来，不静默", deck_of({"type": "moment"})[1] == {"moment"}))
+
+        # 正常的课堂片单：概念片的符号 Morph 到公式，提问原地揭晓，推演逐行
+        deck, unknown, morphs, clicks, stepped = deck_of(
+            {"type": "definition", "value": "周期", "symbol": "T",
+             "caption": "来回摆动一次所用的时间", "morph": "T"},
+            {"type": "formula", "value": "T = 2π √(L / g)", "items": ["L 摆长", "g 重力加速度"],
+             "morph": "T"},
+            {"type": "question", "value": "摆长变成 4 倍，周期变成几倍？",
+             "items": ["2 倍", "4 倍", "16 倍"], "answer": 0, "caption": "周期与摆长的平方根成正比"},
+            {"type": "derive", "value": "一米长的摆，周期约两秒",
+             "items": [["T = 2π √(L / g)", "小角度下的周期公式"], ["≈ 2.0 s", "两位有效数字"]]})
+        checks.append(("正常片单：1 处 Morph，3 张分步共 5 次点击",
+                       (morphs, stepped, clicks) == (1, 3, 5) and not unknown))
+        checks.append(("正常片单没有误报放不下或孤行", not fit_notes(deck)))
+
+        # 拼错的字段不静默；格式不对的片报出第几张
+        deck = deck_of({"type": "specs", "value": "规格", "bulid": True,
+                        "items": [["续航", "30 天"]]})[0]
+        checks.append(("拼错的字段 bulid 会报", any("bulid" in w for w in deck.warnings)))
+        try:
+            deck_of({"type": "phrase", "value": "一句"}, {"type": "specs", "items": [["只有一项"]]})
+            checks.append(("格式不对的片报错并指出第 2 张", False))
+        except SpecError as exc:
+            checks.append(("格式不对的片报错并指出第 2 张", "第 2 张" in str(exc)))
+
+        # 审计复现：--help 原来被当成不认识的选项，退出 1
+        run = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--help"],
+                             capture_output=True, text=True)
+        checks.append(("--help 打印用法与片单格式，退出 0",
+                       run.returncode == 0 and "片单格式" in run.stdout))
+
+    ok = True
+    for name, passed in checks:
+        ok &= passed
+        print(f"  {'pass' if passed else 'FAIL'}  {name}")
+    print("自检" + ("通过" if ok else "未通过"))
+    return 0 if ok else 1
+
+
+def main(argv=None) -> int:
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if "-h" in argv or "--help" in argv:
+        print(__doc__.strip())
+        return 0
+    if "--selftest" in argv:
+        return selftest()
+    args = [a for a in argv if not a.startswith("--")]
+    flags = {a for a in argv if a.startswith("--")}
+    unknown_flags = flags - {"--static"}
+    if unknown_flags:
+        sys.exit(f"不认识的选项: {', '.join(sorted(unknown_flags))}。用法见 --help")
+    if not args:
+        sys.exit(__doc__.split("片单格式")[0].strip())
+
+    src = Path(args[0])
+    if not src.is_file():
+        sys.exit(f"找不到文件: {src}")
+
+    try:
+        spec = json.loads(src.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        sys.exit(f"{src} 不是合法的 JSON：{exc}")
+    if not isinstance(spec, dict):
+        sys.exit("片单最外层要是一个 {...}，slides 写在里面")
+    slides = spec.get("slides") or []
+    if not slides:
+        sys.exit("片单里没有 slides")
+
+    spec["_base"] = str(src.parent)
+    animate = "--static" not in flags
+    try:
+        deck, unknown, morphs, clicks, stepped = build(spec, animate)
+    except SpecError as exc:
+        sys.exit(f"{exc}。没有写出文件")
     made = len(deck.prs.slides)
 
     out = Path(args[1]) if len(args) > 1 else src.with_suffix(".pptx")
