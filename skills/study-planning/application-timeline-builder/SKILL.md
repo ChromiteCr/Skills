@@ -2,7 +2,7 @@
 name: application-timeline-builder
 description: 当学生说"申请季怎么安排"、"ED 之前要做完哪些事"、"帮我排一下今年的申请节点"时使用。从各校截止日往回推出整个申请季的时间线：推荐信什么时候要请老师、文书初稿什么时候出、标化什么时候送分，全部换算成北京时间直接排出来落进日程，只把"走哪一轮"这类只有本人能定的岔路口做成选择题一次问完。截止日只用核实过的，本地数据没核实的一律让学生去官网确认后再排。
 category: study-planning/admissions
-version: 0.2.1
+version: 0.2.2
 status: draft
 priority: P0
 compatible_agents:
@@ -42,7 +42,7 @@ suggest_hint: 申请季快开始了，用「申请季时间线」把各校截止
 
 **不适用于** / Not for：
 
-- 只想换算一个截止日到北京时间 —— 直接用 `resolve_deadline`，不必起 skill
+- 只想换算一个截止日到北京时间 —— 直接用 `resolve_deadline`（没有这个工具就只跑下文降级一节的换算命令），不必起 skill
 - 压缩活动栏文案 —— 那是 `activity-list-optimizer`
 - 评估现有材料的成色 —— 那是 `admissions-reader`
 
@@ -93,7 +93,7 @@ suggest_hint: 申请季快开始了，用「申请季时间线」把各校截止
    | 主文书定稿 | 提前 3–4 周 | 留出补充文书的时间 |
    | 补充文书初稿 | 提前 2–3 周 | 每校一套，数量比想象中多 |
    | 送分 / 成绩单 | 提前 2–3 周 | 走机构与学校流程，不受你控制 |
-   | 全部材料自查 | 提前 3–5 天 | 用 `check_activity_limits` 与 `count_essay_words` 过一遍字数 |
+   | 全部材料自查 | 提前 3–5 天 | 活动栏字符数、各篇文书字数对照上限再核一遍（活动栏交给 `activity-list-optimizer`） |
 
    **不要问"要不要我排"、"这个节奏可以吗"**——把时间线排出来给他看，他会直接说哪里不合适。
 5. **合并同类**：多所学校共用的节点（主文书定稿、送分）合成一条，按**最早的那个截止日**排。
@@ -129,11 +129,67 @@ suggest_hint: 申请季快开始了，用「申请季时间线」把各校截止
 然后调 `propose_events` 出卡。**待确认的学校不要排节点**——建在假日期上的时间线比没有更危险。
 已核实的那几所照排，不要因为有一所待确认就整份都不给。
 
+## 没有这些工具时（降级） / Without these tools (degraded mode)
+
+上面的流程按 nestudy 的工具写。在 Claude Code 或其他没有这些工具的环境里，流程、输出格式和边界都不变，
+只把工具换成下表的做法，并在回复开头写明「降级：没有 nestudy 工具，截止日由你从官网抄来，时区由本地命令换算」。
+
+| 工具 | 没有时怎么做 |
+|---|---|
+| `get_applications` | 请学生贴出申请清单：学校、轮次，以及官网写的截止日期、时间和时区 |
+| `get_school_requirements` | 没有核实过的本地数据：每所学校都按上文 `verified: false` 那一路走，请学生去该校官网抄下截止日再排，来源一栏写「官网，学生抄录」。学生凭印象报的日期同样算待确认，不排节点 |
+| `resolve_deadline` | 跑下面的命令，所有截止日一次算完；结果标「降级计算」，打印出的警告和「夏令时切换」行照样转述 |
+| `get_test_dates`、`get_profile` | 请学生说出已经定下的考试日期、年级和课程体系；他没说的不排、不假设 |
+| `ask_user` | 在对话里直接问：同样一次问完、每问给选项，然后停下等他回答 |
+| `propose_events`、`propose_application` | 把倒推节点（日期、动作、为了哪个截止日）和已确认的截止日写成一张 Markdown 卡片，请学生自己存进日历；不说"已加入日程" |
+
+每行一个截止日：`日期 时间 时区 标签`。时区写 IANA 名（ET → `America/New_York`，CT → `America/Chicago`，
+MT → `America/Denver`，PT → `America/Los_Angeles`，英国 → `Europe/London`）；官网没写具体时间的按 23:59 算，
+并注明这是默认值。第一个参数是今天（北京时间）的日期，省略就取本机当天。需要 Python 3.9 以上。
+
+```bash
+python3 -c 'import sys
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+bj, utc = ZoneInfo("Asia/Shanghai"), timezone.utc
+today = datetime.fromisoformat(sys.argv[1]).date() if len(sys.argv) > 1 else datetime.now(bj).date()
+gap = lambda x: f"北京 = 当地 {(x.astimezone(bj).utcoffset() - x.utcoffset()) / timedelta(hours=1):+g} 小时"
+for line in sys.stdin.read().splitlines():
+    if not line.strip(): continue
+    d, t, z, *label = line.split()
+    tz = ZoneInfo(z)
+    raw = datetime.fromisoformat(f"{d} {t}").replace(tzinfo=tz)
+    loc = raw.astimezone(utc).astimezone(tz)
+    b = loc.astimezone(bj)
+    n = (b.date() - today).days
+    print(" ".join(label) or d, f"| 当地 {loc:%Y-%m-%d %H:%M %Z} | 北京 {b:%Y-%m-%d %H:%M} | {gap(loc)} |", f"还有 {n} 天" if n >= 0 else f"已过 {-n} 天")
+    if raw.replace(fold=1).utcoffset() != raw.utcoffset(): print("  警告：这个当地时间落在夏令时切换的那一小时里（不存在或出现两次），先向学校确认")
+    u = loc.astimezone(utc).replace(minute=0, second=0, microsecond=0)
+    prev = (u - timedelta(hours=505)).astimezone(tz)
+    for h in range(-504, 505):
+        x = (u + timedelta(hours=h)).astimezone(tz)
+        if x.utcoffset() != prev.utcoffset(): print(f"  夏令时切换：{x:%Y-%m-%d %H:%M} 起 {prev.tzname()}→{x.tzname()}，在截止之" + ("前" if h <= 0 else "后") + f"；切换前 {gap(prev)}，切换后 {gap(x)}")
+        prev = x' 2026-08-04 <<'EOF'
+2026-11-02 23:59 America/New_York Duke ED
+EOF
+```
+
+上例的输出（命令会检查截止时刻前后 21 天内的夏令时切换）：
+
+```text
+Duke ED | 当地 2026-11-02 23:59 EST | 北京 2026-11-03 12:59 | 北京 = 当地 +13 小时 | 还有 91 天
+  夏令时切换：2026-11-01 01:00 起 EDT→EST，在截止之前；切换前 北京 = 当地 +12 小时，切换后 北京 = 当地 +13 小时
+```
+
+连命令也跑不了时，把命令交给学生自己运行；拿到结果之前，截止日表格里的北京时间一栏写「待换算」，
+不填估出来的时间。
+
 ## 边界 / Boundaries
 
 - **不编造截止日**。这是本 skill 最硬的一条。没有核实过的日期，宁可让时间线缺一块。
 - **不按往年推**：申请截止日每年都可能动（撞周末就顺延），去年的日期不是今年的依据。
-- **不自己算时区**：全部走 `resolve_deadline`。夏令时的 `warnings` 一律转述。
+- **不心算时区**：有 `resolve_deadline` 就全部走它；没有时跑下文「没有这些工具时（降级）」里的命令，结果标「降级计算」。
+  夏令时提示（工具的 `warnings`，或命令打印的警告与「夏令时切换」行）一律转述。
 - **不替学生决定申哪些学校、走哪一轮**：ED 是有约束力的承诺，这个决定不属于 AI。
   用 `ask_user` 问，不要按"多数人会选 ED"排。
 - **不承诺"按这个做就来得及"**：时间线是脚手架，实际进度取决于学生。
@@ -150,6 +206,7 @@ suggest_hint: 申请季快开始了，用「申请季时间线」把各校截止
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.2.2 | 2026-09-26 | 声明兼容 claude-code 却没有降级路径：补「没有这些工具时（降级）」，截止日改由学生从官网抄录、时区用 `zoneinfo` 命令换算并标「降级计算」、写入改为 Markdown 卡片；"不自己算时区"改为有工具用工具、无工具跑命令；自查节点去掉学生在日程里用不了的 `check_activity_limits`、`count_essay_words`，改写成动作 | patch |
 | 0.2.1 | 2026-09-11 | 标明倒推提前量是经验默认值，补充核对日期、流程来源与上游变化时发布 PATCH 的维护约定 | patch |
 | 0.2.0 | 2026-08-04 | 转向先产出：已核实的学校直接排完整时间线，不再等所有信息齐；轮次选择改用 `ask_user` 一次问完 | minor |
 | 0.1.0 | 2026-08-04 | 初始草稿 | minor |

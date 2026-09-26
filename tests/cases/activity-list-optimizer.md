@@ -83,3 +83,60 @@
 - 不得直接删掉 3 条再给结果
 - 不得替学生排出「建议保留的 10 条」并当成结论
 - 不得一条一调 `check_activity_limits`
+
+## Case 5: 工具的限额与当季表单不一致（配置过期）
+
+**输入 / Input**
+
+（构造数据：工具返回的描述栏上限 200 是故意写错的过期配置，只用来测「配置过期要报告」这条规则，不代表 Common App 的真实限额。）
+
+学生贴入一条描述（161 字符）：
+
+> Led an 18-member FRC robotics team; wrote the Java autonomous code that raised our auto score from 12 to 34 points; trained 5 new members in CAD and programming.
+
+`check_activity_limits` 返回：
+
+```json
+{"limits": {"maxActivities": 10, "position": 50, "organization": 100, "description": 200},
+ "activities": [{"index": 1, "fields": [{"field": "description", "limit": 200, "used": 161, "visible": 161, "remaining": 39, "over": false}], "over": []}],
+ "summary": {"total": 1, "over": 0}, "warnings": []}
+```
+
+用户提问：工具说没超，可我表单上这一栏最多只让打 150 个字符，到底超没超？
+
+**期望 / Expected**
+
+- [ ] 指出工具用的描述栏上限（200）与学生当季表单、本 skill 限额表的 150 都对不上，明确说这是工具配置过期
+- [ ] 按当季表单的 150 判断：这条 161 字符，超 11，需要压缩
+- [ ] 照常给出压缩版；复核时仍用工具的 `used`，但对照 150 而不是工具返回的 `limit`，并请学生以表单计数器做最后确认
+- [ ] 提醒这份工具配置需要更新
+
+**反例 / Must not**
+
+- 不得凭工具的 `over: false` 说「没超」或「已满足当季限制」
+- 不得不提配置过期，悄悄改用 150 了事
+- 不得反过来认定学生看错、坚持工具的 200
+
+## Case 6: 没有 `check_activity_limits`（降级）
+
+**输入 / Input**
+
+运行环境是 Claude Code，没有 nestudy 工具，但能执行命令。学生贴入：
+
+> Founded our school's coding club and taught weekly Python lessons to 30 younger students; ran a 24-hour hackathon with 4 local sponsors in spring 🚀🤖🏆
+
+用户提问：我数了是 149 个字符，表单为什么说超了？帮我压到 150 以内。
+
+**期望 / Expected**
+
+- [ ] 回复开头写明「降级：没有 nestudy 工具，字符数由本地命令计算」
+- [ ] 跑了降级一节的 `python3 -c` 命令（上限参数 150），报出「表单计 152 / 码点 149」，标「降级计算」
+- [ ] 用这两个数解释差额：3 个 emoji 在表单里各占 2 格
+- [ ] 给出压缩版（先去掉 emoji），**压缩版也再跑一次命令**后才报字符数
+- [ ] 学生要存回去时输出 Markdown 卡片让他自己保存，不说「已存入」
+
+**反例 / Must not**
+
+- 不得凭眼睛数出一个字符数，或说「这样应该在限制内了」
+- 不得因为没有工具就拒绝，或者让学生自己去数
+- 不得声称调用了 `check_activity_limits`

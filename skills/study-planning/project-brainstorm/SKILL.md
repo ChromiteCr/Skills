@@ -2,7 +2,7 @@
 name: project-brainstorm
 description: 当学生说"我想做个项目但不知道做什么"、"这个想法可行吗"、"帮我想想能做点什么"、"我有个点子想聊聊"、"这个课题值不值得做"时使用。项目动手之前的全方位判断：先读他的档案、已有经历和写过的东西，把重复的信息合并掉再数还剩几件事，然后直接给出三个具体到能明天开工的方案，每个都摆明代价、需要什么、可能死在哪。定方案之后落成长期事项加前三个里程碑，并存一份构思稿。不吹可行性，不替他选，不为了申请而编项目。
 category: study-planning/growth
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -40,11 +40,14 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
 
 - 学生想做点什么但方向模糊（"想做个项目""想搞个社团"）
 - 他有一个具体想法，想知道值不值得投入
-- 已有项目做不下去了，要判断是转向还是收尾
-- 要选研究课题、竞赛选题、EE/IA 题目
+- 已有的个人项目或课题做不下去了，要判断是转向还是收尾
+- 要选研究课题、竞赛选题、EE/IA 题目（要评分的选题只给方向和可行性，见「边界」）
 
 **不适用于** / Not for：
 
+- 已经定了要办读书会、分享、讲座、社群活动这类事（不论办没办过），要判断办多小、
+  下一步往哪走、停不停 —— 那是 `program-maturity-navigator`。个人项目、研究课题，
+  或者还要在几个方向里挑，才归本 skill
 - 项目已经定了，要排时间 —— 那是 `deadline-to-study-plan`
 - 整理已经做完的经历 —— 那是 `activity-profile-builder`
 - 问"招生官会怎么看我现有的背景" —— 那是 `admissions-reader`
@@ -75,8 +78,18 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
 | 字面重复 | `dedupe_findings` | 同一个链接的不同写法、复制粘贴过的两条记录、转载 |
 | 说的是同一件事 | **你自己** | 「区域赛拿了第四」与「名次是第四名」——字面几乎不重合，工具合不了 |
 
+`dedupe_findings` 返回的字段：
+
+| 字段 | 是什么 | 怎么用 |
+|---|---|---|
+| `received` | 交进去几条 | 就是要报的"原始 M 条" |
+| `distinct` | 字面去重后剩几条 | **不是最终答案**，语义那一半还没做 |
+| `kept` | 字面去重后留下的条目 | 在它上面自己再并一遍 |
+| `mergedGroups` | 被合掉的每一组：留下哪条（`keep`）、合掉哪些（`merged`）、为什么（`reasons`，如"同一个链接""字面重合 72%"） | 向学生转述合并依据，不只给数字 |
+| `similar` | "差一点就算重复"的成对条目，附重合度（`overlap`） | 只是字面接近，不是语义相关，也没有合并；逐对自己判 |
+| `skipped` | 没有标题也没有正文、或超出 100 条上限而没处理的条数（有这种条目时才出现） | 如实说出来 |
+
 所以拿到 `kept` 之后**再自己过一遍标题和片段**，把讲同一件事的并掉，然后才报数字。
-返回里的 `similar` 只是"差一点就算重复"的字面接近，不是语义相关，也不代表已经合并。
 
 如实说出两个数：「原始 8 条，去掉重复后是 3 件事」。**不要把重复计数当成积累厚度**——
 这是这个流程最容易犯的错，代价是劝退一个其实还很空的方向。
@@ -84,6 +97,8 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
 ### 3. 直接给三个方案
 
 **不要先问"你想做哪个领域"。** 拿着第 1 步读到的东西，直接给三个具体方案。
+EE、IA、竞赛这类要评分的选题是例外：三个方案写成候选方向和可行性判断，
+不替他写出研究问题，见「边界」。
 每个方案必须写满这五项，缺一项就是没想清楚：
 
 ```markdown
@@ -123,7 +138,8 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
   为什么选、当时判断的风险都写进去。**没选的那两个也要留着**——
   半年后项目卡住时，这份记录是最有用的东西。
 
-赶某个比赛或申报截止日的，用 `resolve_deadline` 换算，别口算。
+赶某个比赛或申报截止日的，有 `resolve_deadline` 就用它换算；没有时跑「没有这些工具时（降级）」
+里的 `python3` 命令，结果标"降级计算"。两种情况都不许口算，也不许凭感觉估。
 
 ## 输出格式 / Output
 
@@ -133,7 +149,7 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
 
 ## 相关的积累
 去重后 <N> 件（原始 <M> 条，合并了 <M-N> 条重复）：
-- <一件事> —— 来自 <哪几条记录>
+- <一件事> —— 来自 <哪几条记录>；合并依据：<工具给的 reasons，或你判断是同一件事的理由>
 
 ## 三个方案
 <按上面那个模板，三段>
@@ -142,11 +158,60 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
 <一段。可以有倾向，但要说清楚倾向的依据，并且明确这是他的决定>
 ```
 
+## 没有这些工具时（降级）
+
+上面点名的工具只有 nestudy 运行时有。在 Claude Code 或别的宿主里逐个这样替代，
+并在输出里如实标"降级"：
+
+| 工具 | 没有时怎么做 |
+|---|---|
+| `get_profile` | 在对话里一次问齐年级、课程体系、目标方向；使用者贴了档案就直接读 |
+| `get_events` | 请使用者列出正在做和做过的长期项目、近期压着的事，不替他补 |
+| `search_artifacts` | 请使用者贴出或指给你相关的反思、复盘、活动记录；能读文件就读他指定的那几份 |
+| `dedupe_findings` | 只合并两种确定的字面重复：链接去掉追踪参数（`utm_` 之类）、`www` 和末尾斜杠后完全相同，或标题完全相同。其余都归到语义那一半，逐对自己判并写出依据；不报目测的重合度。「相关的积累」标"降级：字面去重只核了链接和标题" |
+| `ask_user` | 在对话里直接问，同样一次问完、最多 4 问、每问附选项 |
+| `propose_events` | 输出一张 Markdown 卡片：长期事项（名称、开始日）加前三个里程碑（名称、到期日 YYYY-MM-DD、交付物），标"降级：未写入日程，请自己录入" |
+| `propose_artifact` | 把构思稿整份输出成 Markdown（含没选的两个方案），标"降级：未存档，请自己保存" |
+| `resolve_deadline` | 跑下面的命令，结果标"降级计算"；不许口算，也不许凭感觉估 |
+
+每行一个截止日：`日期 时间 时区 标签`，时区写 IANA 名（美东 `America/New_York`、美西 `America/Los_Angeles`、英国 `Europe/London`）；通知没写具体时间的按 23:59 算并注明。命令按北京时间换算，与 `application-timeline-builder`、`deadline-to-study-plan` 用的是同一段程序，打印出的警告和「夏令时切换」行照样转述。需要 Python 3.9 以上。
+
+```bash
+python3 -c 'import sys
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+bj, utc = ZoneInfo("Asia/Shanghai"), timezone.utc
+today = datetime.fromisoformat(sys.argv[1]).date() if len(sys.argv) > 1 else datetime.now(bj).date()
+gap = lambda x: f"北京 = 当地 {(x.astimezone(bj).utcoffset() - x.utcoffset()) / timedelta(hours=1):+g} 小时"
+for line in sys.stdin.read().splitlines():
+    if not line.strip(): continue
+    d, t, z, *label = line.split()
+    tz = ZoneInfo(z)
+    raw = datetime.fromisoformat(f"{d} {t}").replace(tzinfo=tz)
+    loc = raw.astimezone(utc).astimezone(tz)
+    b = loc.astimezone(bj)
+    n = (b.date() - today).days
+    print(" ".join(label) or d, f"| 当地 {loc:%Y-%m-%d %H:%M %Z} | 北京 {b:%Y-%m-%d %H:%M} | {gap(loc)} |", f"还有 {n} 天" if n >= 0 else f"已过 {-n} 天")
+    if raw.replace(fold=1).utcoffset() != raw.utcoffset(): print("  警告：这个当地时间落在夏令时切换的那一小时里（不存在或出现两次），先向学校确认")
+    u = loc.astimezone(utc).replace(minute=0, second=0, microsecond=0)
+    prev = (u - timedelta(hours=505)).astimezone(tz)
+    for h in range(-504, 505):
+        x = (u + timedelta(hours=h)).astimezone(tz)
+        if x.utcoffset() != prev.utcoffset(): print(f"  夏令时切换：{x:%Y-%m-%d %H:%M} 起 {prev.tzname()}→{x.tzname()}，在截止之" + ("前" if h <= 0 else "后") + f"；切换前 {gap(prev)}，切换后 {gap(x)}")
+        prev = x' <<'EOF'
+2026-11-01 23:59 America/New_York 比赛截止
+EOF
+```
+
+第 2 步的分工不变：语义上算不算一回事，本来就是你的活。
+
 ## 边界 / Boundaries
 
 - **不吹可行性**：三个方案里如果有一个你觉得多半做不成，就写在「可能死在哪」里，
   不要为了凑三个而端上来一个漂亮的空壳。
 - **不替他选**：可以有倾向、要给依据，但选择是他的。他的时间、他的兴趣、他要承担后果。
+- **要评分的选题只给方向和可行性**：EE、IA、竞赛这类选题，三个方案只作候选方向和可行性判断，
+  研究问题由学生自己定，并交导师确认。采用了 AI 建议的，按 IB 或学校的规定注明。
 - **不为了申请而编项目**：不说"这个方向招生官会喜欢"。没人知道，说了就是编。
   一个他自己不在乎的项目做不完，做完了也写不出真东西。
 - **不编数据支撑可行性**：不引用"这类项目通常需要 X 小时"、"同类竞赛录取率"这种
@@ -166,4 +231,5 @@ suggest_hint: 想做个项目但还没定？用「项目头脑风暴」把想法
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | 第 2 步写明 dedupe_findings 返回的各字段（原先只提 kept、similar，用例却要转述 mergedGroups、不把 distinct 当答案）；补要评分选题（EE/IA、竞赛）的诚信边界；新增「没有这些工具时（降级）」，截止日换算改为有工具用工具、没有就跑 zoneinfo 命令并标降级计算；与 program-maturity-navigator 按对象分流 | patch |
 | 0.1.0 | 2026-08-05 | 初始草稿。含 `dedupe_findings` 去重环节；网页检索的部分等 S11 的 `web_search` 落地后接入，去重本身不需要改动 | minor |
