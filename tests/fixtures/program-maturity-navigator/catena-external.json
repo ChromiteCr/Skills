@@ -1,0 +1,15 @@
+{
+  "series_question": "城市里的边角空间是谁在用、怎么用？",
+  "external_inputs": ["原书第三章"],
+  "sessions": [
+    {"id": "s1", "question": "我们各自在哪儿见过边角空间被用起来？", "format": "reading-group",
+     "participant_action": "读原书第三章，带一张自己拍的边角空间照片",
+     "consumes": ["原书第三章"], "produces": ["边角空间照片墙"]},
+    {"id": "s2", "question": "照片里的使用者可以分成哪几类？", "format": "seminar",
+     "participant_action": "给照片墙上的每张照片标使用者类型",
+     "consumes": ["边角空间照片墙"], "produces": ["使用者分类表"]},
+    {"id": "s3", "question": "作者说街道是公共客厅，成立吗？", "format": "seminar",
+     "participant_action": "各写一段赞成或反对",
+     "consumes": ["原书第三章"], "produces": ["正反意见摘录"]}
+  ]
+}

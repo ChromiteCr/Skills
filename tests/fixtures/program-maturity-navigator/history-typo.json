@@ -1,0 +1,8 @@
+{
+  "claimed": "workshop",
+  "history": [
+    {"date": "2026-03-14", "attendance": 6, "artifacts": ["街区草图 6 张"], "hands-on": true},
+    {"date": "2026-04-11", "attendance": 5, "artifacts": ["路线标注图"]},
+    {"date": "2026-05-09", "attendance": 7, "artifacts": ["观察记录表"]}
+  ]
+}

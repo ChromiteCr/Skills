@@ -1,0 +1,9 @@
+{
+  "claimed": "catena",
+  "history": [
+    {"date": "2026-03-14", "attendance": 6, "artifacts": ["共同疑问三条"]},
+    {"date": "2026-04-11", "attendance": 0, "artifacts": ["分歧清单"], "notes": "下雨，没人来"},
+    {"date": "2026-05-09", "attendance": 7, "artifacts": ["读法对照表"]},
+    {"date": "2099-10-17", "attendance": 8, "artifacts": ["预计产出：年度书单"], "notes": "下一场，已排期"}
+  ]
+}
