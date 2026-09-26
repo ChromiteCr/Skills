@@ -18,11 +18,13 @@
 
 ## 第一部分：现有 skill 的问题
 
+> **2026-09-26 更新：本部分各项已修完，随库版本 0.22.4 发布**（细节见 `CHANGELOG.md` 与各 skill 的变更记录）。I 节否决的各项没有照做；改判的按改判后的修法做。
+
 严重度：**高** = 装不上、给错结论、脚本坏了、误导使用者；**中** = 会咬人的不一致；**低** = 顺手清理。
 
 ### A. 先修这几条（高）
 
-#### A1. [ ] 按 README 装上插件，一个 skill 都加载不到 — **【实测】**
+#### A1. [x] 按 README 装上插件，一个 skill 都加载不到 — **【实测】**
 
 `skills/` 下只有分类目录，技能在 `skills/<分类>/<技能>/SKILL.md` 这一层。Claude Code 扫 `skills/` 时只看它的直接子目录，不往下递归（本机 2.1.177 的加载器如此，官方 plugins-reference 给的目录结构也只有一层）。`scripts/sync-skill-links.sh` 本来要在顶层建 61 个符号链接补这一层，但它从没运行过：仓库里没有一个链接，脚本也没有可执行位；脚本头说"校验脚本用 --check"，`validate.sh` 其实没调用它。本机 `installed_plugins.json` 里也没有 skills-library，所以一直没人从安装路径发现这件事。
 
@@ -38,7 +40,7 @@
 - 修法：`plugin.json` 列出十个分类目录；`validate.sh` 加一条"每个含 `*/SKILL.md` 的分类目录都必须在列表里"，否则将来新开的分类会静默不加载；删掉 `sync-skill-links.sh`，或者把它改写成这条检查。提交 61 个符号链接也能用（核查者在副本上试过，`validate.sh` 不受影响），但 Windows 的 `core.symlinks=false` 和 zip 打包都会碰到链接问题，清单方案更稳。
 - 版本：Library PATCH。
 
-#### A2. [ ] 物理入口把已建成的下游标成"计划中"，还叮嘱 Agent 别调用
+#### A2. [x] 物理入口把已建成的下游标成"计划中"，还叮嘱 Agent 别调用
 
 `physics-problem-router/SKILL.md:96–101` 的分流表里，按名字标"计划中"的有 5 个（concept-to-formula-deriver、fermi-estimation-coach、dimensional-analysis-checker、limiting-case-validator、derivation-step-checker），:101 还有一行"组四各 skill｜计划中"笼统盖住另外 4 个，合计 9 个已建成的 skill 被标成计划中，并给出"暂时手工做"的替代路径。`symbolic-first-discipline-coach`、`answer-plausibility-checker` 两个完全没有行。同样过时的说法还在 `physics-mechanism-decomposer:41/42/204`、`dimensional-analysis-checker:199–202`。
 
@@ -46,7 +48,7 @@
 
 版本：router、decomposer、dimensional 各 skill PATCH。
 
-#### A3. [ ] 确定性脚本静默给出错误结论
+#### A3. [x] 确定性脚本静默给出错误结论
 
 这个库的承诺是"脚本兜底事实"。下面这些脚本在常见输入上给出**错的**结论而不报错，比不做检查更糟。
 
@@ -73,7 +75,7 @@
 
 **修法的共同点**：每个脚本补一个 `--selftest`，把上面这些输入作为回归用例；遇到不认识的键或自由符号时报错，不要静默。
 
-#### A4. [ ] 摄影脚本：读不到参数、照片横躺、字小到看不清、会覆盖原片
+#### A4. [x] 摄影脚本：读不到参数、照片横躺、字小到看不清、会覆盖原片
 
 | 脚本 | 问题 | 严重度 |
 |---|---|---|
@@ -91,7 +93,7 @@
 
 HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先 `sips -s format jpeg`（macOS，保留 EXIF）"。
 
-#### A5. [ ] ai-usage：description 承诺的东西没交付
+#### A5. [x] ai-usage：description 承诺的东西没交付
 
 - **`ai-code-onboarding-checklist`**（高）：description 承诺查"危险调用"，正文和输出表里都没有这一项。补一节（eval/exec、`shell=True`、递归删除、反序列化、提权、外发网络），或者从 description 删掉。
 - **`ai-diff-review-protocol`**（中）：description 和用例说 diff 统计"由脚本出"、"超阈值强制人工逐段过"，目录里没有脚本，正文 :176 还写阈值不是铁律。第一轮规划过这个脚本，也勾了完成。补 `scripts/diff_risk.py`（纯标准库，能直接解析粘贴进来的 diff 文本，因为 :264 写了不假定有 Git），并在输出契约里加"Diff stats"一段。另外，只有口头描述、没有 diff 时，正文让照常出结论，用例禁止出结论：应分两种情况，有前后片段就照常走并降置信度，只有口头描述就不给 verdict，只列补材料清单。
@@ -100,7 +102,7 @@ HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先
 
 ### B. 正文与脚本互相矛盾（中）
 
-#### B1. [ ] keynote-deck-builder 的残留
+#### B1. [x] keynote-deck-builder 的残留
 
 多数条目早于 0.7.0：:163、:326 来自 08-16，:894 来自 08-17，`read_pptx.py` 自 08-17 起没改过；Case 13、:556 等少数几条是 0.6.0 与 0.7.0 引入的。
 
@@ -113,13 +115,13 @@ HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先
 - `outline_to_pptx.py` 的"放不下、孤行"自检只在 derive 片型上跑，长 phrase 超出画布不报（变更记录却说是全局的）。
 - 正文残留旧数字和旧指代：:163"从下面十四类里选"应为三十三类；:173"最后三类"应写明是通用里的最后三类（时刻、信号汇入、取舍）；:326 应为 15 字；:894"至今十三年"会过期；`read_pptx.py` docstring 阈值过时；SKILL.md 没写 python-pptx、Pillow 依赖。
 
-#### B2. [ ] 其他 coding-helper
+#### B2. [x] 其他 coding-helper
 
 - `radio-quote-card`（中）：字号按字符数定档，中文语录实测溢出 800×1000 卡片并被裁掉。中文另立档位（按实渲染，约 66px/40 字、56px/55 字、46px/85 字封顶），加一个中文用例。
 - `maestrwave-ui-system`（中）：规定"字号只用五档"，自带的 CSS 用了 7 处档外字号；:61 的"五个"应为"六个"。另外 `.field-label`（11px，ink 48%）在 `--bg`、`--surface`、`--surface-2` 上的对比度是 4.43、4.33、4.13，都低于 AA 的 4.5（点子轮的提出者与评审各自算过一遍）。
 - `launch-summary-panel`（低）：正文要求圆角 16–24px，模板小卡用 14px；与 keynote 的分流只写了一边。
 
-#### B3. [ ] 其他 skill 的正文与用例冲突
+#### B3. [x] 其他 skill 的正文与用例冲突
 
 - `lyric-doctor`（中）：SKILL.md:70 和用例 :25 拿来示范"脚本查不出"的空话，实际都会被脚本命中，用例的 :23 与 :25 还互相矛盾；`CLICHE_PHRASE` 漏了 craft-reference:53 的"这就是最好的"。三位点子评审都要求这一条立刻单独发 PATCH。
 - `ai-output-fact-checker`（中）：状态规定只能用五个固定值，自己的示例和用例各用了一个不在集合里的词。
@@ -140,57 +142,57 @@ HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先
 
 ### C. 内容错误（物理、写作、核验规则）
 
-- [ ] `problem-representation-scout/SKILL.md:60`（中）：把"滑动→纯滚动"的阶段边界判据写成"|f| 达到 μ_s N"，错了。应拆成两行：静→滑是维持无滑所需的静摩擦达到 μ_s N；滑→滚是接触点相对滑动速度趋于 0，之后再验 |f_req| ≤ μ_s N。
-- [ ] `physics/_shared/law-applicability-table.md:56`（中）：把积分形式的法拉第通量法则 ε = −dΦ/dt 标为"恒成立"。法拉第圆盘（单极发电机）正是已知例外；微分形式恒成立，积分形式要求回路随导体一起运动。
-- [ ] `physics/_shared/dimensionless-groups.md:15`（中）：π 定理的"秩"示例错了。某个量纲只出现在一个量里并不降秩；几个基本量纲只以固定组合出现时才降秩。`dimensional-analysis-checker:208` 说这里列了"两种数错方式"，文档里只有一种。
-- [ ] 准静态与绝热（低 + 中）：两份共享参考把两者说成"矛盾"，实际靠时间尺度窗口 τ_mech ≪ τ_process ≪ τ_heat 可以同时成立（例子用活塞压缩，别用声波）。`tests/cases/derivation-step-checker.md` Case 1 据此把两者判成冲突，是错误物理（中）。
-- [ ] `physics-mechanism-decomposer:157`（低）：给出不带温度和来源的物性数值，违反它自己的边界条款。
-- [ ] `songwriting/_shared/craft-reference.md`（中）：开口辙的范围 :35 与 :70 不一致，:75 的长音规则又和表格矛盾，副歌开口辙这道关的结论随引用哪一行而翻转。
-- [ ] `lyric-structure-mapper:127`（中）："每分钟 180 到 240 字"与自己的模板、自己举的例子对不上，时长估算约偏短一半。改成按 BPM 推算。
-- [ ] `ai-output-fact-checker:180`（中）：DOI 规则只要求作者、年份、标题三项对上两项，DOI 指向同一作者同年的另一篇也能过。标题必须一致，再加作者或年份一项。
-- [ ] `ai-output-fact-checker:172`（中）："包名存在"就算核实通过，没提 AI 幻觉出的包名可能已被人抢注。补"存在不等于可信"：看首发时间、源码仓库、维护者、下载量；加一个抢注反例用例。
-- [ ] `model-fit-auditor` description（低）："残差有结构＝漏了物理"与正文（第 4 步已列出漂移、校准）不一致。改成"模型、测量过程或不确定度模型三者之一不完整"，并点名 `dataset-systematic-error-hunter`；`suggest_hint`（:19）和 `SKILL_INDEX.md:72` 同步改。
+- [x] `problem-representation-scout/SKILL.md:60`（中）：把"滑动→纯滚动"的阶段边界判据写成"|f| 达到 μ_s N"，错了。应拆成两行：静→滑是维持无滑所需的静摩擦达到 μ_s N；滑→滚是接触点相对滑动速度趋于 0，之后再验 |f_req| ≤ μ_s N。
+- [x] `physics/_shared/law-applicability-table.md:56`（中）：把积分形式的法拉第通量法则 ε = −dΦ/dt 标为"恒成立"。法拉第圆盘（单极发电机）正是已知例外；微分形式恒成立，积分形式要求回路随导体一起运动。
+- [x] `physics/_shared/dimensionless-groups.md:15`（中）：π 定理的"秩"示例错了。某个量纲只出现在一个量里并不降秩；几个基本量纲只以固定组合出现时才降秩。`dimensional-analysis-checker:208` 说这里列了"两种数错方式"，文档里只有一种。
+- [x] 准静态与绝热（低 + 中）：两份共享参考把两者说成"矛盾"，实际靠时间尺度窗口 τ_mech ≪ τ_process ≪ τ_heat 可以同时成立（例子用活塞压缩，别用声波）。`tests/cases/derivation-step-checker.md` Case 1 据此把两者判成冲突，是错误物理（中）。
+- [x] `physics-mechanism-decomposer:157`（低）：给出不带温度和来源的物性数值，违反它自己的边界条款。
+- [x] `songwriting/_shared/craft-reference.md`（中）：开口辙的范围 :35 与 :70 不一致，:75 的长音规则又和表格矛盾，副歌开口辙这道关的结论随引用哪一行而翻转。
+- [x] `lyric-structure-mapper:127`（中）："每分钟 180 到 240 字"与自己的模板、自己举的例子对不上，时长估算约偏短一半。改成按 BPM 推算。
+- [x] `ai-output-fact-checker:180`（中）：DOI 规则只要求作者、年份、标题三项对上两项，DOI 指向同一作者同年的另一篇也能过。标题必须一致，再加作者或年份一项。
+- [x] `ai-output-fact-checker:172`（中）："包名存在"就算核实通过，没提 AI 幻觉出的包名可能已被人抢注。补"存在不等于可信"：看首发时间、源码仓库、维护者、下载量；加一个抢注反例用例。
+- [x] `model-fit-auditor` description（低）："残差有结构＝漏了物理"与正文（第 4 步已列出漂移、校准）不一致。改成"模型、测量过程或不确定度模型三者之一不完整"，并点名 `dataset-systematic-error-hunter`；`suggest_hint`（:19）和 `SKILL_INDEX.md:72` 同步改。
 
 ### D. 学术诚信边界
 
-- [ ] `modeling-code-builder`（中）：:185 在"无执行能力"时给完整实现候选，不看任务是否受评，与 :167–169（不能写文件时已区分受评与非受评）和边界 :201–202 冲突；共享契约 `modeling/_shared/modeling-work-contract.md:108` 在"不能写"时也无条件返回完整候选。两处都补上受评条件：受评任务只给实现合同、伪代码、测试与局部补丁。Case 6 输入写明"非考核的个人项目"，另加一条"只能聊天、规则未说明"的用例。
-- [ ] `symbolic-first-discipline-coach`（中）：闸门只在使用者"明确要求代写"时触发，输出契约默认交一份完整符号推导；作业进行中只说"我卡住了"的学生会拿到完整解。Inputs 加"场景"，会被评分的作业进行中只给结构性问题；示例里"only then substitute numbers"改成由使用者代入。
-- [ ] `project-brainstorm`（中）：把 EE/IA 选题列为适用场景，却没有受评选题的诚信边界。补一句：受评选题只给方向和可行性，研究问题由学生定并交导师确认。
-- [ ] `fermi-estimation-coach`（中）：教练型 skill，没有代做边界，也没有代做请求的用例。其余七个物理 skill 各自写了边界，只差一条指向 `_shared/physics-evidence-contract.md` §4 的引用（低）。
-- [ ] `admissions-reader:42`、`reflection-interviewer:124`（低）：把"帮忙写文书"转给一个不存在的"文书类 skill""另一个 skill"。改成"文书本库不代写，只帮学生改自己写的稿"。
-- [ ] `dimensional-analysis-checker`（低）：:182 的诚信条款带条件，References 也没引用证据契约 §4；用例没有覆盖 `dimcheck.py` 路径，也没覆盖无执行能力时的降级。
+- [x] `modeling-code-builder`（中）：:185 在"无执行能力"时给完整实现候选，不看任务是否受评，与 :167–169（不能写文件时已区分受评与非受评）和边界 :201–202 冲突；共享契约 `modeling/_shared/modeling-work-contract.md:108` 在"不能写"时也无条件返回完整候选。两处都补上受评条件：受评任务只给实现合同、伪代码、测试与局部补丁。Case 6 输入写明"非考核的个人项目"，另加一条"只能聊天、规则未说明"的用例。
+- [x] `symbolic-first-discipline-coach`（中）：闸门只在使用者"明确要求代写"时触发，输出契约默认交一份完整符号推导；作业进行中只说"我卡住了"的学生会拿到完整解。Inputs 加"场景"，会被评分的作业进行中只给结构性问题；示例里"only then substitute numbers"改成由使用者代入。
+- [x] `project-brainstorm`（中）：把 EE/IA 选题列为适用场景，却没有受评选题的诚信边界。补一句：受评选题只给方向和可行性，研究问题由学生定并交导师确认。
+- [x] `fermi-estimation-coach`（中）：教练型 skill，没有代做边界，也没有代做请求的用例。其余七个物理 skill 各自写了边界，只差一条指向 `_shared/physics-evidence-contract.md` §4 的引用（低）。
+- [x] `admissions-reader:42`、`reflection-interviewer:124`（低）：把"帮忙写文书"转给一个不存在的"文书类 skill""另一个 skill"。改成"文书本库不代写，只帮学生改自己写的稿"。
+- [x] `dimensional-analysis-checker`（低）：:182 的诚信条款带条件，References 也没引用证据契约 §4；用例没有覆盖 `dimcheck.py` 路径，也没覆盖无执行能力时的降级。
 
 ### E. 兼容声明与运行时能力不符（中）
 
-- [ ] study-planning 八个 skill 加 `skill-creator`：正文必经步骤依赖 nestudy 专有工具（`check_activity_limits`、`resolve_deadline`、`propose_*`、`ask_user`），却声明兼容 claude-code 和 generic-llm-agent，也没有降级路径。其中四处明令不许手算：`activity-list-optimizer:74`、`application-timeline-builder:136`、`project-brainstorm:126`、`deadline-to-study-plan:80`。在 Claude Code 里这些工具不存在，两条规定直接矛盾。
-- [ ] `adversarial-lyric-writer`、`lyric-concept-builder`：核心流程依赖 Claude Code 的子代理，却声明 generic-llm-agent 兼容。
-- [ ] `application-timeline-builder:96`（低）：引用了库里找不到的工具 `count_essay_words`、`check_activity_limits`。
+- [x] study-planning 八个 skill 加 `skill-creator`：正文必经步骤依赖 nestudy 专有工具（`check_activity_limits`、`resolve_deadline`、`propose_*`、`ask_user`），却声明兼容 claude-code 和 generic-llm-agent，也没有降级路径。其中四处明令不许手算：`activity-list-optimizer:74`、`application-timeline-builder:136`、`project-brainstorm:126`、`deadline-to-study-plan:80`。在 Claude Code 里这些工具不存在，两条规定直接矛盾。
+- [x] `adversarial-lyric-writer`、`lyric-concept-builder`：核心流程依赖 Claude Code 的子代理，却声明 generic-llm-agent 兼容。
+- [x] `application-timeline-builder:96`（低）：引用了库里找不到的工具 `count_essay_words`、`check_activity_limits`。
 
 **建议定一条仓库规则**写进 CONTRIBUTING §3.1：正文点名的工具只有某个运行时才有时，要么不声明其他运行时，要么写一段"没有该能力时"的降级（字符数用 `python3 -c` 按 UTF-16 计、时区用 `zoneinfo`、`propose_*` 改成输出 Markdown 卡片、子代理改成三次互不共享上下文的独立调用，并如实标注"降级"）。现在 CONTRIBUTING.md:41 说"同一份 SKILL.md 在两边都能用"，:46 又把 `capabilities` 定义为运行本 skill"必需"的能力，两句放在一起，没有说必需能力缺席时怎么办。规则补在 :46 附近。
 
 ### F. 分流与触发语
 
-- [ ] **`photo-spread-composer` ↔ `photo-series-layout`**（中）：抢同一句请求，互不点名；spread-composer:48 还把单张照片指给不收照片的 `radio-quote-card`。两边各补判别句：自己拍的 3–9 张、要一张长图或 PDF、保留顺序 → series；刊物或展板版面、分带定主次、每张带署名 → spread。单张照片改指 `photo-caption-writer` / `photo-exif-frame`。spread-composer 仍挂在 `coding-helper/ui-design`；挪到 photography 按 VERSIONING 属于目录结构变更（Library MAJOR，0.x 可在 MINOR 位做但要写明），不是修复必需。
-- [ ] **摄影五个 skill 的 description 全是英文**（中）：全库仅有的纯英文 description，与仓库惯例和它们自己的中文用例不符。每个前面加 2–4 条中文原话触发语（"给照片加参数边框""把这几张拼成一页""给这张照片写图注""做一张这次外拍的回顾卡""把照片做成极简海报"），英文可以保留。
-- [ ] **`ai-answer-triage` ↔ `ai-output-fact-checker` ↔ `ai-code-onboarding-checklist`**（中）：触发语几乎一样，互不点名。triage 只排序和处置，逐条核实走 fact-checker，整段代码走 onboarding；triage:49–51 的三条泛称改成实名。`ai-diff-review-protocol` ↔ `ai-generated-test-auditor` 同样互不点名（低）。
-- [ ] **modeling ↔ physics 零交叉引用**（中）：modeling 九个 skill 从不提 physics。reading-coach 加"物理题 / IYPT / 实验现象 → `physics-problem-router`"，description 的"竞赛题"改成"数学建模竞赛题"；problem-formalization-coach 加对称的一句；assumption-builder、critique-coach 加"只查单条方程的量纲或极限 → `dimensional-analysis-checker` / `limiting-case-validator`"，并在量纲段引用 `../../physics/_shared/scripts/dimcheck.py`（这也是第一轮 A4 唯一值得做的一步）；model-fit-auditor 与 model-critique-coach 互相写判别句。
-- [ ] **`project-brainstorm` ↔ `program-maturity-navigator`**（中）：navigator 建好后 brainstorm 没补回指句。按对象分流：已定了要办读书会、分享、讲座、社群活动（不论办没办过）→ navigator；个人项目、研究课题、还要在几个方向里挑 → brainstorm。
-- [ ] **`concept-to-formula-deriver`**（中）：description 把最常见的说法"帮我推导 X"排除在外，它自己的用例恰恰要求处理这类请求。
-- [ ] **`prompt-brief-builder`**（低）：保留"帮我写个东西"（改判理由见 I 节），只在"不适用于"补实名分流：写歌 → `lyric-concept-builder`，复习计划 → `deadline-to-study-plan`，建模题 → `modeling-problem-reading-coach`，物理题 → `physics-problem-router`。
-- [ ] 物理几处（低）：`concept-to-formula-deriver` 与 `symbolic-first-discipline-coach` 不引用任何 `_shared` 文件；`symbolic-first-discipline-coach:64–66` 有三处泛称路由；deriver 与 `derivation-step-checker` 功能相邻却互不点名；`problem-formalization-coach:43` 说"可以讲某条公式从哪条守恒律来"，却不点名 deriver。
-- [ ] 零碎（低）：`modeling-assumption-builder` 的触发语"怎么做假设检验"在中文里指统计检验；`adversarial-lyric-writer` 的"我们在写一首关于 X 的歌"和 `lyric-concept-builder` 几乎一字不差；`reflection-interviewer` ↔ `activity-profile-builder` 的"何时使用"两边几乎同句，未建档的分支没有用例；`limiting-case-validator` 不提两个检错兄弟；8 个 skill 另有 14 处泛称路由（"用别的 skill""走建模类"）换成实名。
+- [x] **`photo-spread-composer` ↔ `photo-series-layout`**（中）：抢同一句请求，互不点名；spread-composer:48 还把单张照片指给不收照片的 `radio-quote-card`。两边各补判别句：自己拍的 3–9 张、要一张长图或 PDF、保留顺序 → series；刊物或展板版面、分带定主次、每张带署名 → spread。单张照片改指 `photo-caption-writer` / `photo-exif-frame`。spread-composer 仍挂在 `coding-helper/ui-design`；挪到 photography 按 VERSIONING 属于目录结构变更（Library MAJOR，0.x 可在 MINOR 位做但要写明），不是修复必需。
+- [x] **摄影五个 skill 的 description 全是英文**（中）：全库仅有的纯英文 description，与仓库惯例和它们自己的中文用例不符。每个前面加 2–4 条中文原话触发语（"给照片加参数边框""把这几张拼成一页""给这张照片写图注""做一张这次外拍的回顾卡""把照片做成极简海报"），英文可以保留。
+- [x] **`ai-answer-triage` ↔ `ai-output-fact-checker` ↔ `ai-code-onboarding-checklist`**（中）：触发语几乎一样，互不点名。triage 只排序和处置，逐条核实走 fact-checker，整段代码走 onboarding；triage:49–51 的三条泛称改成实名。`ai-diff-review-protocol` ↔ `ai-generated-test-auditor` 同样互不点名（低）。
+- [x] **modeling ↔ physics 零交叉引用**（中）：modeling 九个 skill 从不提 physics。reading-coach 加"物理题 / IYPT / 实验现象 → `physics-problem-router`"，description 的"竞赛题"改成"数学建模竞赛题"；problem-formalization-coach 加对称的一句；assumption-builder、critique-coach 加"只查单条方程的量纲或极限 → `dimensional-analysis-checker` / `limiting-case-validator`"，并在量纲段引用 `../../physics/_shared/scripts/dimcheck.py`（这也是第一轮 A4 唯一值得做的一步）；model-fit-auditor 与 model-critique-coach 互相写判别句。
+- [x] **`project-brainstorm` ↔ `program-maturity-navigator`**（中）：navigator 建好后 brainstorm 没补回指句。按对象分流：已定了要办读书会、分享、讲座、社群活动（不论办没办过）→ navigator；个人项目、研究课题、还要在几个方向里挑 → brainstorm。
+- [x] **`concept-to-formula-deriver`**（中）：description 把最常见的说法"帮我推导 X"排除在外，它自己的用例恰恰要求处理这类请求。
+- [x] **`prompt-brief-builder`**（低）：保留"帮我写个东西"（改判理由见 I 节），只在"不适用于"补实名分流：写歌 → `lyric-concept-builder`，复习计划 → `deadline-to-study-plan`，建模题 → `modeling-problem-reading-coach`，物理题 → `physics-problem-router`。
+- [x] 物理几处（低）：`concept-to-formula-deriver` 与 `symbolic-first-discipline-coach` 不引用任何 `_shared` 文件；`symbolic-first-discipline-coach:64–66` 有三处泛称路由；deriver 与 `derivation-step-checker` 功能相邻却互不点名；`problem-formalization-coach:43` 说"可以讲某条公式从哪条守恒律来"，却不点名 deriver。
+- [x] 零碎（低）：`modeling-assumption-builder` 的触发语"怎么做假设检验"在中文里指统计检验；`adversarial-lyric-writer` 的"我们在写一首关于 X 的歌"和 `lyric-concept-builder` 几乎一字不差；`reflection-interviewer` ↔ `activity-profile-builder` 的"何时使用"两边几乎同句，未建档的分支没有用例；`limiting-case-validator` 不提两个检错兄弟；8 个 skill 另有 14 处泛称路由（"用别的 skill""走建模类"）换成实名。
 
 ### G. 记账与校验
 
-- [ ] **`SKILL_INDEX.md` 8 行漂移**（中）：6 个版本落后（三个 modeling 0.1.1、`activity-list-optimizer`、`application-timeline-builder`、`writing-rules` 0.2.1），2 个优先级不一致（`dataset-systematic-error-hunter`、`numerical-stability-auditor` 在 frontmatter 是 P1，索引是 P2）。`validate.sh` 已经解析索引行，顺手比对三列即可。
-- [ ] **授权矛盾**（中）：`photo-exif-frame`、`shoot-outing-review-card` 的 frontmatter 写 `license: MIT`，插件清单是 `UNLICENSED`，仓库根没有 LICENSE。0.20.0 清理过同样的问题。删掉这两行，或者库级统一定一个许可证。
-- [ ] **README**：10 个 physics skill 列在"Applications and growth records"标题下（:103–112，低）；:41 说 token 成本那一半"lives in coding-helper"，coding-helper 相关的 8 行全是 planned，也没列进"Not written yet"（中）。
-- [ ] **`SKILL_INDEX.md`**（低）：physics 的脚本说明段落错放在 study-planning 小节里（:95–98），"八个确定性脚本"应为九个；physics 小节的描述还停在组〇和组一。
-- [ ] **三个摄影 skill 在自己目录里另存了一份测试**（中）：`skills/photography/*/tests/cases.md` 与 `tests/cases/<name>.md` 内容不同，登记的那份只有 2 个用例。合并后删除副本；注意 `photo-exif-frame/SKILL.md:104` 引用了副本，要一起改。
-- [ ] **单技能 zip 缺共享文件**（中，【实测】）：20 份 SKILL.md 引用 `../_shared/…`：physics 的四份共享参考与 `dimcheck.py`，modeling 的五份共享文档（work-contract、validation-playbook、paper-argument-checklist、team-workflow、code-reproducibility-checklist），songwriting 的 craft-reference。`dist/` 里的单技能 zip 只打了 skill 自己的目录，例如 `dimensional-analysis-checker.zip` 里只有一份 SKILL.md。各 skill 自带的脚本还在（`lyric-doctor.zip` 里有 `lyric_check.py`），丢的只是 `_shared` 文件，但依赖它们的步骤都会断。`dist/keynote-deck-builder.zip` 还是 0.6.0（打包于 9/17，源码 9/18 升到 0.7.0）。仓库里没有打包脚本，zip 是手工做的。修法：补一个 `scripts/package.sh`，打包时把被引用的 `_shared` 文件一起放进 zip 并改写相对路径，文件名带上 frontmatter 里的版本。插件安装不受影响，因为插件根就是仓库根。新写的共享代码怎么放，见第二部分 F 节的约定。
-- [ ] **`validate.sh` 的盲区**（中）：真实出过、现在仍检不出的错误有：索引的版本、优先级列漂移；已建成的 skill 在索引里仍写 planned；`skills/` 以外出现 SKILL.md（0.19.0 那次七个 skill 放在仓库根）；frontmatter 的缩进键；skill 目录里的第二份测试；description 没有中文字符；徽章数与实际数；`plugin.json` 的 skills 路径（A1）。另外没有 hook 或 CI 强制运行它，0.22.2 那次 Library Version 漂移脚本能查出，只是没人跑。
-- [ ] **CHANGELOG**（低）：漏记 8 个 Library 版本（0.7.0、0.8.0、0.9.0、0.10.0、0.13.0、0.14.0、0.15.0、0.17.0）；0.20.0 写"八个新脚本"后面列了十个；0.14.1 日期错。历史条目不改，在下一版注明更正即可。
-- [ ] **模板与流程文档**（低）：`templates/skill-template.md` 的 `compatible_agents` 默认带 openclaw，不带 codex 和 nestudy，与 README 不一致；CONTRIBUTING 写"main 受保护、只走 PR、squash、打 tag"，实际是直推 main。二选一：按个人仓库的实际做法改写，但写明"提交前必须跑 validate.sh"。
+- [x] **`SKILL_INDEX.md` 8 行漂移**（中）：6 个版本落后（三个 modeling 0.1.1、`activity-list-optimizer`、`application-timeline-builder`、`writing-rules` 0.2.1），2 个优先级不一致（`dataset-systematic-error-hunter`、`numerical-stability-auditor` 在 frontmatter 是 P1，索引是 P2）。`validate.sh` 已经解析索引行，顺手比对三列即可。
+- [x] **授权矛盾**（中）：`photo-exif-frame`、`shoot-outing-review-card` 的 frontmatter 写 `license: MIT`，插件清单是 `UNLICENSED`，仓库根没有 LICENSE。0.20.0 清理过同样的问题。删掉这两行，或者库级统一定一个许可证。
+- [x] **README**：10 个 physics skill 列在"Applications and growth records"标题下（:103–112，低）；:41 说 token 成本那一半"lives in coding-helper"，coding-helper 相关的 8 行全是 planned，也没列进"Not written yet"（中）。
+- [x] **`SKILL_INDEX.md`**（低）：physics 的脚本说明段落错放在 study-planning 小节里（:95–98），"八个确定性脚本"应为九个；physics 小节的描述还停在组〇和组一。
+- [x] **三个摄影 skill 在自己目录里另存了一份测试**（中）：`skills/photography/*/tests/cases.md` 与 `tests/cases/<name>.md` 内容不同，登记的那份只有 2 个用例。合并后删除副本；注意 `photo-exif-frame/SKILL.md:104` 引用了副本，要一起改。
+- [x] **单技能 zip 缺共享文件**（中，【实测】）：20 份 SKILL.md 引用 `../_shared/…`：physics 的四份共享参考与 `dimcheck.py`，modeling 的五份共享文档（work-contract、validation-playbook、paper-argument-checklist、team-workflow、code-reproducibility-checklist），songwriting 的 craft-reference。`dist/` 里的单技能 zip 只打了 skill 自己的目录，例如 `dimensional-analysis-checker.zip` 里只有一份 SKILL.md。各 skill 自带的脚本还在（`lyric-doctor.zip` 里有 `lyric_check.py`），丢的只是 `_shared` 文件，但依赖它们的步骤都会断。`dist/keynote-deck-builder.zip` 还是 0.6.0（打包于 9/17，源码 9/18 升到 0.7.0）。仓库里没有打包脚本，zip 是手工做的。修法：补一个 `scripts/package.sh`，打包时把被引用的 `_shared` 文件一起放进 zip 并改写相对路径，文件名带上 frontmatter 里的版本。插件安装不受影响，因为插件根就是仓库根。新写的共享代码怎么放，见第二部分 F 节的约定。
+- [x] **`validate.sh` 的盲区**（中）：真实出过、现在仍检不出的错误有：索引的版本、优先级列漂移；已建成的 skill 在索引里仍写 planned；`skills/` 以外出现 SKILL.md（0.19.0 那次七个 skill 放在仓库根）；frontmatter 的缩进键；skill 目录里的第二份测试；description 没有中文字符；徽章数与实际数；`plugin.json` 的 skills 路径（A1）。另外没有 hook 或 CI 强制运行它，0.22.2 那次 Library Version 漂移脚本能查出，只是没人跑。
+- [x] **CHANGELOG**（低）：漏记 8 个 Library 版本（0.7.0、0.8.0、0.9.0、0.10.0、0.13.0、0.14.0、0.15.0、0.17.0）；0.20.0 写"八个新脚本"后面列了十个；0.14.1 日期错。历史条目不改，在下一版注明更正即可。
+- [x] **模板与流程文档**（低）：`templates/skill-template.md` 的 `compatible_agents` 默认带 openclaw，不带 codex 和 nestudy，与 README 不一致；CONTRIBUTING 写"main 受保护、只走 PR、squash、打 tag"，实际是直推 main。二选一：按个人仓库的实际做法改写，但写明"提交前必须跑 validate.sh"。
 
 ### H. 第一轮遗留项核对
 
@@ -279,7 +281,7 @@ HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先
 | name | 一句话 | 确定性部分 | 分 / 先做票 | 批次与判断 |
 |---|---|---|---|---|
 | [ ] **电影感调色**（必做，方案见第三部分） | 输入一张照片，出一张电影感、色彩鲜明、可以直接发的成片，外加剧照卡、前后对比和 .cube LUT | 全部像素处理：浮点线性光管线、filmic 曲线、OkLCh 调色、光晕与颗粒、画幅、LUT 导出与回读校验、QA 数字 | — | **本轮锚点** |
-| [ ] `photo-render-color-fidelity`（四个渲染 skill 的扩展） | 每个渲染 skill 放一份相同的 `image_io.py`：读图先按 EXIF 转正、带着 ICC 走，写出时按 keep / 转 sRGB 两种策略嵌回，报告写明源色彩空间 | Pillow + littlecms2（本机已确认）。提出者实测：Display P3 照片走完三个现有渲染器，高饱和的橙和红偏 ΔE2000 5.7–7.2，中性灰偏 0，所以用灰调测试图永远查不出来 | 5.0 / 3 | **第一批。** 和调色 skill 同期做或先做：调色的卖点就是颜色，下游装框、成套一洗色，使用者会以为是调色没调好。顺带修掉第一部分 A4 的 ICC 与方向问题 |
+| [x] `photo-render-color-fidelity`（四个渲染 skill 的扩展；0.22.4 随第一部分 A4 做完：五个 skill 带相同的 `image_io.py` 1.1.0） | 每个渲染 skill 放一份相同的 `image_io.py`：读图先按 EXIF 转正、带着 ICC 走，写出时按 keep / 转 sRGB 两种策略嵌回，报告写明源色彩空间 | Pillow + littlecms2（本机已确认）。提出者实测：Display P3 照片走完三个现有渲染器，高饱和的橙和红偏 ΔE2000 5.7–7.2，中性灰偏 0，所以用灰调测试图永远查不出来 | 5.0 / 3 | **第一批。** 和调色 skill 同期做或先做：调色的卖点就是颜色，下游装框、成套一洗色，使用者会以为是调色没调好。顺带修掉第一部分 A4 的 ICC 与方向问题 |
 | [ ] `photo-export-prep` | 成片出门前最后一步，按去向分两路：社交或网页（定尺寸比例、输出锐化、转 sRGB 并嵌 profile、剥 GPS 和序列号）；冲印（按物理尺寸算有效 PPI，用冲印店 ICC 出色域外遮罩） | 平台规格表带核对日期和出处，超 180 天报警；锐化量随缩放比线性决定；JPEG 质量从 92 往下试到满足体积上限；色域外遮罩 | 4.0 / 2 | **第一批**，接在调色之后。青橙这类高饱和调色大量超出相纸色域，屏幕上完全看不出来，打出来橙色发土 |
 | [ ] `grade-series-matcher` | 把一个定稿的 look 推到同一组 N 张上：先把每张的曝光和白平衡基底对齐到参考张，再套同一个 look，出一致性矩阵；拍摄者标记的有意变化（日落推进、室内外切换）不抹平 | CIELAB 分位数与中性轴偏移估计、基底对齐、逐张 ΔE 矩阵；只有成片没有参数时，用"参考源片→参考成片"拟合一个 17³ LUT，色域外格点标"外推" | 4.0 / 0 | 第二批，等调色 skill 能导出 .cube 之后。它只回答"同一个 look 怎样在 N 张上还是同一个 look"，从不创造新 look |
 | [ ] `shoot-cull-assistant` | 几百张的拍摄压成连拍组拼图和测量证据，模型看组拼图写带帧号和理由的候选，留还是淘汰由人定；只出清单，不删不移任何文件 | dHash + 拍摄时间分组；8×8 分块 Laplacian 方差与"最锐块÷全画面中位数"（区分浅景深主体锐和整张虚）；剪切面积；Haar 人脸框内锐度 | 3.7 / 0 | 第二批。关掉的默认很具体：300 张逐张读进上下文，读到一半截断，后半场没看也说"挑完了" |
@@ -306,7 +308,7 @@ HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先
 
 | name | 一句话 | 确定性部分 | 分 / 先做票 | 批次与判断 |
 |---|---|---|---|---|
-| [ ] `ai-diff-review-protocol` + `ai-code-onboarding-checklist` 扩展：补脚本 | diff-review 补 `diff_risk.py`，onboarding 补 `intake_scan.py`，两者共用一个代码信号模块 | 任意 unified diff：文件数、增删、重命名、权限变化；路径按边界分类（迁移、锁文件、CI、配置、鉴权、测试）；hunk 级信号（NOT NULL 无 DEFAULT、DROP、删掉的断言、shell=True、eval、rm -rf）；锁文件新增包计数 | 4.3 / 2 | **第一批。** diff-review 的 description 承诺"统计由脚本出"，目录里没有脚本（第一部分 A5）；onboarding 自己没声称有脚本，落差在第一轮规划表与索引那一层 |
+| [ ] `ai-diff-review-protocol` + `ai-code-onboarding-checklist` 扩展：补脚本（0.22.4 已做 `diff_risk.py`；`intake_scan.py` 与共用信号模块未做） | diff-review 补 `diff_risk.py`，onboarding 补 `intake_scan.py`，两者共用一个代码信号模块 | 任意 unified diff：文件数、增删、重命名、权限变化；路径按边界分类（迁移、锁文件、CI、配置、鉴权、测试）；hunk 级信号（NOT NULL 无 DEFAULT、DROP、删掉的断言、shell=True、eval、rm -rf）；锁文件新增包计数 | 4.3 / 2 | **第一批。** diff-review 的 description 承诺"统计由脚本出"，目录里没有脚本（第一部分 A5）；onboarding 自己没声称有脚本，落差在第一轮规划表与索引那一层 |
 | [ ] `ui-design-system-builder` 扩展：`css_token_lint.py` | 把反默认清单和对比度里能数的部分交给脚本；`--profile maestrwave` 让 maestrwave 的自查也跑它 | 解析 `:root` 与主题下的自定义属性，展开 `var()` 与 `color-mix()`，对"文字 × 表面"矩阵算 WCAG，不达标时给出过线所需的最小 alpha；反默认字体、颜色、圆角、阴影检查 | 3.7 / 2 | **第一批。** 第一轮 A4 的第三条，这次有了实测收获：MaestrWave 自己的 `.field-label` 不达标（第一部分 B2） |
 | [ ] `ai-output-fact-checker` 扩展：`claim_probe.py` | 离线抽声明、生成台账骨架；显式 `--online` 才向 PyPI、npm、Crossref、arXiv 发只读查询，专抓"DOI 存在但指向另一篇"和"包名存在却是新近抢注的幻觉名" | 声明抽取；导入名与发行名别名表；首发日期、发布次数、DOI 元数据标题比对 | 4.0 / 1 | 第二批。对应第一部分 A5 与 C 节的 DOI、抢注两条 |
 | [ ] `stage-render-checker` | 用本机无头 Chrome 断网渲染单文件 HTML 视觉产物（面板、语录卡、演示片、照片版面），出 PNG，并量出被裁掉的文字、越出舞台的元素、中文孤行、字号下限、对比度、外部请求、字体回退 | 注入测量脚本 + `--dump-dom` 取 JSON + `--screenshot`；host-resolver 规则断网 | 4.0 / 0 | 第二批。四个视觉 skill 都不量渲染结果：keynote 用无头 Chrome 导 PDF、spread-composer 走浏览器打印，都没有量裁切和溢出。第一部分 B2 的 radio 中文溢出就是它能抓到的那类问题。依赖和 keynote 的 `export_pdf.sh` 相同 |

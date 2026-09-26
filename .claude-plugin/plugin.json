@@ -1,8 +1,20 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "skills-library",
-  "version": "0.22.3",
+  "version": "0.22.4",
   "description": "A curated, portable library of agent skills and capabilities.",
   "license": "UNLICENSED",
-  "keywords": ["claude-code", "codex", "skills", "agents", "hooks", "mcp"]
+  "keywords": ["claude-code", "codex", "skills", "agents", "hooks", "mcp"],
+  "skills": [
+    "./skills/ai-usage",
+    "./skills/coding-helper",
+    "./skills/community-programs",
+    "./skills/modeling",
+    "./skills/photography",
+    "./skills/physics",
+    "./skills/skill-authoring",
+    "./skills/songwriting",
+    "./skills/study-planning",
+    "./skills/writing"
+  ]
 }

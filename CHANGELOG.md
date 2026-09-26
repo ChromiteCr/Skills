@@ -1,9 +1,111 @@
 # CHANGELOG
 
-Library 级变更记录。单个 skill 的变更记在各自 `SKILL.md` 末尾的「变更记录」小节。
+Library 级变更记录。单个 skill 的变更记在各自 `SKILL.md` 末尾的「变更记录」小节，或该 skill 目录下的 `CHANGELOG.md`（`keynote-deck-builder` 从 0.7.1 起用后者）。
 Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
+
+## 0.22.4 — 2026-09-26
+
+第二轮审计（`AUDIT-AND-IDEAS.md` 第一部分）的修复。没有新增或删除 skill，Library 按规则记 PATCH；
+57 个 skill 各升一版（多数 PATCH，四 个 MINOR），细节记在各自的变更记录里。
+
+**插件装上就能用（A1）**
+
+- `plugin.json` 加上 `skills`，列出十个分类目录。Claude Code 只扫 `skills/` 的直接子目录，技能在下一层，
+  所以此前按 README 安装，一个 skill 都加载不到；无头会话实测从 0 个变成 61 个。
+- 删掉从未运行过、也没有被任何地方调用的 `scripts/sync-skill-links.sh`。
+
+**校验、打包与提交前检查（G）**
+
+- `validate.sh` 补上审计列出的盲区：分类目录必须列进 `plugin.json`；`SKILL_INDEX.md` 的优先级、状态、版本三列
+  逐列比对 frontmatter，建成的 skill 不能还写 planned；`skills/` 以外的 SKILL.md；缩进的 frontmatter 键；
+  skill 目录里的第二份测试；没有中文触发语的 description；与插件清单冲突的 `license`；README 徽章数；
+  `../` 引用的共享文件与兄弟 skill 文件必须存在；共享代码各副本的 sha256 必须一致。
+- 新增 `scripts/package.sh`：单技能 zip 改由脚本打，文件名带版本（`dist/<skill>-<version>.zip`），
+  被引用的 `_shared` 文件和兄弟 skill 的脚本一起放进 zip 的 `<skill>/_shared/` 并改写路径；`--check` 报告缺失或过期的包。
+  此前 20 个 skill 的 zip 缺共享文件，`keynote-deck-builder.zip` 还停在 0.6.0。`dist/` 已全部重打。
+- 新增 `scripts/run-selftests.sh`：跑所有带 `--selftest` 的脚本，相同的共享副本只跑一次。
+- 新增 `scripts/git-hooks/pre-commit`：提交前跑 `validate.sh` 和这次改动到的 skill 的脚本自检。
+  每个克隆启用一次：`git config core.hooksPath scripts/git-hooks`。0.22.2 那次 Library Version 漂移，脚本本来查得出，只是没人跑。
+
+**脚本不再静默给错结论（A3、A4、A5）**
+
+- 物理十个脚本全部带上 `--selftest` 与 `--help`，未知键和未声明的符号一律报错，不再静默：
+  - `_shared/scripts/dimcheck.py`：`[check]` 里的方程两边真的比对（原来被当成"名字 = 表达式"，量纲不一致也报"全部通过"）；
+    `^1/2` 这类不加括号的分数指数以退出码 2 拒收；`µ` 等兼容字符按 NFKC 归一；输入写法错误退出码 2，量纲结论 1。
+  - `compare_formula.py`：名字一律按普通符号解析（`I`、`E` 不再被当成虚数单位和自然常数，`lambda`、`gamma` 不再崩溃）；
+    默认正值假设，`--real` 可关；判"不等价"必须给出数值反例；退出码分成 0 等价 / 1 不等价 / 2 输入错误 / 3 无法判定。
+  - `check_derivation.py`：`… = 0` 不再误判量纲；符号指数要求无量纲；`nonzero` 可写表达式并逐个因子核对，
+    只声明 m1、m2 不再放行除以 m1−m2。
+  - `hunt_systematics.py`、`audit_fit.py`：拟合改在中心化、缩放后的自变量上做（后者用列主元 QR 与相对秩容差，并校验杠杆值之和等于秩），
+    Unix 时间戳与 SI 小量不再给出负的 SSE 降幅、误报秩亏或错误的杠杆值；时间列认 ISO 8601，没有可用行时报错而不是 n=0 照常退出。
+  - `check_estimate.py`：product 合成按各机制单位相乘再比对目标单位（原规则只有谎标单位才能通过）。
+  - `check_plausibility.py`：不确定度相容改用 z 值（输入按 k=1 的标准不确定度），1.56σ 不再判失败。
+  - `propagate_uncertainty.py` 不再把未声明的 `E` 当欧拉数；`check_limit_manifest.py` 不再把空 manifest 判"结构完整"；
+    `audit_stability.py` 自收敛允许两个差值并警告，均匀采样容差按时间列的打印精度算。
+- `check_latex.py`：按主文件目录解析 `\input` 与参考文献；macOS 上也查得出图片路径的大小写错误；查中文"公式 (3)""式（5）"手工编号；
+  照 SKILL.md 从 skill 目录运行能读到论文。
+- `lyric_check.py`：段名按"精确 → 去编号归一 → 对不上就报"匹配，重复段不再被静默跳过；认【主歌】、主歌：；
+  模板里的全角空格与 `--extra` 的全角逗号生效；陈词黑名单与 `craft-reference.md` 同步（补"这就是最好的"）。
+- `check_program.py`：拼错的键、未来日期、非整数人数报输入错误；到场 0 人的场次不计；`external_inputs` 生效。
+- `check_brief.py`：只有占位的节判空，SKILL 自带的空模板不再通过；标题行尾多一个空格不再把整节判空。
+  `check_test_audit_manifest.py`：接受正文用语（mirrored logic 等），传目录不再抛异常。
+- 新脚本 `ai-diff-review-protocol/scripts/diff_risk.py`：兑现 description 早就写着的"统计由脚本出"。纯标准库，能读粘贴进聊天的 diff，
+  出文件与增删行、边界分类、危险 hunk、锁文件新增包和阈值，越线必须人工逐段过。
+- 摄影：新增共享模块 `image_io.py`（五个 skill 各放一份相同副本，`validate.sh` 查 sha256），统一处理 EXIF 转正、ICC、HEIC 提示、
+  有汉字字形的字体、不覆盖输入。`extract_exif.py` 读 Exif 子 IFD（原来相机 JPEG 的光圈、快门、ISO、焦距、镜头、拍摄时间全是 null）；
+  信息带字号按格宽倒推，不再落到 10px；回顾卡中文标题不再是方块，`--output` 不能再指向原片；拼版里竖拍不再横躺、照片不再注入两次；
+  组照实现了 references 写的 auto 排布；海报 validate 按 viewBox 坐标查边界，并检查 path 与文字。
+  拍摄时间只取 DateTimeOriginal；Display P3 照片输出后不再发灰。
+- `keynote-deck-builder` 0.7.1：`read_pptx.py` 递归读组合形状里的字，`inline_images.py` 把被认成 MPO 的 JPEG 当 JPEG 收，
+  `outline_to_pptx.py` 的放不下与孤行自检扩到每个会折行的文本框，降级表补上五类片型；四个脚本都认 `--help`、带 `--selftest`。
+  **pptx 导出没变**：用改动前的两份示例片单重新导出（带动画与 `--static` 各一次），与改动前逐部件相同。
+  SKILL.md 从 73,628 字节降到 54,950 字节：变更记录移进 skill 目录的 `CHANGELOG.md`，只在特定场合用到的几节原样移进 `references/` 并写明读取条件。
+- 现在 `./scripts/run-selftests.sh` 覆盖 28 个脚本，全部通过。
+
+**正文、用例与边界**
+
+- A2：`physics-problem-router` 把 9 个已建成的 skill 标成"计划中"并叮嘱别调用，改为可用并逐个点名，补上两个漏掉的下游；
+  `physics-mechanism-decomposer`、`dimensional-analysis-checker` 的同类说法与两份惩罚正确分流的用例一并改掉。
+- C（内容错误）：滑动→纯滚动的判据、积分形式法拉第通量法则的适用条件（法拉第圆盘是反例）、π 定理降秩的例子、
+  准静态与绝热（时间尺度窗口内可以同时成立）、`craft-reference.md` 的开口辙定义（按表格「拖长时」一列统一）、
+  歌词时长改按 BPM 推算、DOI 核对（标题必须一致）、包名存在不等于可信（可能被抢注）、`model-fit-auditor` 对残差结构的说法，逐条改正。
+- D（学术诚信）：受评任务的边界补齐：`modeling-code-builder` 与共享工作契约、`symbolic-first-discipline-coach`、`fermi-estimation-coach`、
+  `project-brainstorm` 的 EE/IA 选题、`dimensional-analysis-checker` 的无条件条款；两处指向不存在的"文书类 skill"改为"本库不代写，只帮改学生自己的稿"。
+- E（运行时专有工具）：13 个 skill 的正文依赖 nestudy 工具或 Claude Code 子代理，却声明其他运行时兼容。
+  各补「没有这些工具时（降级）」一节，给出可运行的替代命令（UTF-16 字符计数、`zoneinfo` 时区换算并提示夏令时切换），输出标"降级"。
+- F（分流）：摄影五个 skill 的 description 补中文触发语；spread-composer 与 series-layout、triage 与 fact-checker 与 onboarding、
+  diff-review 与 test-auditor、modeling 与 physics、brainstorm 与 navigator、reflection 与 activity-profile 各写判别句；泛称路由全部换成实名。
+- B（正文与脚本、用例互相矛盾）逐条对齐，例如：`ai-code-onboarding-checklist` 补上 description 承诺的危险调用检查（MINOR）；
+  `ai-generated-test-auditor` 改说"规划 2–5 个突变抽样，能执行时再实跑"；handoff 的节数与密钥规则；`maestrwave-ui-system` 自带 CSS 收回五档字号，
+  `.field-label` 由 48% 提到 52%，对比度过 AA；`radio-quote-card` 按实渲染另立中文字号档；`launch-summary-panel` 小卡圆角统一。
+- H（第一轮遗留）：`modeling-code-builder` 的两条评估用例移进 `tests/cases`；`program-maturity-navigator` 注明 catena 只是内部代号；
+  `activity-list-optimizer` 补"工具限额过期要报告"的用例。
+- G：两个摄影 skill 删掉与插件清单矛盾的 `license: MIT`；三个摄影 skill 目录里的测试副本并入 `tests/cases` 后删除。
+  新增的测试夹具都在 `tests/fixtures/<skill>/` 下，全是合成的小文件。
+
+**文档**
+
+- `CONTRIBUTING.md` 按实际做法改写：直接提交到 `main`，提交前必须跑 `validate.sh`；新增 3.2 节「只有某个运行时才有的工具」
+  （要么缩小 `compatible_agents`，要么写降级一节并标注"降级"）与 3.3 节「共享文件与共享代码」。
+- `VERSIONING.md` 发布步骤补 `run-selftests.sh` 与 `package.sh`，tag 改为可选。
+- `templates/skill-template.md` 的 `compatible_agents` 默认值改成与 README 一致（去掉 openclaw，补 codex、nestudy）。
+- README：physics 十个条目移回 Physics 小节；"token 纪律在 coding-helper"改为如实说明尚未建成，并补进 Not written yet；
+  兼容性一节写明运行时专有工具的规则。`SKILL_INDEX.md`：physics 说明段移回 physics 小节，脚本数更正为九个；
+  coding-helper 与 physics 的分类说明改为如实描述现有成员。
+
+**更正（历史条目不改，在此注明）**
+
+- 漏记了 8 个 Library 版本：0.7.0（2026-08-10，新增 `ui-design-system-builder`）、0.8.0（08-10，`maestrwave-ui-system`）、
+  0.9.0（08-10，`writing-rules`）、0.10.0（08-11，`adversarial-lyric-writer`、`lyric-concept-builder`、`lyric-doctor`、
+  `lyric-structure-mapper`）、0.13.0（08-12，`launch-summary-panel`、`llm-midi-composition`、`zlc`）、
+  0.14.0（08-13，`radio-quote-card`）、0.15.0（08-16，`keynote-deck-builder`）、0.17.0（08-26，`photo-spread-composer`）。
+- 下面的 0.18.0 与 0.20.0 两条从未作为版本号出现在 `plugin.json`：实际是 0.17.0 → 0.19.0 → 0.21.0，
+  两条的内容分别随 0.19.0 与 0.21.0 发布。
+- 0.14.1 的日期应为 2026-08-14。
+- 0.20.0 写"八个新脚本逐个实跑验证过"，后面列的是十个脚本。
+- 0.19.0 说补齐的七份用例"均含矛盾输入与边界违规两类场景"；`prompt-brief-builder` 那份当时没有矛盾输入，本版补上（Case 5）。
 
 ## 0.22.3 — 2026-09-18
 
