@@ -2,7 +2,7 @@
 name: physics-mechanism-decomposer
 description: 当面对一个开放现象、说不清"为什么会这样"时使用——IYPT 题目、实验里看到的奇怪行为、科研中待解释的观测。把现象拆成候选机制清单，用守恒量收支表检查有没有漏，为每个机制写出带指数的标度律，用同量纲的量级比较排出主导、次导与可忽略，再为每个机制配一个能真正分辨它的观测量（判据是指数或符号不同，不是系数不同）。产出的是可检验命题与实验建议，不是结论。
 category: physics/mechanism
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -38,8 +38,8 @@ suggest_hint: 用「物理机制分解器」把"为什么会这样"拆成排了�
 
 - 封闭计算题，条件已经给全 —— 用 `problem-formalization-coach`
 - 材料还没整理成现象陈述 —— 用 `competition-scenario-extractor`
-- 已经排好机制，要配数值锚点做量级估算 —— `fermi-estimation-coach`（计划中）
-- 已有数据要做拟合体检 —— 组四的 skill（计划中）
+- 已经排好机制，要配数值锚点做量级估算 —— `fermi-estimation-coach`
+- 已有数据要做拟合体检 —— `model-fit-auditor`；怀疑数据本身有漂移、温度依赖等系统误差 —— `dataset-systematic-error-hunter`
 
 ## 需要的输入 / Inputs
 
@@ -132,6 +132,9 @@ d(储量)/dt = Σ流入 − Σ流出 + Σ源汇
 python3 ../_shared/scripts/dimcheck.py mechanisms.dim
 ```
 
+表达式里的分数指数要加括号（`d^(1/2)`、`Re_L^(1/2)`）。`d^1/2`、`m*v^2/2` 这类写法有歧义，脚本以退出状态 2 拒收：
+这是 `.dim` 的写法问题，改好重跑，不算量纲结论。
+
 ### 5. 为每条机制配一个可分辨的观测量
 
 **这一步决定了整份分析有没有用。** 排序只是猜想，分辨才是证据。
@@ -154,9 +157,11 @@ python3 ../_shared/scripts/dimcheck.py mechanisms.dim
 **实验设计的关键约束：判据里的那个参数必须能被独立改变。**
 换一种液体会同时改变 `ρ`、`μ`、`σ` 三个量，这是最常见的失败设计。几个能相对独立调节的手法：
 
-- **只改黏度**：甘油–水混合可以让 `μ` 变几个量级，而 `σ` 只从约 72 变到 64 mN/m
-- **只改表面张力**：低浓度表面活性剂能把水的 `σ` 从约 72 降到 30–40 mN/m，`μ` 几乎不动
+- **只改黏度**：甘油–水混合可以让 `μ` 变几个量级，而 `σ` 的相对变化小得多
+- **只改表面张力**：低浓度表面活性剂能明显降低水的 `σ`，`μ` 几乎不动
 - **只改气体密度**：改变环境气压
+
+前两条的具体物性数值随温度、浓度变化，由使用者查，连同温度与出处一起写（见 `../_shared/physics-evidence-contract.md` 第 3 节）。
 
 改不动的时候要如实说改不动，并给出退而求其次的方案（例如同时测两个观测量做联合约束）。
 
@@ -201,7 +206,7 @@ python3 ../_shared/scripts/dimcheck.py mechanisms.dim
 
 ## 交接
 - 已确认 / 暂定 / 未解决
-- 下一步：<实验设计，或量级估算（fermi-estimation-coach，计划中）>
+- 下一步：<实验设计，或量级估算（fermi-estimation-coach）>
 ```
 
 ## 六个高频翻车 / Common failures
@@ -242,4 +247,5 @@ python3 ../_shared/scripts/dimcheck.py mechanisms.dim
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | fermi-estimation-coach 与组四 skill 已建成，删掉三处"计划中"并写出实名（model-fit-auditor、dataset-systematic-error-hunter）；独立调节手法里去掉不带温度与出处的表面张力数值，改为定性说法并要求查值时写明条件；第 4 步注明分数指数要加括号（修好的 dimcheck.py 对 `d^1/2` 这类写法以退出状态 2 拒收） | patch |
 | 0.1.0 | 2026-08-30 | 初始草稿：收支表与物理域双路枚举、标度律四档来源、同量纲排序、可分辨观测量判据与独立可调性、四项完备性自检 | minor |

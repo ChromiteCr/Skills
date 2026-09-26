@@ -1,0 +1,7 @@
+# 使用者写的终端速度 v_t = (g d)^1/2，照抄进 [check]。
+[symbols]
+g = L T^-2
+d = L
+
+[check]
+v_t = (g*d)^1/2 ; L T^-1

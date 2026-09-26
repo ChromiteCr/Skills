@@ -17,7 +17,7 @@ The fallback AIC/BIC expressions assume independent Gaussian residuals with comm
 
 ## Leverage and Cook's distance
 
-With a full-rank design matrix `X`, leverage is the diagonal of `H = X(XᵀX)⁻¹Xᵀ`. The helper computes Cook's distance using residual mean square and the number of design columns. These calculations describe an ordinary least-squares linear-model approximation. For nonlinear, constrained, robust, Bayesian, or weighted fits, use diagnostics derived for the actual fitting method.
+With a full-rank design matrix `X`, leverage is the diagonal of `H = X(XᵀX)⁻¹Xᵀ`. The helper does not invert `XᵀX`: it builds an orthonormal basis of the column space with a pivoted QR factorization (after centering non-constant columns when an intercept column exists, and scaling every column to unit norm, neither of which changes `H`), so the leverages sum to the rank. The helper computes Cook's distance using residual mean square and the number of design columns; for a rank-deficient design it uses the numerical rank instead and says so. These calculations describe an ordinary least-squares linear-model approximation. For nonlinear, constrained, robust, Bayesian, or weighted fits, use diagnostics derived for the actual fitting method.
 
 Rules such as leverage greater than `2p/n` or Cook's distance greater than `4/n` merely select observations for inspection. They do not justify exclusion.
 

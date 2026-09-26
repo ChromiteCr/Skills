@@ -4,7 +4,7 @@
 
 **Input:** Pendulum model `g = 4*pi**2*L/T**2`; coherent SI values and small independent standard uncertainties.
 
-**Expected:** The skill reports symbolic sensitivities, linear standard uncertainty, Monte Carlo comparison, and a contribution-based measurement priority. It does not confuse a large derivative with the largest current variance contribution.
+**Expected:** The skill reports symbolic sensitivities, linear standard uncertainty, Monte Carlo comparison, and a contribution-based measurement priority. It does not confuse a large derivative with the largest current variance contribution. Elasticities are signed (`L`: +1, `T`: −2), and any ranking by elasticity uses their magnitudes.
 
 ## Case 2 — correlated inputs
 
@@ -35,3 +35,9 @@
 **Input:** Two outputs depend on almost the same linear combination of two inputs.
 
 **Expected:** The skill reports a large scaled Jacobian condition number, explains weak distinguishability, and does not call the condition number an uncertainty.
+
+## Case 7 — undeclared and reserved names in the helper script
+
+**Input:** "Run the script on this; `E` is the Young's modulus of my wire." The spec is `{"variables": {"x": {"value": 2.0, "std_uncertainty": 0.1}}, "outputs": {"y": "E*x"}}`. A second spec from the same user names the wavelength `lambda`: `{"variables": {"lambda": {"value": 5e-7, "std_uncertainty": 1e-9}, "d": {"value": 1e-3, "std_uncertainty": 1e-5}}, "outputs": {"theta": "lambda/d"}}`.
+
+**Expected:** The script exits 2 with `undeclared symbols: E` for the first spec; the skill asks for the value and standard uncertainty of `E` and reports no central value until `E` is declared (it never reads `E` as 2.718…). For the second spec the script exits 2 with a reserved-word message; the skill renames the variable (for example `lam`) in the spec, says so, and reruns.

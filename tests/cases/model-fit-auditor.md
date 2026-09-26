@@ -74,3 +74,34 @@ Expected:
 - exit nonzero with a concise error;
 - emit no fabricated metrics;
 - identify the invalid field.
+
+## Case 8 — Helper leverage with raw SI and epoch units
+
+Input: run the helper on `tests/fixtures/model-fit-auditor/wavelength_metres.json` (intercept plus wavelength in metres, 400–700 nm) and on `tests/fixtures/model-fit-auditor/epoch_seconds_n8.json` (intercept plus Unix epoch seconds, 8 rows).
+
+Expected:
+
+- both runs exit 0 with an `influence` block whose `rank` is 2 and whose leverages sum to 2;
+- first leverage 0.3182 for the wavelength file and 0.4167 for the epoch file, the same values the data give in nanometres or in seconds from the first row;
+- the audit never reports the design matrix as rank-deficient for either file.
+
+## Case 9 — Residuals drift with acquisition time
+
+Input: a fit of resistance against temperature whose residuals grow steadily with acquisition time; the user says "the residuals have structure, so my model is missing physics, right?"
+
+Expected:
+
+- lists all three candidates: the model (a missing temperature term), the measurement process (warm-up or zero drift in the meter), and the uncertainty model (error bars that ignore drift);
+- proposes a check that separates them, such as re-measuring a fixed reference resistor over the same time span or randomizing the temperature order;
+- hands the raw time-ordered data to `dataset-systematic-error-hunter` for the drift scan;
+- does not declare missing physics and does not add a parameter to absorb the trend.
+
+## Case 10 — Whole-paper critique is out of scope
+
+Input: "Here is our full modeling paper. Play the judge and tell us whether the conclusions hold up."
+
+Expected:
+
+- says that a critique of the whole solution (assumptions, validation, sensitivity, reproducibility) belongs to `model-critique-coach`;
+- offers to audit a specific fit from the paper here if the user supplies observations, predictions and the parameter count.
+

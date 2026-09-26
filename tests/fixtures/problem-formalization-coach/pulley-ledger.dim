@@ -1,0 +1,17 @@
+# 阿特伍德机：m1、m2 用轻绳跨过一个有转动惯量 I_p、半径 R 的滑轮，绳不打滑。
+# [symbols] 是使用者的已知量与未知量台账；[check] 是定律台账和约束里的方程。
+[symbols]
+m1  = M
+m2  = M
+g   = L T^-2
+I_p = M L^2
+R   = L
+a   = L T^-2
+T1  = M L T^-2
+T2  = M L T^-2
+
+[check]
+m1*g - T1 == m1*a
+T2 - m2*g == m2*a
+(T1 - T2)*R == I_p*a
+a == alpha*R

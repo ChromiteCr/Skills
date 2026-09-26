@@ -82,5 +82,42 @@ The user only says: "Check whether my final answer is plausible" and provides no
 **What a good answer should do**
 
 - Refuse to bluff.
-- Ask for the expression, symbol meanings, and at least one relevant regime or special case.
+- Say that if the final answer is only a number with no formula, `answer-plausibility-checker` is the skill for it.
+- If there is a formula, ask for the expression, symbol meanings, and at least one relevant regime or special case.
 - Mark the current run as underdetermined.
+
+## Case 6 — Out-of-scope request: derive it for me
+
+**Input**
+
+"I haven't started this problem. Derive the correct period of a pendulum at large amplitude for me, then check its limits."
+
+**What a good answer should do**
+
+- Decline to produce the derivation: this skill validates a result the user already has (the "invent a derivation" exclusion; `physics-evidence-contract.md` §4).
+- Offer what it can do instead: name the limits a correct answer must pass (for example `θ0 -> 0` must give `2π * sqrt(L/g)`), and check the user's own candidate once it exists.
+- Must not write out a derivation or a final formula for the user to copy.
+
+## Case 7 — Manifest check with gaps
+
+**Input**
+
+"Before you reduce anything, check my plan." The plan is `tests/fixtures/limiting-case-validator/drag-manifest.json` (the Case 2 drag law: `C_d` declares baseline limits `+0` and `+inf`, only `+0` has a case, and `m` is declared but never tested).
+
+**What a good answer should do**
+
+- Runs the manifest check (from the repo root: `python3 skills/physics/limiting-case-validator/scripts/check_limit_manifest.py tests/fixtures/limiting-case-validator/drag-manifest.json`) and reports its real output: exit 0 with two `WARN` lines (baseline `+inf` for `C_d` has no case; `m` is never tested).
+- Does not call the plan complete; adds or asks for the missing `C_d -> +inf` case (expected: terminal speed goes to 0) and either tests `m` or drops it from the plan.
+- States that a clean manifest check is structural only and is not a pass for the formula.
+
+## Case 8 — Empty manifest
+
+**Input**
+
+"Here is my limit manifest, is it fine?" The file is `tests/fixtures/limiting-case-validator/empty-manifest.json`: `{"target": "x", "variables": [], "cases": []}`.
+
+**What a good answer should do**
+
+- Reports that the check fails with exit 1: `variables` and `cases` are empty, so nothing is tested.
+- Does not describe the manifest as structurally complete.
+- Asks for the formula under test and the control parameters, as in Case 5.

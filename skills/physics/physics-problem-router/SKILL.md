@@ -2,7 +2,7 @@
 name: physics-problem-router
 description: 当使用者贴出一道物理题、一个实验现象、一份竞赛材料或一句"这个怎么解释"，还没想好从哪一步下手时使用。先定三件事——问题类型（计算/建模/科研/开放现象）、目标产物（数值答案/可检验模型/机制解释）、卡在哪一步——再分流到下游物理 skill；专门检出"要的产物与问题类型不匹配"和"其实该先回去读题"两种走错门。不解题，不给答案，不替使用者选机制。
 category: physics/routing
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -84,7 +84,7 @@ suggest_hint: 先用「物理问题分流器」定问题类型、目标产物和
 
 ## 分流表 / Routing
 
-**下游 skill 分两种状态。标 `计划中` 的尚未建成，不要假装调用它，按"暂时怎么做"那一栏走。**
+**下游 skill 分两种状态：`可用` 与 `计划中`。下表各行都已建成，状态都是 `可用`。以后新加的下游在建成前标 `计划中`，状态栏写出暂时怎么做；标 `计划中` 的不要假装调用它。**
 
 | 卡点 | 去向 | 状态 |
 |---|---|---|
@@ -93,12 +93,17 @@ suggest_hint: 先用「物理问题分流器」定问题类型、目标产物和
 | 方程列得出但解不动；过程分不清阶段 | `problem-representation-scout` | 可用 |
 | 参考系选得别扭；想知道换系后什么不变 | `reference-frame-choice-guide` | 可用 |
 | 开放现象要排机制、给标度律 | `physics-mechanism-decomposer` | 可用 |
-| 要从守恒律重建公式 | `concept-to-formula-deriver` | 计划中 → 暂时用 `problem-formalization-coach` 把定律与条件写清，推导本人做 |
-| 要做数量级估算 | `fermi-estimation-coach` | 计划中 → 暂时用 `physics-mechanism-decomposer` 排完序后自行配数值锚点 |
-| 查量纲 | `dimensional-analysis-checker` | 计划中 → 暂时用 `_shared/scripts/dimcheck.py` |
-| 查极限行为 | `limiting-case-validator` | 计划中 → 暂时手工做：令每个参数分别趋于 0 与 ∞，核对是否回到已知特例 |
-| 逐步验推导 | `derivation-step-checker` | 计划中 |
-| 不确定度、拟合、系统误差、数值稳定性 | 组四各 skill | 计划中 |
+| 想知道一条公式从哪来，要从定义或守恒律把它重建出来 | `concept-to-formula-deriver` | 可用 |
+| 推导中途就代了数字，看不出结果依赖哪些量、哪些量约掉了 | `symbolic-first-discipline-coach` | 可用 |
+| 机制已经排好，要给每个机制配数值锚点、合成量级（机制还没排，先用 `physics-mechanism-decomposer`） | `fermi-estimation-coach` | 可用 |
+| 有推导、方程或标度律，要先逐项查量纲 | `dimensional-analysis-checker` | 可用 |
+| 有公式或模型结果，要查它在极限下讲不讲得通、能不能回到已知特例 | `limiting-case-validator` | 可用 |
+| 手上有一份写好的推导，要逐步核验代数、量纲、符号，以及定律在该步是否仍适用 | `derivation-step-checker` | 可用 |
+| 算完、估完、拟合完或模拟完拿到一个数，要决定信不信 | `answer-plausibility-checker` | 可用 |
+| 测量量带不确定度，要给导出量的不确定度与预算 | `uncertainty-propagator` | 可用 |
+| 已有观测与拟合，要判断拟合信不信（残差结构、拟合优度、影响点） | `model-fit-auditor` | 可用 |
+| 实验数据可能藏着漂移、温度依赖、非线性、滞回等系统误差 | `dataset-systematic-error-hunter` | 可用 |
+| 模拟跑出了结果，要判断是物理还是数值假象 | `numerical-stability-auditor` | 可用 |
 
 跨类别的两个出口：
 
@@ -191,4 +196,5 @@ suggest_hint: 先用「物理问题分流器」定问题类型、目标产物和
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | 分流表里 9 个已建成的下游误标"计划中"并给了手工替代路径，改为可用；"组四各 skill"拆成四行实名；补上 symbolic-first-discipline-coach、answer-plausibility-checker 两行 | patch |
 | 0.1.0 | 2026-08-30 | 初始草稿：三个判别问题、分流表、四种走错门、两道闸 | minor |

@@ -1,0 +1,80 @@
+{
+  "target": {
+    "name": "mean power",
+    "unit": "W"
+  },
+  "mechanisms": [
+    {
+      "id": "rate",
+      "role": "dominant",
+      "provenance": "user",
+      "factors": [
+        {
+          "id": "x",
+          "name": "rate",
+          "unit": "W",
+          "low": 1,
+          "central": 2,
+          "high": 4,
+          "evidence_status": "assumed",
+          "basis": "stated guess"
+        }
+      ],
+      "calculation": {
+        "multiply": [
+          "x"
+        ],
+        "divide": []
+      },
+      "estimate": {
+        "low": 1,
+        "central": 2,
+        "high": 4,
+        "unit": "W"
+      }
+    },
+    {
+      "id": "energy",
+      "role": "dominant",
+      "provenance": "user",
+      "factors": [
+        {
+          "id": "x",
+          "name": "energy",
+          "unit": "W",
+          "low": 10,
+          "central": 20,
+          "high": 40,
+          "evidence_status": "assumed",
+          "basis": "stated guess"
+        }
+      ],
+      "calculation": {
+        "multiply": [
+          "x"
+        ],
+        "divide": []
+      },
+      "estimate": {
+        "low": 10,
+        "central": 20,
+        "high": 40,
+        "unit": "W"
+      }
+    }
+  ],
+  "synthesis": {
+    "method": "product",
+    "included_mechanism_ids": [
+      "rate",
+      "energy"
+    ],
+    "estimate": {
+      "low": 10,
+      "central": 40,
+      "high": 160,
+      "unit": "W"
+    },
+    "decision": "tens of watts"
+  }
+}

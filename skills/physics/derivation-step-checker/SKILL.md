@@ -2,7 +2,7 @@
 name: derivation-step-checker
 description: 当手上有一份已经写好的推导、要逐步核验时使用。每一步查四件事：代数是否等价、量纲是否一致、符号有没有翻错、以及这一步用的定律在此处适用条件是否仍然成立——变质量、非惯性系、准静态假设中途被悄悄破坏是高频翻车点。scripts/check_derivation.py 做前三项的确定性检查，第四项是人的判断。只核验已有推导，不代写推导。
 category: physics/checking
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -58,10 +58,10 @@ Do not invent omitted steps or assumptions. Mark them `unknown` and explain what
 When the derivation can be represented with scalar symbolic expressions, create a JSON input following [references/input-schema.md](references/input-schema.md), then run:
 
 ```text
-python scripts/check_derivation.py derivation.json
+python3 scripts/check_derivation.py derivation.json
 ```
 
-The checker verifies a constrained expression grammar, residual equivalence up to a declared factor, required nonzero declarations, and dimensions. It deliberately cannot decide whether a physical law applies; review that from the stated regime and assumptions.
+The checker verifies a constrained expression grammar, residual equivalence up to a declared factor, required nonzero declarations, and dimensions. Every non-constant factor of the declared factor must itself be declared nonzero: declaring `m1` and `m2` does not cover a division by `m1 - m2`, and you add `"m1 - m2"` to `nonzero` only when the user has established it, never to make the check pass. Equations written as `... = 0` check normally, and a symbolic exponent such as `10**m` must be dimensionless. `--selftest` runs the checker's regression cases. It deliberately cannot decide whether a physical law applies; review that from the stated regime and assumptions.
 
 If Python or SymPy is unavailable, perform the same checks explicitly and mark them as manual. Never claim a script passed unless it was actually run successfully.
 
@@ -82,8 +82,15 @@ Finish with:
 
 ## Boundaries
 
-- This skill audits an existing derivation; it does not replace a student's own assessed derivation.
+- This skill audits an existing derivation; it does not replace a student's own assessed derivation. Deriving a formula from principles in the first place belongs to the neighbouring skill `concept-to-formula-deriver`.
 - Do not treat symbolic equivalence as proof of physical correctness.
 - Do not infer a missing law from the desired answer.
 - Do not hide domain restrictions, frame labels, approximation order, or uncertainty behind a green status.
-- For a final-answer-only plausibility review, use an answer plausibility workflow instead; for isolated unit checking, use a dimensional-analysis workflow.
+- For a final-answer-only plausibility review, use `answer-plausibility-checker` instead; for isolated unit checking, use `dimensional-analysis-checker`.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 修 check_derivation.py：`… = 0` 形式不再误判量纲不一致；`10**m` 这类符号指数要求无量纲；nonzero 可写表达式，按 factor_list 逐个因子核对，声明 m1、m2 不再放行除以 m1−m2；补 --selftest 与未知键报错；分流改为实名；用例 Case 1 更正为准静态与绝热可以同时成立 | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

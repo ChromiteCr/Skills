@@ -1,8 +1,8 @@
 ---
 name: concept-to-formula-deriver
-description: 当想弄清一条公式「为什么长这样」、而不是想让人把它推出来时使用。从定义或守恒律出发重建标准公式，每一步标出用的是哪条原理、这一步在物理上做了什么；假设写在它真正被用到的那一步，不堆在开头。终式可用 scripts/compare_formula.py 与标准式做符号比对。会被评分的推导由本人写，本 skill 只讲这条式子从哪来。
+description: 当问「这条公式怎么来的」「为什么长这样」，或说「帮我推导／推出 X 公式」时使用。从定义或守恒律出发重建标准公式，每一步标出用的是哪条原理、这一步在物理上做了什么；假设写在它真正被用到的那一步，不堆在开头。终式可用 scripts/compare_formula.py 与标准式做符号比对。会被评分的推导：结构与理由可以给，代数由本人做。要逐步核验一份已写好的推导，用 derivation-step-checker。
 category: physics/derivation
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -34,14 +34,15 @@ explicit enough that a learner can reproduce it on their own.
 ## Use when
 
 - The user asks where a standard formula comes from.
+- The user asks to derive a standard formula ("帮我推导 X"); for assessed work, stop at the safe endpoints in step 8.
 - The user can name a target relation, but cannot justify each step.
 - The user needs help choosing between candidate starting principles such as conservation, definitions, or kinematics.
-- The user wants a derivation checked for missing physical meaning, not only algebra.
+- The user wants each step of a derivation tied to its physical reason, not only the algebra.
 
 ## Do not use when
 
-- The task is mainly about **which model/mechanism applies**. Use an upstream problem-reading or mechanism skill first.
-- The task is mainly about **debugging algebra line by line** after the physical setup is already agreed. Use a derivation-checking skill.
+- The task is mainly about **which model/mechanism applies**. Use `problem-formalization-coach` first (which law applies here, and under what conditions), or `physics-mechanism-decomposer` for an open phenomenon.
+- The user already has a written derivation and wants it checked step by step (algebra, dimensions, signs, whether each law still applies at that step). Use `derivation-step-checker`: it audits an existing derivation, while this skill builds one from a starting principle.
 - The user wants a full polished assignment solution with no explanation. Refuse the write-up, but you may still teach the method.
 - The target relation depends on specialized facts, coefficients, or constitutive laws that the user has not supplied and you cannot justify.
 
@@ -91,6 +92,8 @@ Examples:
 
 If there are multiple plausible starts, compare them briefly and choose the shortest physically clean path.
 
+State the chosen principle's applicability conditions for this problem. `../_shared/law-applicability-table.md` lists them for common laws, and its §6 gives the thresholds where non-relativistic or classical forms stop working.
+
 ### 4) Derive in single-responsibility steps
 
 Each line should do **one** mathematical move and carry **two labels**:
@@ -113,7 +116,7 @@ When an assumption matters, attach it to the line where it enters, for example:
 - "Using small-angle approximation, so sin(theta) ≈ theta for |theta| << 1."
 - "Setting nonconservative work to zero because drag is neglected in this model."
 
-Do not dump assumptions only at the top and never mention them again.
+Do not dump assumptions only at the top and never mention them again. `../_shared/idealization-catalog.md` says what each common idealization switches off and when it fails.
 
 ### 6) Interpret the result, not just the algebra
 
@@ -142,7 +145,7 @@ If the task is assessed work, stop at one of these safe endpoints:
 - first 1-2 justified steps plus the remaining roadmap;
 - critique of the learner's own attempt.
 
-Do **not** hand over a ready-to-submit derivation when that would replace the learner's work.
+Do **not** hand over a ready-to-submit derivation when that would replace the learner's work. This is the shared boundary in `../_shared/physics-evidence-contract.md` §4.
 
 ## Output template
 
@@ -188,13 +191,24 @@ Use this structure unless the user asks for another format:
 
 ## Deterministic support
 
-`scripts/compare_formula.py` can help compare a derived symbolic expression with a reference expression.
+`scripts/compare_formula.py` can help compare a derived symbolic expression with a reference expression. It needs Python 3 with sympy.
+
+```text
+python3 scripts/compare_formula.py --derived "2*pi*(L/g)**(1/2)" --reference "2*pi*sqrt(L/g)"
+```
+
+- Every name is a plain symbol, including `E`, `I`, `N`, `S`, `gamma`, `beta`, and `lambda`. `pi` is the only constant; write Euler's number as `exp(1)`. A name used as a function that the script does not know is an input error.
+- Every symbol is assumed positive, so `L*sqrt(g/L)` matches `sqrt(g*L)`. List symbols that can be negative or zero with `--real q,v`.
+- Decimals are exact (`0.5` is `1/2`). Write products with `*` and powers with `**` or `^`.
+- Equations are written `Eq(lhs, rhs)` and match when their `lhs - rhs` differ by a nonzero constant factor, so swapped sides are fine. A rearranged form such as `T**2 = 4*pi**2*L/g` against `T = 2*pi*sqrt(L/g)` does not match; compare the expressions for the target quantity instead.
+- Exit status: `0` equivalent; `1` not equivalent, with a numerical counterexample printed; `2` input error (one line on stderr); `3` undetermined: simplification did not confirm it, but no counterexample was found. `--selftest` runs the regression cases.
 
 Suggested use:
 
 - Compare two expressions for the same quantity after moving them into a common symbolic form.
 - Treat the script as a **sanity check**, not proof that the derivation is pedagogically good.
-- If the script says two forms differ, inspect assumptions, missing factors, sign conventions, and hidden substitutions.
+- If the script says `no`, start from the printed counterexample and inspect assumptions, missing factors, sign conventions, and hidden substitutions. If it says `undetermined`, check by hand before calling the forms different. Exit status `2` means the input could not be read, not that the forms differ.
+- Without code execution, compare by hand and label the check as manual.
 
 ## Minimal test cases
 
@@ -232,3 +246,17 @@ This skill is complete for a given turn when it has:
 - attached assumptions where they enter;
 - given at least two post-derivation checks;
 - preserved learner ownership if the context is assessed work.
+
+## References
+
+- `../_shared/law-applicability-table.md` — applicability conditions of common laws (step 3); §6 gives the thresholds for relativistic and quantum corrections
+- `../_shared/idealization-catalog.md` — what each assumption switches off and when it fails (step 5)
+- `../_shared/physics-evidence-contract.md` — status tags for the symbol table, sourcing of constants (§3), and the integrity boundary for assessed work (§4)
+- `scripts/compare_formula.py` — symbolic equivalence check for step 7
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | compare_formula.py 修正误判与崩溃：小数指数与等式左右互换判错、符号无正值假设、I/E 被当成虚数单位与自然常数、N/Q/S/gamma/beta/lambda 崩溃；所有名字按普通符号解析，退出码分成 0 等价/1 不等价（给反例）/2 输入错误/3 无法判定，加 --selftest；description 补上「帮我推导」触发语；泛称分流改成实名并点明与 derivation-step-checker 的分工；引用 _shared 参考 | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

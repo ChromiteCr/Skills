@@ -1,0 +1,84 @@
+{
+  "target": {
+    "name": "heat loss",
+    "unit": "W"
+  },
+  "mechanisms": [
+    {
+      "id": "convection",
+      "role": {
+        "x": 1
+      },
+      "provenance": "prior mechanism analysis",
+      "factors": [
+        {
+          "id": "h",
+          "name": "heat-transfer coefficient",
+          "unit": "W m^-2 K^-1",
+          "low": 5,
+          "central": 10,
+          "high": 20,
+          "evidence_status": [
+            "sourced"
+          ],
+          "basis": "source and access date"
+        },
+        {
+          "id": "area",
+          "name": "exposed area",
+          "unit": "m^2",
+          "low": 1.8,
+          "central": 2.0,
+          "high": 2.2,
+          "evidence_status": "measured",
+          "basis": "dimensions supplied by user"
+        },
+        {
+          "id": "delta_t",
+          "name": "temperature difference",
+          "unit": "K",
+          "low": 8,
+          "central": 10,
+          "high": 12,
+          "evidence_status": "measured",
+          "basis": "sensor readings"
+        }
+      ],
+      "calculation": {
+        "coefficient": 1,
+        "multiply": [
+          "h",
+          "area",
+          "delta_t"
+        ],
+        "divide": []
+      },
+      "estimate": {
+        "low": 72,
+        "central": 200,
+        "high": 528,
+        "unit": "W"
+      },
+      "reference_range": {
+        "low": 50,
+        "high": 1000,
+        "unit": "W"
+      }
+    }
+  ],
+  "synthesis": {
+    "method": [
+      "sum"
+    ],
+    "included_mechanism_ids": [
+      "convection"
+    ],
+    "estimate": {
+      "low": 72,
+      "central": 200,
+      "high": 528,
+      "unit": "W"
+    },
+    "decision": "Order 10^2 W; measurement needed if the threshold is below 500 W."
+  }
+}

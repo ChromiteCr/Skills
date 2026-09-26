@@ -1,0 +1,19 @@
+{
+  "symbols": {
+    "m": {"M": 1},
+    "g": {"L": 1, "T": -2},
+    "k": {"M": 1, "T": -2},
+    "x": {"L": 1}
+  },
+  "nonzero": ["k"],
+  "steps": [
+    {
+      "id": "1",
+      "before": "m*g - k*x = 0",
+      "after": "x = m*g/k",
+      "factor": "-k",
+      "law": "static equilibrium of a mass hanging on a spring",
+      "applicability": "mass at rest; linear spring; inertial frame; k nonzero"
+    }
+  ]
+}

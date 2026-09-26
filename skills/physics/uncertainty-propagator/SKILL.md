@@ -2,7 +2,7 @@
 name: uncertainty-propagator
 description: 当有一组带不确定度的测量量、需要给导出量一个不确定度时使用。做线性协方差传播（含相关项），给出符号灵敏度、不确定度预算、线性与蒙特卡罗的一致性检查，并按贡献大小排出下一轮该先测哪个量。灵敏度大不等于贡献大，这一条会被明确区分。不做拟合、不诊断系统误差、不替缺失的不确定度编数。
 category: physics/data
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -39,9 +39,9 @@ If an uncertainty, distribution, or dependence is unknown, label it `unknown`; d
 
 Use this skill for propagation through a stated model and for local sensitivity ranking.
 
-- Use a fitting/audit workflow when model parameters must first be estimated from data.
-- Use a systematic-error workflow when drift, hysteresis, calibration bias, or omitted physics must be diagnosed from raw data.
-- Use a mechanism-decomposition workflow when the physical model itself is still disputed.
+- Use `model-fit-auditor` when model parameters must first be estimated from data and that fit has to be judged.
+- Use `dataset-systematic-error-hunter` when drift, hysteresis, calibration bias, or omitted physics must be diagnosed from raw data.
+- Use `physics-mechanism-decomposer` when the physical model itself is still disputed.
 - Do not convert tolerance limits or instrument resolution to standard uncertainty without naming the assumed distribution.
 - Do not imply that propagation captures unknown bias or model inadequacy.
 
@@ -98,7 +98,7 @@ Use both local sensitivity and actual uncertainty contribution:
 
 - **sensitivity coefficient**: how strongly the model responds per unit change;
 - **variance contribution**: sensitivity combined with present measurement uncertainty;
-- **elasticity** `|(x_i/y)(∂y/∂x_i)|`: useful for comparing differently scaled inputs when values are nonzero;
+- **elasticity** `(x_i/y)(∂y/∂x_i)`: signed, as the script reports it (for `g = 4π²L/T²` the elasticity of `T` is −2); compare magnitudes `|e_i|` when ranking differently scaled inputs; defined only when values are nonzero;
 - **Jacobian condition number**: warns that inverse interpretation or multi-output separation may be unstable; it is not by itself an uncertainty.
 
 Recommend improving a measurement only when reducing its uncertainty would materially reduce the output uncertainty. For correlated inputs, discuss the covariance source before ranking individual measurements.
@@ -121,7 +121,7 @@ Use appropriate significant figures: normally one or two significant digits in u
 `scripts/propagate_uncertainty.py` accepts a JSON specification and emits a JSON report. It uses SymPy for symbolic derivatives and NumPy for covariance algebra and Monte Carlo sampling.
 
 ```bash
-python scripts/propagate_uncertainty.py example.json --samples 100000 --seed 20260904
+python3 scripts/propagate_uncertainty.py example.json --samples 100000 --seed 20260904
 ```
 
 Input shape:
@@ -139,6 +139,8 @@ Input shape:
 
 All numerical values must already use coherent units. Review `references/method.md` for interpretation and failure criteria. If dependencies or valid numerical inputs are unavailable, provide the symbolic method and mark numerical verification as blocked rather than inventing a result.
 
+Names in `outputs` are plain symbols: every one must be declared under `variables`. The only built-in constant is `pi`; write `exp(1)` for Euler's number, so an undeclared `E` (energy, field, Young's modulus) is an error, not 2.718. Callable functions: `sqrt`, `cbrt`, `exp`, `log`, `ln`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `abs`, `erf`, `erfc`. Python reserved words cannot be names; call a wavelength `lam`, not `lambda`. Each variable may carry an optional `unit` string as a label; it is not converted. Unknown fields (for example `correlation` for `correlations`) are errors. Exit code `0` means a report was produced, `2` an input error reported as `{"error": ...}`; `--selftest` runs the script's regression cases.
+
 ## Quality gate
 
 Before finalizing, verify:
@@ -151,3 +153,15 @@ Before finalizing, verify:
 - sensitivity is not confused with uncertainty contribution;
 - the recommendation names a measurable change and expected effect;
 - unknown systematic and model errors remain explicit limitations.
+
+## References
+
+- `references/method.md` — propagation formulas, Monte Carlo diagnostics, sensitivity and elasticity definitions
+- `../_shared/physics-evidence-contract.md` — §4 academic-integrity boundary shared by all physics skills (no invented uncertainties or correlations)
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 脚本里表达式的名字一律按普通符号处理，未声明的 E、I、S、gamma 等不再静默取 SymPy 含义，只保留 pi 与白名单函数；变量名用 lambda 等保留字时给出改名提示；未知字段（如 correlation）改为报错；加 --selftest；弹性系数统一为带符号（与脚本输出、method.md 一致），排序按绝对值；Boundary 三处泛称改为点名 model-fit-auditor、dataset-systematic-error-hunter、physics-mechanism-decomposer；补 _shared 证据契约 §4 引用；示例命令改用 `python3`（macOS 自带的只有 python3） | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

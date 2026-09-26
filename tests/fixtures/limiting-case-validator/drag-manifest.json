@@ -1,0 +1,12 @@
+{
+  "target": "v_t = sqrt(2*m*g/(rho*C_d*A))",
+  "variables": [
+    {"name": "C_d", "meaning": "drag coefficient", "units": "1", "baselineLimits": ["+0", "+inf"]},
+    {"name": "m", "meaning": "mass", "units": "kg"}
+  ],
+  "cases": [
+    {"id": "L1", "variable": "C_d", "approach": "+0",
+     "expected": "no drag, so no finite terminal speed: v_t should diverge",
+     "why": "turning off the only force that balances gravity"}
+  ]
+}

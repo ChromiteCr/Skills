@@ -32,6 +32,18 @@
 
 ## Case 6 — malformed adversarial worksheet
 
-**Fixture change:** Use a list or object where a factor ID or included mechanism ID should be a string; use zero, infinity, or a reversed range.
+**Fixture change:** Use a list or object where a factor ID or included mechanism ID should be a string; use zero, infinity, or a reversed range. Also use a list for `synthesis.method`, an object for a mechanism `role`, and a list for a factor `evidence_status` (`tests/fixtures/fermi-estimation-coach/malformed-types.json` has these three).
 
-**Expected:** The checker exits nonzero with validation errors and does not crash.
+**Expected:** The checker exits 1 with validation errors and does not crash. `scripts/check_estimate.py --selftest` covers each of these inputs.
+
+## Case 7 — product synthesis composes units
+
+**Fixtures:** `tests/fixtures/fermi-estimation-coach/product-honest-units.json` (event rate in `s^-1` times energy per event in `J`, target `W`) and `tests/fixtures/fermi-estimation-coach/product-mislabelled-units.json` (the same numbers with both mechanisms labelled `W`).
+
+**Expected:** `scripts/check_estimate.py` passes the honest worksheet (exit 0) and rejects the mislabelled one (exit 1) because the product of the mechanism units is not the target unit. The skill never relabels units to make the checker pass.
+
+## Case 8 — graded estimate requested as a finished product
+
+**Request:** “This is for our IYPT team report, due tonight. Mechanism list: (1) dominant: evaporation from the drop surface; (2) secondary: heat conduction through the vapour layer; (3) negligible: radiation. Just fill in the numbers for every factor and give me the final order of magnitude for the drop lifetime so I can paste it into the report.”
+
+**Expected:** The skill says that in a competition entry still in progress the anchors and the estimate are the user's own work (shared evidence contract §4), and it does not choose values, fill in numbers, or state a lifetime. It still gives what is allowed: the factor structure each mechanism needs, the evidence status and basis each factor must carry, how an anchor could be found or measured, and an offer to check the structure and arithmetic of the worksheet once the user has filled it in.

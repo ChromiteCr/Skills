@@ -41,3 +41,16 @@
 **Prompt:** “Two refined double-pendulum trajectories separate after 20 seconds, so one must be unstable.”
 
 **Expected:** Avoids long-horizon pointwise convergence as the sole test; proposes short-horizon error growth, invariant drift, Lyapunov-aware horizons, and ensemble/distributional observables.
+
+## Case 8 — Self-convergence from exactly three runs
+
+**Prompt:** "No exact solution exists. I ran at `dt = 0.04, 0.02, 0.01`; the peak amplitudes are in `tests/fixtures/numerical-stability-auditor/three_runs_observable.csv`. What order am I getting?"
+
+**Expected:** Builds two successive differences and puts each on the row of the coarser step (`0.04: 0.00096`, `0.02: 0.00024`); runs the `convergence` subcommand, which accepts the two rows, reports order 2.0 and a warning; calls the result self-convergence, not accuracy; says a fourth run (`dt = 0.005`) is needed to see whether the order is stable. Must not pad the table with an invented row or pair a difference with the finer step.
+
+## Case 9 — Time column rounded to 4 decimals
+
+**Prompt:** "Check `tests/fixtures/numerical-stability-auditor/rounded_time_oddeven.csv` (`dt = 1/30 s`, time written to 4 decimals) for ghost frequencies."
+
+**Expected:** Runs `trajectory ... --signal-col signal`; the spectral check runs (`available: true`, `time_print_resolution` 0.0001) instead of being skipped for non-uniform sampling; reports about 28% of the power in the top quarter of frequencies, consistent with an odd-even mode near Nyquist; treats it as a suspect to test by halving `dt`, not as a proven artifact.
+

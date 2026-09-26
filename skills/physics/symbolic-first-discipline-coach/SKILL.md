@@ -2,7 +2,7 @@
 name: symbolic-first-discipline-coach
 description: 当推导中途就把数字代进去、结果看不出结构时使用。把符号一路保留到结构不再变化，再与「早代入数字」的路径并排对照：哪些量其实约掉了、哪两个量只以某个组合出现（说明本质自由度比看上去少）、从哪一步开始代数字会把物理藏起来。给的是纪律与对照，不替使用者算完。
 category: physics/derivation
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -61,9 +61,9 @@ Do **not** use this skill when:
 
 Route elsewhere when appropriate:
 
-- to a problem-formalization skill if the variables and constraints are not yet defined;
-- to a dimensional-analysis skill if unit consistency is still in doubt;
-- to a limiting-case skill if the formula is derived but its physical behavior is not trusted.
+- to `problem-formalization-coach` if the variables and constraints are not yet defined;
+- to `dimensional-analysis-checker` if unit consistency is still in doubt;
+- to `limiting-case-validator` if the formula is derived but its physical behavior is not trusted.
 
 ## Inputs required
 
@@ -74,8 +74,9 @@ Ask for the smallest set that makes structural comparison possible:
 3. **Starting relations** — laws, definitions, constraints, or equations already accepted.
 4. **Early numeric path** — where the user would normally substitute values.
 5. **Known scales or regimes** — small angle, low speed, weak damping, large separation, etc.
+6. **Context** — graded work still in progress (homework, a test, a competition entry), or self-study, review after submission, research. It decides how much of the symbolic path you write (see Boundaries and integrity).
 
-If any of 1–3 are missing, stop and request them before coaching.
+If any of 1–3 are missing, stop and request them before coaching. If 6 is missing, ask for it; until the user says the work is not graded or already submitted, coach at the graded-work level.
 
 ## Output contract
 
@@ -88,6 +89,8 @@ Produce a compact coaching artifact with these sections:
 5. **Physical reading** — what each surviving factor means physically.
 6. **Decision rule** — exactly when numbers should finally be substituted.
 7. **Confidence / gaps** — assumptions, unproved steps, or places needing human checking.
+
+For graded work in progress, sections 2–5 become structural questions plus the comparison method: which quantities might cancel, which combination to watch for, at which step substituting numbers would hide the structure. The user writes the symbolic path and does the substitution.
 
 ## Core workflow
 
@@ -195,16 +198,18 @@ If no tooling is available, perform the same checks manually and label them as m
 
 This skill is for coaching, explanation, and structural diagnosis.
 It must not be used to ghostwrite a graded derivation that the learner is expected to produce independently.
+This holds for any graded work still in progress (homework, a test, a competition entry), whether or not the user asks for a write-up: a student who only says "I'm stuck" gets the same boundary. It is the shared rule in `../_shared/physics-evidence-contract.md` §4.
 A good boundary is:
 
-- okay: reveal the dependency structure, identify cancellations, suggest a symbolic path, explain what the surviving groups mean;
-- not okay: produce a polished end-to-end submission-ready derivation when the user asks for direct homework completion.
+- okay, graded work in progress: structural questions (which quantities might cancel, which combination to watch for, where numbers would hide the structure) and the comparison method; the user derives and substitutes;
+- okay, self-study, review after submission, or research: reveal the dependency structure, identify cancellations, suggest a symbolic path, explain what the surviving groups mean;
+- not okay: a complete symbolic solution or a polished end-to-end derivation for graded work in progress, even when the user did not ask for one.
 
 ## Minimal example
 
 ### Example prompt
 
-"I need the terminal speed of a small sphere in a viscous fluid. If I plug in numbers immediately I get an answer, but I can't tell what really controls it. Show me why keeping it symbolic helps."
+"Self-study, not for an assignment: I need the terminal speed of a small sphere in a viscous fluid. If I plug in numbers immediately I get an answer, but I can't tell what really controls it. Show me why keeping it symbolic helps."
 
 ### Expected coaching shape
 
@@ -213,7 +218,7 @@ A good boundary is:
 - solve for terminal speed before substituting values;
 - point out that radius enters quadratically while density contrast enters linearly;
 - identify which constants are medium properties versus object properties;
-- only then substitute numbers.
+- leave the numeric substitution to the user, now that the structure is visible.
 
 ## Acceptance checklist
 
@@ -221,8 +226,22 @@ A solid run of this skill should satisfy all of the following:
 
 - the target quantity is explicit;
 - all symbols used in the derivation are defined;
-- the symbolic path is shown at least until the dependency structure stops changing;
+- the context is known; for graded work in progress, structural questions replace the written symbolic path;
+- otherwise, the symbolic path is shown at least until the dependency structure stops changing;
 - at least one hidden cancellation, grouping, or proportionality is named;
 - the physical meaning of the surviving group(s) is explained;
 - the output states when numeric substitution becomes appropriate;
 - uncertainties, approximations, or missing assumptions are called out plainly.
+
+## References
+
+- `../_shared/physics-evidence-contract.md` — §4 integrity boundary for graded work; §2 precision once numbers finally go in
+- `../_shared/dimensionless-groups.md` — §1 Buckingham π, for counting and naming the independent groups that survive
+- `../_shared/law-applicability-table.md` — the small or large parameter that licenses an approximation step
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | Inputs 加"场景"：会被评分的作业、测验、竞赛进行中（包括只说"卡住了"）只给结构性问题与对照方法，不交完整符号推导，原边界只在明确要求代写时生效；场景未说明时先问；示例改为由使用者代入数字；三处泛称分流改成 problem-formalization-coach、dimensional-analysis-checker、limiting-case-validator；引用 _shared 证据契约等参考 | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

@@ -31,7 +31,7 @@ Search snippets, uncited tables, and remembered constants are leads to verify, n
 
 - Convert candidate and reference to the same unit before numeric comparison.
 - Match like with like: component versus component, RMS versus peak, local versus global, vacuum versus medium, and measured versus model-defined quantities.
-- Compare uncertainty intervals when available.
+- When both uncertainties are available, compare with the z rule of check 6 (standard uncertainties, k=1), not by whether the intervals overlap.
 - Use a range rather than false precision when the quantity varies by context.
 - State the ratio and order-of-magnitude gap.
 - A mismatch may expose a regime difference rather than an arithmetic error; check conditions before rejecting the result.

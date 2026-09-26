@@ -38,7 +38,7 @@ For scalar output, useful quantities are:
 
 - signed coefficient: `c_i = ∂f/∂x_i`;
 - diagonal variance term: `v_i = c_i²u_i²`;
-- elasticity: `e_i = (x_i/y)c_i`, when `x_i` and `y` are nonzero;
+- elasticity: `e_i = (x_i/y)c_i`, when `x_i` and `y` are nonzero; signed, as the helper script reports it; rank inputs by `|e_i|`;
 - predicted gain from reducing one independent standard uncertainty by factor `r`: `(1-r²)v_i` reduction in variance.
 
 With correlations, changing one uncertainty can also change covariance terms. Trace correlations to shared calibration, environment, or data reduction before claiming an isolated improvement.

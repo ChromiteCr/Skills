@@ -2,7 +2,7 @@
 name: fermi-estimation-coach
 description: 当机制清单已经排好、需要给每个机制配数值锚点并合成一个站得住的量级结论时使用。把估算写成显式的因子分解，每个因子给低／中／高三值与证据档位，算出区间而不是装饰性的小数位，再与参考区间和守恒量核对。worksheet 的结构与算术由 scripts/check_estimate.py 校验。不负责发现或排序机制——那是 physics-mechanism-decomposer 的事。
 category: physics/estimation
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -32,7 +32,9 @@ Use this skill to:
 - combine mechanism-level estimates into an order-of-magnitude conclusion;
 - identify which assumptions deserve measurement or source checking.
 
-Do **not** use it to discover, rank, or explain candidate mechanisms from scratch. If no mechanism list exists, first ask for one or route the user to a mechanism-decomposition workflow. Do not present guessed values as measured facts, and do not silently replace missing inputs with convenient constants.
+Do **not** use it to discover, rank, or explain candidate mechanisms from scratch. If no mechanism list exists, first ask for one or route the user to `physics-mechanism-decomposer`. Do not present guessed values as measured facts, and do not silently replace missing inputs with convenient constants.
+
+In graded work that is still in progress (homework, a test, a competition entry such as an IYPT report), the factorization, the anchors, and the final estimate are the user's own work. There, check the structure and arithmetic of the worksheet the user wrote, name factors that lack a basis or an evidence status, and explain how an anchor could be found; do not choose the anchors, fill in the numbers, or produce the estimate. If the context is unclear and the request is to produce the estimate, ask first. This is the shared boundary in `../_shared/physics-evidence-contract.md` §4.
 
 ## Inputs
 
@@ -103,7 +105,7 @@ Combine all `dominant` and `secondary` contributions unless an exclusion is expl
 
 - `sum` for additive contributions;
 - `max` only when the goal is a dominant-scale approximation and this is stated;
-- `product` only when mechanism outputs are genuinely multiplicative.
+- `product` only when mechanism outputs are genuinely multiplicative. The mechanism units then multiply to the target unit (for example `s^-1` × `J` = `W`); with `sum` and `max`, every mechanism estimate carries the target unit itself.
 
 Keep negligible mechanisms in the ledger with the reason they were omitted. Never infer cancellation from magnitudes alone; signs and phases require separate physical justification.
 
@@ -123,10 +125,10 @@ If the conclusion crosses the decision threshold inside the plausible range, rep
 Encode the worksheet using `references/estimate-schema.md`, then run:
 
 ```text
-python scripts/check_estimate.py estimate.json
+python3 scripts/check_estimate.py estimate.json
 ```
 
-The checker validates field completeness, ordered positive ranges, reference-range conflicts, product/quotient arithmetic, synthesis closure, and omission of non-negligible mechanisms. It does **not** validate the selected physics, source credibility, unit conversions, signs, correlations, or whether factorization is conceptually correct. Those require human or agent review.
+The checker validates field completeness, unknown keys, ordered positive ranges, reference-range conflicts, product/quotient arithmetic, synthesis closure, the combined unit of a `product` synthesis, and omission of non-negligible mechanisms. Exit status: `0` pass, `1` validation errors, `2` unreadable file or bad arguments; `--selftest` runs its regression cases. It does **not** validate the selected physics, source credibility, unit conversions, whether factor units multiply to the mechanism unit, signs, correlations, or whether factorization is conceptually correct. Those require human or agent review.
 
 ## Output format
 
@@ -163,3 +165,10 @@ Before finalizing, confirm:
 - the stated precision matches the uncertainty range;
 - deterministic checks pass;
 - physical assumptions and checker limitations remain visible.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | check_estimate.py：product 合成改为各机制单位相乘后与目标单位比对（原规则只有谎标单位才能通过），method/role/evidence_status 类型错误不再抛 TypeError，未知键报错，加 --selftest 并写明退出码；Scope 补作业与竞赛进行中的代做边界（指向证据契约 §4），机制分解改指 physics-mechanism-decomposer；示例命令改用 `python3`（macOS 自带的只有 python3） | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

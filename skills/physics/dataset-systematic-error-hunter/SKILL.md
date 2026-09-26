@@ -2,7 +2,7 @@
 name: dataset-systematic-error-hunter
 description: 当一份实验数据可能藏着仪器或环境偏差时使用。扫描漂移、温度依赖、非线性、滞回、重复不一致这几类系统误差特征，再把每一类归因到一个具体的物理过程（热学、电子学、机械），而不是一句「数据有问题」。相关不等于因果——脚本给的是线索，归因要另找证据。
 category: physics/data
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -52,7 +52,7 @@ State what the response should look like under the intended model. If no trusted
 When local execution is available, run:
 
 ```bash
-python scripts/hunt_systematics.py data.csv \
+python3 scripts/hunt_systematics.py data.csv \
   --response measured_value \
   --time elapsed_s \
   --temperature temperature_C \
@@ -68,6 +68,8 @@ Use only flags supported by the local script. The script reports descriptive sig
 - first-versus-last segment drift;
 - linear versus quadratic fit improvement as a nonlinearity clue;
 - between-repeat mean spread and within-repeat scatter.
+
+The fits are computed on the predictor after centering and scaling it, so Unix epoch seconds or SI-small values (wavelengths in metres) give the same fit and SSE reduction as elapsed seconds. `--time` accepts plain numbers or ISO 8601 timestamps (`2026-09-01T10:00:00`, optionally with `Z` or an offset); timestamps become seconds since the earliest one. Each pair scan reports `n`, `dropped_rows` and `warnings` (unreadable rows, or why a fit is unavailable); carry dropped rows into **Audit coverage and limitations**. A missing column, an unreadable file, or a requested column with no usable rows exits with code 2 and an `error:` line instead of a report; exit code 0 means the report was written. `--selftest` runs the script's regression cases.
 
 If tools cannot be run, perform the same checks explicitly and label numerical results unverified.
 
@@ -123,8 +125,8 @@ Never remove outliers merely because they weaken a trend. Never subtract a fitte
 ## Boundaries
 
 - This skill diagnoses systematic-error signatures; it does not replace uncertainty propagation or general model-fit auditing.
-- Use a fit-audit skill for residual adequacy, leverage, influence, or model selection as the primary question.
-- Use an uncertainty-propagation skill after a defensible measurement model has been established.
+- Use `model-fit-auditor` for residual adequacy, leverage, influence, or model selection as the primary question.
+- Use `uncertainty-propagator` after a defensible measurement model has been established.
 - Do not invent apparatus details, units, uncertainty, calibration history, or physical causes.
 - Do not claim statistical independence when samples are time ordered or grouped.
 - Small datasets may support a warning or follow-up design, but not a confident mechanism claim.
@@ -136,3 +138,15 @@ Never remove outliers merely because they weaken a trend. Never subtract a fitte
 - **Acquisition order discarded:** restore original order before drift checks.
 - **Many scans, one dramatic result:** report all scans performed and treat weak findings as exploratory.
 - **Automatic correction:** stop and preserve the unmodified source data.
+
+## References
+
+- `scripts/hunt_systematics.py` — deterministic signature scan (step 3)
+- `../_shared/physics-evidence-contract.md` — §4 academic-integrity boundary shared by all physics skills (no invented apparatus details or data)
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 脚本的线性与二次拟合改在中心化、缩放后的自变量上求解，Unix 时间戳不再给出负的 SSE 降幅、SI 小量不再返回 null；时间列支持 ISO 8601；逐项报告 dropped_rows 与原因，某列没有可用行时以退出码 2 报错而不是 n=0 照常退出；加 --selftest；Boundaries 两处泛称改为点名 model-fit-auditor、uncertainty-propagator；补 _shared 证据契约 §4 引用；示例命令改用 `python3`（macOS 自带的只有 python3） | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

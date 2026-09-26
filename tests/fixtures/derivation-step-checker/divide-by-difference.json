@@ -1,0 +1,19 @@
+{
+  "symbols": {
+    "m1": {"M": 1},
+    "m2": {"M": 1},
+    "v": {"L": 1, "T": -1},
+    "p": {"M": 1, "L": 1, "T": -1}
+  },
+  "nonzero": ["m1", "m2"],
+  "steps": [
+    {
+      "id": "div",
+      "before": "(m1 - m2)*v = (m1 - m2)*p/m1",
+      "after": "v = p/m1",
+      "factor": "m1 - m2",
+      "law": "divide both sides by (m1 - m2)",
+      "applicability": "m1 and m2 are nonzero masses"
+    }
+  ]
+}

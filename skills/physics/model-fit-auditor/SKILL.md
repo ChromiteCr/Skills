@@ -1,8 +1,8 @@
 ---
 name: model-fit-auditor
-description: 当已经有观测与模型预测（或一份拟合输出）、要判断这个拟合信不信时使用。看残差结构、带不确定度的拟合优度、杠杆值与影响点、信息准则。系统性残差是理论模型的照妖镜——残差里有结构，说明模型漏了一段物理，必须说出漏的可能是哪一段，而不是加参数。不在有数据之前选模型，也不悄悄删离群点。
+description: 当已经有观测与模型预测（或一份拟合输出）、要判断这个拟合信不信时使用。看残差结构、带不确定度的拟合优度、杠杆值与影响点、信息准则。残差里有结构，说明模型、测量过程或不确定度模型三者之一不完整：必须说出可能是哪一处、用什么检查分辨，而不是加参数；疑似仪器漂移、温度、批次这类测量偏差时转 dataset-systematic-error-hunter 查原始数据。不在有数据之前选模型，也不悄悄删离群点。
 category: physics/data
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P1
 compatible_agents:
@@ -16,7 +16,7 @@ display_name: 拟合诚实性体检
 outputs:
   - chat
 max_rounds: 20
-suggest_hint: 用「拟合诚实性体检」看残差里有没有结构——有结构就是漏了物理，不是该加参数
+suggest_hint: 用「拟合诚实性体检」看残差里有没有结构——有结构说明模型、测量过程或不确定度模型有一处不完整，不是该加参数
 ---
 
 # Model Fit Auditor
@@ -45,6 +45,8 @@ If raw data cannot be shared, accept a residual table or fit report and explicit
 - Do not compare AIC/BIC values computed from different response data, likelihood definitions, or preprocessing pipelines.
 - Do not infer causation from a residual pattern. Offer candidate mechanisms and discriminating checks.
 - For correlated errors, censored data, hierarchical models, non-Gaussian likelihoods, or errors in predictors, require a likelihood appropriate to that structure; the bundled script is only a first-pass diagnostic.
+- When residual structure looks like the measurement system rather than the model (drift with acquisition time, temperature dependence, batch or re-zeroing effects), hand the raw data to `dataset-systematic-error-hunter` to scan and attribute it.
+- This skill judges whether one fit honestly describes its data. When the question is whether a whole modeling solution or paper holds up (assumptions, validation design, sensitivity, reproducibility, reviewer-style critique), use `model-critique-coach`.
 
 ## Workflow
 
@@ -156,7 +158,7 @@ Separate observations from interpretations. Never hide failed checks.
 `scripts/audit_fit.py` accepts JSON and emits JSON diagnostics without vendor-specific services or third-party packages:
 
 ```sh
-python scripts/audit_fit.py fit.json
+python3 scripts/audit_fit.py fit.json
 ```
 
 Minimal input:
@@ -165,7 +167,9 @@ Minimal input:
 {"observed":[1.0,2.1,2.9],"predicted":[1.1,2.0,3.0],"parameter_count":2}
 ```
 
-Optional keys are `sigma`, `variables` (a mapping of variable name to numeric values), and `design_matrix` (rows including any intercept column). See `references/interpretation.md` before treating heuristic flags as conclusions.
+Optional keys are `sigma`, `variables` (a mapping of variable name to numeric values), and `design_matrix` (rows including any intercept column). Any other key is an input error, so a misspelled `sigma` or `design_matrix` cannot silently switch a check off. See `references/interpretation.md` before treating heuristic flags as conclusions.
+
+Leverage comes from a pivoted QR factorization of the design matrix after centering (when an intercept column is present) and column scaling, with a relative rank tolerance. Raw units therefore do not matter: wavelengths in metres, or time in Unix epoch seconds next to an intercept, give the same leverages as rescaled data. The `influence` block reports `rank` and `leverage_sum`; the leverages must sum to the rank, and a rank below the column count is a warning, not an error. When rounding already present in the input could move the leverages by more than 0.001 (for example a column of squared epoch seconds), leverage and Cook's distance are withheld with a warning; subtract a reference value from the predictor before building such columns. Exit code `0` means diagnostics were written (read `warnings`); `2` means invalid input. `--help` prints usage and `--selftest` runs the script's regression cases.
 
 ## Failure modes
 
@@ -175,3 +179,15 @@ Optional keys are `sigma`, `variables` (a mapping of variable name to numeric va
 - **Invalid score comparison:** comparing AIC/BIC across different datasets or likelihoods.
 - **Uncertainty theater:** using guessed error bars as if independently measured.
 - **Tool overreach:** presenting the helper’s linear-model influence diagnostics as valid for every nonlinear fit.
+
+## References
+
+- `references/interpretation.md` — definitions and assumptions behind every helper statistic
+- `../_shared/physics-evidence-contract.md` — §4 academic-integrity boundary shared by all physics skills (no invented data, uncertainties or exclusions)
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 脚本求杠杆值改用中心化加列缩放后的列主元 QR 与相对秩容差，SI 小量不再误报秩亏、epoch 秒不再静默给错杠杆值，并校验杠杆值之和等于秩；输入本身精度不够时扣下杠杆值并警告；支持 --help、--selftest，未知键改为报错；description 与 suggest_hint 改为"模型、测量过程或不确定度模型三者之一不完整"并点名 dataset-systematic-error-hunter；Boundaries 补与 model-critique-coach 的判别句；补 _shared 证据契约 §4 引用；示例命令改用 `python3`（macOS 自带的只有 python3） | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |

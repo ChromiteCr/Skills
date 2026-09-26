@@ -55,6 +55,25 @@ Expected:
 - do not merge or silently choose one source;
 - propose a provenance check before mechanism claims.
 
+## Case 6 — Logger time in Unix epoch seconds
+
+Input: "Is there curvature in this zero drift?" with `tests/fixtures/dataset-systematic-error-hunter/epoch_curvature.csv` (a zero reading logged once a minute; `epoch_s` is Unix time, `elapsed_s` is the same clock started at 0, plus a temperature column).
+
+Expected:
+
+- run the scan with `--time epoch_s` (the same command with `--time elapsed_s` must give the same numbers);
+- report the quadratic SSE reduction for `epoch_s` as about 0.94, identical to `elapsed_s`; never report a negative reduction or a missing quadratic fit for this file;
+- treat the curvature as a clue with competing mechanisms (warm-up settling versus the temperature ramp), not as a cause.
+
+## Case 7 — ISO timestamps with one unreadable row
+
+Input: `tests/fixtures/dataset-systematic-error-hunter/iso_time.csv` (readings every 5 minutes with ISO 8601 timestamps; one timestamp is `n/a`). The user asks for a drift check against time, then asks to use the `operator` column as the time axis.
+
+Expected:
+
+- the scan reads the timestamps as seconds since `2026-09-01T10:00:00`, with `n` = 11 and `dropped_rows` = 1; the dropped row is named under Audit coverage and limitations, not ignored;
+- with `--time operator` the script exits 2 with `no usable rows for predictor 'operator'`; the skill reports that error and does not describe a scan with `n` = 0.
+
 ## Script smoke fixture
 
 A minimal CSV for local smoke testing:

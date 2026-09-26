@@ -2,7 +2,7 @@
 name: limiting-case-validator
 description: 当有一条公式、标度律或模型结果，想在相信它之前查它在极限下还讲不讲得通时使用。先找出控制参数与无量纲组，挑最小一组有用的极限，在动手算之前先写下物理上应该发生什么，再做数学化简两相对照；专抓在某个极限下发散、变号、或丢掉已知特例的表达式。manifest 的完整性由 scripts/check_limit_manifest.py 校验。
 category: physics/checking
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -27,17 +27,19 @@ This skill is for validation, not for doing the original derivation from scratch
 
 ## Use this when
 
-- You have a final formula and want to know whether it is physically plausible.
+- You have a final formula (not only a number) and want to know whether it is physically plausible in its limits.
 - You need to check whether a model reduces to a known textbook case.
 - You want to identify which dimensionless parameter actually controls the regime.
 - A result looks suspicious near a boundary, singularity, or approximation limit.
 
 ## Do not use this when
 
-- The main problem is parsing the original statement. Use a problem-formalization skill first.
+- The main problem is parsing the original statement. Use `competition-scenario-extractor` first.
 - The formula is not yet defined clearly enough to test.
 - The user is asking you to invent a derivation they have not attempted.
-- The task is mainly unit consistency; that belongs to dimensional analysis.
+- The task is mainly unit consistency; use `dimensional-analysis-checker`.
+- The user wants every step of a written derivation audited (algebra, signs, whether each law still applies); use `derivation-step-checker`. This skill tests only the end result.
+- The user has a numerical answer but no formula to take limits of; use `answer-plausibility-checker`.
 
 ## Required inputs
 
@@ -101,6 +103,8 @@ For each chosen limit, state:
 - whether the quantity should remain finite, monotone, positive, or bounded
 
 If you cannot explain the expectation in words, say so instead of bluffing.
+
+If you can run scripts, record steps 1-3 as a limit manifest and check it now, before step 4 (see **Limit manifest check** under Deterministic assistance).
 
 ### 4. Reduce the expression in each limit
 
@@ -208,6 +212,51 @@ If tools are available, they may help with:
 
 These checks support the judgment; they do not replace the need to state the physical expectation first.
 
+### Limit manifest check
+
+`scripts/check_limit_manifest.py` checks that the plan from steps 1-3 is complete before any algebra: every limit names its variable, its approach, a physical expectation and a reason. Write the plan as a JSON file and run, from this skill's directory:
+
+```bash
+python3 scripts/check_limit_manifest.py limit-manifest.json
+```
+
+`--help` prints the field list; `--selftest` runs the script's regression cases.
+
+| Field | Required | Content |
+|---|---|---|
+| `target` | yes | the formula or claim under test, quoted exactly |
+| `variables` | yes, non-empty | one object per control parameter or dimensionless group |
+| `variables[].name` | yes | unique name; cases refer to it |
+| `variables[].baselineLimits` | no | approach words that must each have a case; a missing case is a `WARN` |
+| `variables[].meaning`, `units`, `range` | no | free text |
+| `cases` | yes, non-empty | one object per limit |
+| `cases[].id` | yes | unique id such as `L1` |
+| `cases[].variable` | yes | a declared variable name |
+| `cases[].approach` | yes | one approach word from the list below |
+| `cases[].expected` | yes | the physical expectation from step 3, written before the math |
+| `cases[].why` | yes | why this limit is physically relevant (step 2) |
+| `notes` | no | free text, allowed at the root, in variables and in cases |
+
+Approach words: `0`, `+0`, `-0`, `inf`, `+inf`, `-inf`, `small`, `large`, `equal-scale`, `threshold`, `special-value`, `turn-off`, `symmetry`.
+
+Minimal example:
+
+```json
+{
+  "target": "T = 2*pi*sqrt(L/g)*(1 + theta0)",
+  "variables": [
+    {"name": "theta0", "meaning": "launch amplitude", "units": "rad", "baselineLimits": ["+0"]}
+  ],
+  "cases": [
+    {"id": "L1", "variable": "theta0", "approach": "+0",
+     "expected": "period returns to 2*pi*sqrt(L/g); the first correction is even in theta0",
+     "why": "small-angle textbook limit"}
+  ]
+}
+```
+
+Exit codes: `0` the plan is structurally complete, or usable with `WARN` lines (a declared variable no case tests, a baseline limit with no case); `1` errors (missing or empty field, unknown field, unsupported approach word, undeclared variable, unreadable file); `2` usage error. The script checks the structure of the plan only. It evaluates no limit, so a clean run says nothing about whether the formula passes.
+
 ## Acceptance bar
 
 A good run of this skill must include all of the following:
@@ -219,3 +268,15 @@ A good run of this skill must include all of the following:
 - the final verdict distinguishes pass, fail, and inconclusive cases
 
 If any of the above is missing, the validation is incomplete.
+
+## References
+
+- `../_shared/physics-evidence-contract.md` — §4 academic-integrity boundary shared by all physics skills (backs the "invent a derivation" exclusion above)
+- `scripts/check_limit_manifest.py` — structural check of the limit plan (see Limit manifest check)
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | 正文补 manifest 字段表、调用命令与退出码；脚本支持 --help、--selftest，空 manifest 与未知字段改为报错；"不适用"改为点名 competition-scenario-extractor、dimensional-analysis-checker、derivation-step-checker、answer-plausibility-checker；补 _shared 证据契约 §4 引用 | patch |
+| 0.1.0 | 2026-09-05 | 初始版本 | minor |
