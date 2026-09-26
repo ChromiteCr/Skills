@@ -110,6 +110,8 @@ warnings:
 supports_claims:
 ```
 
+本节是 Run Manifest 的唯一 schema；其他文档引用这里，不另列一套字段。
+
 不能取得 Git revision、环境锁文件或文件哈希时，记录可用的最低等价信息；不能空着却写“可复现”。
 
 ## 8. 完成判据

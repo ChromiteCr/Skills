@@ -2,7 +2,7 @@
 name: paper-enhancement-builder
 description: 当使用者说“这篇建模论文还能怎么提升”“按评分表排修改优先级”“时间不够先改什么”“给我一个论文改进清单”“要不要再加一个高级模型”时使用。基于现有草稿、模型工作包、批判 findings、评分规则和真实剩余资源建立可定位的 gap register，再按结论影响、评分关联、工作量、依赖与失败风险排序；每项写所需数据/代码/作者决定、验证与验收条件，先给一个最小可行修订，不用装饰复杂度替代证据，不编创新、实验或评委偏好。
 category: modeling/paper
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -36,6 +36,7 @@ suggest_hint: 截止前不知道先改哪？用「建模论文增强规划器」
 **不适用于** / Not for：
 
 - 还没有可审查的论文 / 工作包 —— 先完成拆题、模型、代码或 `paper-structure-coach`
+- 已有草稿，但章节顺序、段落职责或主张—证据链还没理顺 —— 先用 `paper-structure-coach`，结构稳定后再来排增强优先级
 - 需要发现根本性模型漏洞 —— 先用 `model-critique-coach`
 - 已经决定修订，只需执行代码 —— 用 `modeling-code-builder`
 - 只需 LaTeX 格式与编译修复 —— 用 `latex-paper-formatter`
@@ -70,7 +71,7 @@ suggest_hint: 截止前不知道先改哪？用「建模论文增强规划器」
 1. 原题 / 评分项没有对应论文位置
 2. `C -> F / R / T / M / D / A -> Q` 证据链断裂
 3. critique finding 没有关闭条件或仍为 open
-4. 结构中职责混淆、重复、冲突或页数失衡
+4. 结构中职责混淆、重复、冲突或页数失衡（结构重排本身交给 `paper-structure-coach`，本 skill 只排序与追踪）
 5. 复现、引用、AI 披露和提交格式缺失
 
 每个 gap 写：精确位置 / IDs、观察证据、影响的主张或评分项、严重度、根因与当前状态。多个反馈若指向同一根因，
@@ -137,8 +138,9 @@ MVR 是在当前资源下能完整闭环的一项或一组最小改动，通常�
 
 ### 8. 执行前确认，执行后按条件关闭
 
-先交 backlog 与 MVR 让使用者确认取舍。确认后把代码、模型、结构与 LaTeX 任务路由给对应 skill；本 skill 维护状态，
-不在一个大补丁里同时改模型、跑实验、重写论文和重排格式。
+先交 backlog 与 MVR 让使用者确认取舍。确认后把代码任务交给 `modeling-code-builder`，模型与假设修订交给
+`model-selection-tutor` / `modeling-assumption-builder`，结构交给 `paper-structure-coach`，LaTeX 交给
+`latex-paper-formatter`；本 skill 维护状态，不在一个大补丁里同时改模型、跑实验、重写论文和重排格式。
 
 关闭 gap 时附证据 IDs。只是“已经修改文字”不能关闭需要新验证的 finding。
 
@@ -210,4 +212,5 @@ MVR 是在当前资源下能完整闭环的一项或一组最小改动，通常�
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | 补与 `paper-structure-coach` 的分流：有草稿但结构不稳先去理结构，gap 路径 4 注明结构重排交给它；执行路由的“对应 skill”改为实名 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：gap register、完整增强卡、资源排序、MVR、三档队列与拒绝项 | minor |

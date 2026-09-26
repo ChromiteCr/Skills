@@ -7,11 +7,13 @@ import json
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKER = ROOT / "skills/modeling/latex-paper-formatter/scripts/check_latex.py"
+SKILL_DIR = CHECKER.parents[1]
 FIXTURES = ROOT / "tests/fixtures/latex-paper-check"
 REQUIRED_INVALID_CODES = {
     "duplicate-label",
@@ -22,10 +24,16 @@ REQUIRED_INVALID_CODES = {
 }
 
 
-def run_checker(path: Path, root: Path = ROOT) -> subprocess.CompletedProcess[str]:
+def run_checker(
+    path: Path, root: Path | None = ROOT, cwd: Path = ROOT
+) -> subprocess.CompletedProcess[str]:
+    command = [sys.executable, str(CHECKER), "--json"]
+    if root is not None:
+        command += ["--root", str(root)]
+    command.append(str(path))
     return subprocess.run(
-        [sys.executable, str(CHECKER), "--json", "--root", str(root), str(path)],
-        cwd=ROOT,
+        command,
+        cwd=cwd,
         check=False,
         capture_output=True,
         text=True,
@@ -56,6 +64,13 @@ def main() -> int:
     assert invalid.returncode == 1, invalid_report
     missing_codes = REQUIRED_INVALID_CODES - finding_codes(invalid_report)
     assert not missing_codes, f"missing invalid fixture findings: {sorted(missing_codes)}"
+    manual_numbers = {
+        item["message"]
+        for item in invalid_report["findings"]
+        if item["code"] == "manual-number-reference"
+    }
+    for written in ("Figure 2", "公式 (3)", "式（5）"):
+        assert any(written in message for message in manual_numbers), invalid_report
 
     biblatex = run_checker(FIXTURES / "biblatex-invalid.tex")
     biblatex_report = parse_report(biblatex)
@@ -70,6 +85,33 @@ def main() -> int:
     }
     assert any("missing2026" in message for message in citation_messages), biblatex_report
     assert not any("smith2025" in message for message in citation_messages), biblatex_report
+
+    # Multi-file paper, checked the way SKILL.md says: from the skill directory,
+    # without --root. Nested \input, a dotted file name, \graphicspath from the
+    # root preamble and \bibliography inside a sub-file all resolve from the
+    # root file's directory, as TeX resolves them.
+    multifile = run_checker(FIXTURES / "multifile-valid/main.tex", root=None, cwd=SKILL_DIR)
+    multifile_report = parse_report(multifile)
+    assert multifile.returncode == 0, multifile_report
+    assert multifile_report["summary"]["sources"] == 5, multifile_report
+    assert multifile_report["summary"]["errors"] == 0, multifile_report
+    assert multifile_report["summary"]["warnings"] == 0, multifile_report
+
+    # A path written relative to the sub-file, a figure whose case differs from
+    # the disk (reported on case-insensitive macOS too) and Chinese manual numbers.
+    broken = run_checker(
+        FIXTURES / "multifile-invalid/main.tex", root=FIXTURES / "multifile-invalid"
+    )
+    broken_report = parse_report(broken)
+    assert broken.returncode == 1, broken_report
+    broken_counts = Counter(
+        item["code"] for item in broken_report["findings"] if item["severity"] != "info"
+    )
+    assert broken_counts == {
+        "subfile-relative-path": 1,
+        "path-case-mismatch": 1,
+        "manual-number-reference": 2,
+    }, broken_report
 
     with tempfile.TemporaryDirectory() as temp_directory:
         temp_root = Path(temp_directory)
@@ -86,7 +128,27 @@ def main() -> int:
         unreadable_report = parse_report(run_checker(unreadable, project))
         assert "unreadable-tex-source" in finding_codes(unreadable_report), unreadable_report
 
-    print("OK: LaTeX checker fixtures, citation parsing, path containment, and read errors.")
+    selftest = subprocess.run(
+        [sys.executable, str(CHECKER), "--selftest"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert selftest.returncode == 0, selftest.stdout + selftest.stderr
+    assert "passed" in selftest.stdout, selftest.stdout
+
+    usage = subprocess.run(
+        [sys.executable, str(CHECKER), "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert usage.returncode == 0 and "usage:" in usage.stdout, usage.stdout + usage.stderr
+
+    print(
+        "OK: LaTeX checker fixtures, TeX path semantics, path case, Chinese manual numbers, "
+        "citation parsing, path containment, read errors, --selftest and --help."
+    )
     return 0
 
 

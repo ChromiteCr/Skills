@@ -2,7 +2,7 @@
 name: team-role-coach
 description: 当使用者说“建模比赛三个人怎么分工”“帮我们排协作节奏”“模型、代码和论文总对不上”“截止前谁做什么”“怎么交接和复核”时使用。根据真实成员能力、可用时间、交付物依赖与截止约束，按产物和决策分配 owner/reviewer，建立单一事实源、关键路径、九个质量闸门、交接包、冲突与回退规则；不猜成员能力、不平均分任务、不伪造会议、贡献或独立审查，不让未验证结果直接进入论文。
 category: modeling/team
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -37,7 +37,8 @@ owner、reviewer、版本和退出条件，让交接后的人知道什么能信�
 **不适用于** / Not for：
 
 - 只是个人时间计划，不涉及建模产物依赖 —— 使用通用计划工具
-- 要替成员选择模型、写代码或论文 —— 路由到对应 modeling skill
+- 要替成员选择模型、写代码或论文 —— 分别用 `model-selection-tutor`、`modeling-code-builder`、`paper-structure-coach`
+  （它们各自守代写边界）
 - 要编造团队日志、贡献、审查或署名 —— 拒绝
 - 团队存在人际或安全危机 —— 本 skill 只能处理技术协作，需由真实负责人介入
 
@@ -213,4 +214,5 @@ Gate 可以异步审核，不需要为每个都开会。没有 reviewer 的单�
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | “不适用于”里的“路由到对应 modeling skill”改为实名 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：产物 owner/reviewer、关键路径、九个 Gate、交接、冻结与诚信核对 | minor |

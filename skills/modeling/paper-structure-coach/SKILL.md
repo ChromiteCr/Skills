@@ -2,7 +2,7 @@
 name: paper-structure-coach
 description: 当使用者说“帮我整理建模论文结构”“这一段该放哪”“论文逻辑很乱”“怎么从模型讲到结论”“摘要和正文对不上”时使用。基于学生已有题面、模型、运行、图表和草稿建立主张—证据图，再给按问题驱动的章节蓝图、段落职责、图表计划与页数预算；保证摘要数字可追溯、结果与验证分开、结论强度不越过证据，不代写整篇竞赛论文，不用流畅叙事掩盖缺失分析。
 category: modeling/paper
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -36,7 +36,8 @@ suggest_hint: 分析已经做了但论文讲不顺？用「建模论文结构教
 
 **不适用于** / Not for：
 
-- 尚未完成基本拆题、选模或假设 —— 回到对应 modeling skill
+- 尚未完成基本拆题、选模或假设 —— 分别回到 `modeling-problem-reading-coach`、`model-selection-tutor`、
+  `modeling-assumption-builder`
 - 想让 Agent 从零写完整竞赛论文 —— 本 skill 只整理学生已有论据与写作提示
 - 已有稳定结构，只需排序具体改进项 —— 用 `paper-enhancement-builder`
 - 只需修 LaTeX 版式、标签与编译 —— 用 `latex-paper-formatter`
@@ -187,4 +188,5 @@ suggest_hint: 分析已经做了但论文讲不顺？用「建模论文结构教
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | “不适用于”里的“回到对应 modeling skill”改为三个上游 skill 的实名 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：材料盘点、中心主张、证据图、问题驱动章节、图表计划与三向闭环 | minor |

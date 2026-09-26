@@ -11,7 +11,8 @@
 **期望 / Expected**
 
 - [ ] 先记录模板、根文件、引擎、构建命令和基线日志，不因 PDF 存在就称完全通过
-- [ ] 静态检查发现手工编号、重复 label、缺 citation 和缺图
+- [ ] 静态检查发现手工编号（含“公式 (3)”）、重复 label、缺 citation 和图路径大小写错误（`path-case-mismatch`；
+  在不分大小写的 macOS 上也要报出）
 - [ ] 用语义等价环境与 label / ref 修复排版，不改变方程项和符号
 - [ ] 表格单位移到列标题前确认数值含义，不擅自换算
 - [ ] overfull 逐项定位，不全局缩字号或改边距
@@ -103,3 +104,36 @@ Agent 可以读取和建议修改 `.tex`，但环境没有 Python、TeX 引擎�
 - [ ] `\addbibresource{references}` 能补 `.bib`，plural citation 与 `citeauthor` / `citeyear` 的缺失 key 被检查
 - [ ] `\input`、bibliography 与 figure 逃出 `--root` 时报告 path-outside-root，不读取根外文件
 - [ ] 非 UTF-8 / 不可读源文件转成结构化 finding，不以 traceback 崩溃
+- [ ] invalid fixture 中的“公式 (3)”“式（5）”报 manual-number-reference
+- [ ] `check_latex.py --selftest` 全部通过并返回 0；`--help` 打印用法并返回 0
+
+## Case 7: 多文件论文的路径按 TeX 规则解析
+
+**输入 / Input**
+
+在本 skill 目录（`skills/modeling/latex-paper-formatter`）下照 SKILL.md 的命令运行，不加 `--root`：
+
+```bash
+python3 scripts/check_latex.py <仓库根>/tests/fixtures/latex-paper-check/multifile-valid/main.tex
+python3 scripts/check_latex.py <仓库根>/tests/fixtures/latex-paper-check/multifile-invalid/main.tex
+```
+
+`multifile-valid` 里子文件 `sections/results.tex` 写 `\input{tables/summary}`（文件在项目根的 `tables/`），根文件写
+`\input{sections/1.intro}` 和 `\graphicspath{{figures/}}`，`\bibliography{refs}` 写在子文件 `sections/references.tex` 里。
+`multifile-invalid` 的 `sections/model.tex` 写 `\input{detail}`（文件只在 `sections/detail.tex`）、
+`\includegraphics{figs/Result.PNG}`（磁盘上是 `figs/result.png`），正文有“公式 (3)”和“式（5）”。
+
+**期望 / Expected**
+
+- [ ] 两条命令都真的读到论文：不出现 path-outside-root，SUMMARY 的 source 数分别是 5 和 3
+- [ ] `multifile-valid` 返回 0，没有 error 和 warning：嵌套 `\input`、带点文件名、根文件的 `\graphicspath` 和子文件里的
+  `\bibliography` 都从根文件目录解析
+- [ ] `multifile-invalid` 返回 1，恰好报出 subfile-relative-path（并给出从根目录写的 `sections/detail.tex`）、
+  path-case-mismatch（macOS 上同样报）和两条 manual-number-reference
+- [ ] Agent 把改路径列为安全机械项，把改手工编号列为 `\label` + `\eqref` 替换，不动公式本身
+
+**反例 / Must not**
+
+- 不得把只在子文件目录下才找得到的路径当作通过
+- 不得因为本机不分大小写就放过 `Result.PNG`
+- 脚本一个源文件都没读到（source 数为 0）时，不得照样给出“静态检查通过”或把报错当成论文本身的问题

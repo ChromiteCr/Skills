@@ -2,7 +2,7 @@
 name: latex-paper-formatter
 description: 当使用者说“整理建模论文 LaTeX”“修编译错误和引用”“统一公式、表格和图注”“按比赛模板排版”“检查交叉引用与缺图”时使用。先冻结内容并做基线编译，再在不改变数学含义、数字、引用或作者措辞的前提下修结构、符号格式、标签、表图、文献与版面；运行静态检查和实际编译，记录引擎、命令、警告与输出。只格式化和诊断，不补造公式、结果、来源或论文内容。
 category: modeling/paper
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -36,7 +36,7 @@ suggest_hint: 内容定稿后，用「LaTeX 建模论文排版」统一符号、
 **不适用于** / Not for：
 
 - 需要改变论文主张、章节论证或补分析 —— 用 `paper-structure-coach` / `paper-enhancement-builder`
-- 需要修改模型方程、数据或代码 —— 回到对应 modeling skill
+- 需要修改模型方程、数据或代码 —— 方程与假设用 `modeling-assumption-builder`，数据处理与代码用 `modeling-code-builder`
 - 要求补写引用、实验或结果以“填满版面” —— 本 skill 不生成内容
 - 只有 Word / Google Docs 且不需要 LaTeX —— 使用对应文档格式工具
 
@@ -85,9 +85,11 @@ suggest_hint: 内容定稿后，用「LaTeX 建模论文排版」统一符号、
 python3 scripts/check_latex.py path/to/main.tex
 ```
 
-路径以当前 skill 目录为基准时使用该脚本的实际位置；在其他位置执行时用 `--root <论文项目根>` 限定允许读取范围。
-脚本检查 `\input / \include`、label / ref、常用 natbib / biblatex citation、bibliography、figure 路径、手工编号和
-占位符；它不判断数学正确，也不能代替编译。
+命令里的 `scripts/` 相对本 skill 目录；在别的目录运行时写脚本的完整路径。不加 `--root` 时，读取范围是当前目录
+（它包含全部根文件时）或根文件所在目录；论文用到这个范围以外的文件（例如 `../figures/`）时，加 `--root <论文项目根>`。
+脚本按 TeX 的规则从根文件所在目录解析 `\input / \include`、bibliography 和 figure 路径（子文件里写的也一样），逐级比对
+磁盘上文件名的大小写（macOS 默认不分大小写也照报），并检查 label / ref、常用 natbib / biblatex citation、手工编号（含
+“公式 (3)”“式（5）”）和占位符；它不判断数学正确，也不能代替编译。`--selftest` 运行脚本自带的回归用例。
 
 随后运行项目原有构建命令并记录：引擎 / 版本、命令、退出状态、首个根因错误、未定义引用、重复 label、缺字形、
 overfull / underfull box、package conflict 与 PDF 页数。若不能编译，保留状态 `not-run` 或 `failed`，不能写“已修复”。
@@ -202,11 +204,13 @@ overfull / underfull box、package conflict 与 PDF 页数。若不能编译，�
 ## 参考资料 / References
 
 - `references/latex-conventions.md` —— 数学、单位、表格、图、文献、构建与视觉约定
-- `scripts/check_latex.py` —— 标准库静态检查；支持项目根限制、多个根文件、`--json` 与 `--strict`
+- `scripts/check_latex.py` —— 标准库静态检查；支持项目根限制、多个根文件、`--json`、`--strict` 与 `--selftest`；
+  退出码 0 无 error，1 有 error（`--strict` 时 warning 也算）或自检失败，2 命令行用法错误
 - `../_shared/paper-argument-checklist.md` —— 需要判断表图与主张职责时读取，不用于改内容
 
 ## 变更记录 / Changelog
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | check_latex.py 改按根文件目录解析 \input、bibliography、图片与 \graphicspath，只在子文件目录下成立的路径报错；逐级比对真实文件名大小写（macOS 上也报）；补中文“公式 (3)”“式（5）”手工编号与带点文件名补 .tex；不传 --root 时从 skill 目录照文档运行也能读到论文；新增 --selftest；“不适用于”改为实名路由 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：内容冻结、基线编译、机械格式批次、静态检查脚本与 PDF 视觉验收 | minor |

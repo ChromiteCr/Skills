@@ -2,7 +2,7 @@
 name: model-critique-coach
 description: 当使用者说“帮我批判这个模型”“找漏洞和反例”“模拟评委审稿”“这个结论站得住吗”“为什么验证不充分”时使用。先重建现有模型及其证据链，再从核心主张倒查方程、参数、数据、代码与假设，检查量纲、边界、可辨识性、泄漏、基线、验证、灵敏度、稳健性和可复现性；按对结论的影响分级，每条给最低成本反证检查与修复方向，不伪造审稿意见或验证结果，不整套重写。
 category: modeling/review
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P0
 compatible_agents:
@@ -39,6 +39,9 @@ suggest_hint: 模型已经能跑？用「模型批判教练」从结论倒查证
 - 还在选择模型 —— 用 `model-selection-tutor`
 - 只需把当前假设整理成登记表 —— 用 `modeling-assumption-builder`
 - 需要按批判结果安排论文修改 —— 批判完成后用 `paper-enhancement-builder`
+- 只查单条方程的量纲或极限 —— 用 `dimensional-analysis-checker` / `limiting-case-validator`
+- 手上只有观测数据和一次拟合的输出，只想判断这个拟合可不可信（残差结构、拟合优度、杠杆与影响点）—— 用
+  `model-fit-auditor`；要从论文结论倒查题意、假设、数据、实现与验证整条链，才用本 skill
 
 ## 需要的输入 / Inputs
 
@@ -120,6 +123,9 @@ suggest_hint: 模型已经能跑？用「模型批判教练」从结论倒查证
 
 验证术语与最低验证梯见 `../_shared/validation-playbook.md`。
 
+有执行能力时，第 2 面的量纲交给 `python3 ../../physics/_shared/scripts/dimcheck.py model.dim`（路径相对本 skill
+目录；输入格式见脚本开头说明；人数、金额等计数单位借一个用不到的基本量纲代表，如 `N` 代表“人”，不要记成 `1`）。
+
 一旦出现因果措辞，额外核对 estimand、处理 / 暴露、结果、时间顺序、识别设计 / DAG、混杂与选择、overlap、
 consistency、干扰和未测混杂敏感性。缺少识别策略时，即使预测和拟合优秀，也只能保留关联或条件预测措辞。
 
@@ -184,7 +190,7 @@ consistency、干扰和未测混杂敏感性。缺少识别策略时，即使预
 1. <动作>；关闭条件：<可核对标准>
 
 ## 交接
-- 接收：<modeling-code-builder / paper-enhancement-builder / 对应上游 skill>
+- 接收：<modeling-code-builder / paper-enhancement-builder / 上游的 modeling-problem-reading-coach、model-selection-tutor 或 modeling-assumption-builder>
 - 回退到上游：<需要重开的 Q / A / M IDs>
 - 必须重跑：<R / F / C IDs>
 ```
@@ -219,9 +225,11 @@ consistency、干扰和未测混杂敏感性。缺少识别策略时，即使预
 
 - `../_shared/modeling-work-contract.md` —— 证据状态、稳定 ID 与回退规则
 - `../_shared/validation-playbook.md` —— 验证梯、量纲、可辨识性、泄漏与结论措辞
+- `../../physics/_shared/scripts/dimcheck.py` —— 第 2 面量纲的确定性检查（物理库共用脚本）
 
 ## 变更记录 / Changelog
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.1 | 2026-09-26 | 补与物理侧的分流：单条方程的量纲 / 极限交给 `dimensional-analysis-checker` / `limiting-case-validator`，只判断一次拟合可不可信交给 `model-fit-auditor`；第 2 面量纲引用 `dimcheck.py`；交接模板的“对应上游 skill”改为实名 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：模型重建、主张反向追踪、十二面审查、反例与可关闭修复队列 | minor |

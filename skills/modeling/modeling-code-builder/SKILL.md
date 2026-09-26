@@ -2,7 +2,7 @@
 name: modeling-code-builder
 description: 当使用者说“按我的模型写代码”“把方程实现成 Python/MATLAB/R”“调试这段建模代码”“补验证和灵敏度分析”“让结果可复现”时使用。只实现学生已确认的模型与数据契约，先写实现合同、手算小例、不变量和验收矩阵，再按读取、变换、求解、验证、敏感性与导出拆分；执行后记录输入快照、种子、环境、求解设置和输出，不静默修数据、不硬编码结果、不替学生发明模型或伪造数据。
 category: modeling/implementation
-version: 0.1.1
+version: 0.1.2
 status: draft
 priority: P0
 compatible_agents:
@@ -127,8 +127,8 @@ suggest_hint: 模型和方程定了？用「建模代码助手」把它实现成
 
 ### 7. 生成 Run Manifest
 
-每次用于论文表图或结论的运行记录：代码版本、入口命令、环境、输入快照、配置、种子、求解器 / 容差、
-测试状态、警告、输出路径和支持的 `C / F`。无法取得某项时写 `missing`，不空口称可复现。
+每次用于论文表图或结论的运行，按 `../_shared/code-reproducibility-checklist.md` §7 的字段逐项记录；该节是 Run
+Manifest 的唯一 schema，包括运行状态 `status` 与测试记录 `tests`。无法取得某项时写 `missing`，不空口称可复现。
 
 ### 8. 交付与独立复核
 
@@ -148,14 +148,21 @@ suggest_hint: 模型和方程定了？用「建模代码助手」把它实现成
 | T ID | 层级 | 输入 / 场景 | 预期 | 实际 | 状态 | 证据位置 |
 
 ## Run Manifest
-- R ID:
-- code revision / version:
-- command / environment:
-- inputs / configuration / seed:
-- solver / tolerance:
+<字段与 ../_shared/code-reproducibility-checklist.md §7 相同，以该节为准>
+- run_id: R...
+- status: not-run | failed | passed-with-warnings | passed
+- code_revision:
+- entry_command:
+- environment:
+- input_snapshots:
+- configuration:
+- random_seed:
+- solver_and_tolerances:
+- started_at:
 - outputs:
+- tests:
 - warnings:
-- supports claims:
+- supports_claims:
 
 ## 已知限制与未实现项
 - <限制> —— 影响 <M / C IDs>，下一步 <动作>
@@ -166,7 +173,7 @@ suggest_hint: 模型和方程定了？用「建模代码助手」把它实现成
 
 若宿主可以直接编辑文件，就实际做最小改动并运行检查；输出只总结，不把整份代码在对话中重复一遍。若不能写文件，
 在非考核任务或规则明确允许完整 AI 实现时，可在聊天中返回完整候选代码与运行步骤；规则未明确的课程作业、
-竞赛或评分项目只返回实现合同、伪代码、测试和对学生已有代码的局部补丁。
+竞赛或评分项目只返回实现合同、伪代码、测试和对学生已有代码的局部补丁。没说明是否受评时按后者处理，并问一句。
 
 ```markdown
 ## Next Handoff
@@ -182,7 +189,8 @@ suggest_hint: 模型和方程定了？用「建模代码助手」把它实现成
 
 - 有代码搜索、编辑和执行能力时遵循仓库本地约定，小步编辑后跑最窄测试，再跑端到端复现。
 - 只有执行能力时提供补丁建议或脚本，不覆盖用户文件。
-- 无执行能力时给完整实现候选、测试、命令和预期，全部实际结果标 `not-run`。
+- 无执行能力时：非考核任务或规则明确允许完整 AI 实现时，给完整实现候选、测试、命令和预期；否则（受评任务规则
+  未明确或不允许，或没说明是否受评）只给实现合同、伪代码、测试与对学生已有代码的局部补丁。全部实际结果标 `not-run`。
 - 无数据读取能力时实现 schema / 接口与 synthetic 小例，不声称适配真实数据。
 - 无版本控制时用时间、文件清单和内容哈希的可用子集标识运行。
 - 不依赖 Python、MATLAB、R 或某个 Agent 专有工具；优先项目现有、团队可运行的工具链。
@@ -213,12 +221,12 @@ suggest_hint: 模型和方程定了？用「建模代码助手」把它实现成
 
 - `../_shared/modeling-work-contract.md` —— 稳定 ID、状态与运行 / 图表交接
 - `../_shared/validation-playbook.md` —— 验证梯、泄漏、可辨识性与结论强度
-- `../_shared/code-reproducibility-checklist.md` —— 实现、数据、数值、测试和 Run Manifest 检查表
-- `references/evaluation-cases.md` —— 矛盾输入与受评任务边界违规的跨 Agent 行为评估用例
+- `../_shared/code-reproducibility-checklist.md` —— 实现、数据、数值、测试检查表；§7 是 Run Manifest 的唯一 schema
 
 ## 变更记录 / Changelog
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.2 | 2026-09-26 | 不能写文件或无执行能力时按是否受评区分：受评或没说明时只给实现合同、伪代码、测试与局部补丁（共享契约 §5 同步）；Run Manifest 以 code-reproducibility-checklist §7 为唯一 schema，模板补 status 与 tests，共享契约的 R 行与运行状态改为引用该节；两条评估用例移入 tests/cases，删除 references/evaluation-cases.md | patch |
 | 0.1.1 | 2026-09-15 | 补充矛盾输入与受评任务边界违规评估用例 | patch |
 | 0.1.0 | 2026-08-17 | 初始草稿：就绪门槛、实现合同、验证夹具、数据链、运行清单与跨工具降级 | minor |
