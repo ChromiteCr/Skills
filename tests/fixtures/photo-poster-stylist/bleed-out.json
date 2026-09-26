@@ -1,0 +1,21 @@
+{
+  "width": 1080,
+  "height": 1350,
+  "bleed": 36,
+  "palette": {
+    "background": "#F3EFE6",
+    "foreground": "#151515",
+    "accent": "#D95336"
+  },
+  "title": "HARBOUR",
+  "shapes": [
+    {
+      "type": "rect",
+      "x": 1100,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "fill": "accent"
+    }
+  ]
+}

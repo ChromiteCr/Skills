@@ -1,0 +1,40 @@
+{
+  "title": "fixture spread",
+  "page": {
+    "width_mm": 210,
+    "height_mm": 297,
+    "margin_mm": 15,
+    "gutter_mm": 3,
+    "dpi": 72
+  },
+  "bands": [
+    {
+      "caption": "横图与手机竖拍",
+      "credit": "摄影：Test Shooter",
+      "items": [
+        {
+          "type": "photo",
+          "src": "wide.jpg"
+        },
+        {
+          "type": "photo",
+          "src": "phone-portrait.jpg"
+        }
+      ]
+    },
+    {
+      "caption": "Display P3 照片",
+      "credit": "摄影：Test Shooter",
+      "items": [
+        {
+          "type": "photo",
+          "src": "p3-red.jpg"
+        },
+        {
+          "type": "photo",
+          "src": "wide.jpg"
+        }
+      ]
+    }
+  ]
+}

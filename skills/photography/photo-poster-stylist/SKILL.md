@@ -1,8 +1,8 @@
 ---
 name: photo-poster-stylist
-description: Turn a photographer-provided description of an existing photo into a minimal, geometric SVG poster with an explicit visual abstraction, restrained palette, grid, typography, bleed, and deterministic validation. Use when the user wants to reinterpret one of their photos as a stylized poster rather than retouch or reproduce the photo.
+description: 当使用者说"把照片做成极简海报"、"做一张几何风格的海报"、"把这张照片抽象成海报"时使用。Turn a photographer-provided description of an existing photo into a minimal, geometric SVG poster with an explicit visual abstraction, restrained palette, grid, typography, bleed, and deterministic validation. Use when the user wants to reinterpret one of their photos as a stylized poster rather than retouch or reproduce the photo.
 category: photography
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P2
 compatible_agents:
@@ -27,7 +27,7 @@ Create a minimal poster from an **existing photo plus the photographer's account
 
 - Photo retouching, compositing, restoration, or faithful vector tracing.
 - Inventing a photographer's emotions, symbolism, location, identity, or story.
-- A multi-photo layout; use a series-layout workflow instead.
+- A multi-photo layout: use `photo-series-layout` for 3–9 photos on one page, or `photo-spread-composer` for a publication-style spread with bands and credits.
 - Work where the user has no right to use the source image or requested branding assets.
 
 ## Required inputs
@@ -110,6 +110,8 @@ python3 scripts/poster_tool.py validate poster.svg
 
 The script uses only the Python standard library. It checks parseability, dimensions, color count, graphic-element count, text hierarchy, bounds, and foreground/background text contrast. A zero exit status means the deterministic checks passed, not that the design is aesthetically successful.
 
+Bounds are checked in the SVG's viewBox coordinates, so with bleed the canvas runs from `-bleed` to `trim + bleed`: a shape may fill the bleed, but not go past it. Paths are measured by their exact outline (`M L H V C S Q T A Z`, absolute and relative), curves by their extremes rather than their control points. Text is checked with an estimated box (full-width CJK characters 1 em, spaces 0.3 em, other characters 0.6 em): its anchor must be on the canvas and the box inside the trim. Warnings, which do not fail the check, cover text reaching into the 5% side margins of the safe area and, with bleed, a shape that crosses the trim edge but stops short of the bleed edge. The validator rejects `transform`, `style`, and `stroke` attributes, and any element other than `rect`, `circle`, `ellipse`, `polygon`, `path`, `text`, `g`, `title`, `desc`, and `metadata`, because these checks cannot follow them; hand-edited SVG must stay within the renderer's subset. Run `python3 scripts/poster_tool.py --selftest` after changing the script.
+
 If another renderer is available, PNG/PDF conversion is optional. Do not claim those formats were produced unless the conversion was actually run and inspected.
 
 ### 6. Human review
@@ -141,3 +143,10 @@ Return:
 - **Validator failure:** fix the specification and rerender; do not hand-edit around the checker without explaining why.
 - **Unsupported SVG feature:** simplify it to supported geometry or validate the external SVG separately.
 - **Aesthetic disagreement:** present at most two materially different abstractions and state the tradeoff.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | validate 改按 viewBox 坐标查边界（有出血时满出血形状不再误报、越出出血边的形状不再放过），补 path 精确外框（M/L/H/V/C/S/Q/T/A/Z，含相对命令）和文字估算框检查，transform/style/stroke 等查不了的写法直接报错；加 --selftest；多图排版改点名 photo-series-layout / photo-spread-composer，description 前加中文触发语；目录内测试副本并入 tests/cases 后删除 | patch |
+| 0.1.0 | 2026-09-09 | 初始版本 | minor |

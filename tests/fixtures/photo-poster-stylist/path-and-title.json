@@ -1,0 +1,18 @@
+{
+  "width": 1080,
+  "height": 1350,
+  "bleed": 0,
+  "palette": {
+    "background": "#F3EFE6",
+    "foreground": "#151515",
+    "accent": "#D95336"
+  },
+  "title": "城市尽头的北窗与午后缓慢移动的光影以及它们留下的痕迹",
+  "shapes": [
+    {
+      "type": "path",
+      "d": "M 5000 5000 L 6000 5000 L 6000 6000 Z",
+      "fill": "accent"
+    }
+  ]
+}

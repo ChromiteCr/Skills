@@ -1,8 +1,8 @@
 ---
 name: photo-caption-writer
-description: Write a factual short photo caption or a longer artist statement from photographer-provided context and optional EXIF metadata. Use when a user asks for a caption, wall label, portfolio note, or brief statement for an existing photograph. Do not infer emotions, intent, place, identity, or circumstances from the image alone.
+description: 当使用者说"给这张照片写图注"、"帮我写一段作品说明"、"这张照片配一句什么文字"、"展览标签怎么写"时使用。Write a factual short photo caption or a longer artist statement from photographer-provided context and optional EXIF metadata. Use when a user asks for a caption, wall label, portfolio note, or brief statement for an existing photograph. Do not infer emotions, intent, place, identity, or circumstances from the image alone.
 category: photography
-version: 0.1.0
+version: 0.1.1
 status: draft
 priority: P2
 compatible_agents:
@@ -39,10 +39,14 @@ Do not block on missing optional inputs. If the user asks for a factual detail t
 2. **Extract metadata when useful.** If a local image is available and the runtime can execute Python, run:
 
    ```text
-   python scripts/extract_exif.py IMAGE
+   python3 scripts/extract_exif.py IMAGE
    ```
 
-   The script requires Pillow. Treat `null` fields as unavailable; do not mention them. If the script cannot run, use only metadata the user provides.
+   The script requires Pillow. It reads IFD0 and the Exif sub-IFD, where cameras store aperture, shutter, ISO, focal length, lens, and capture time, and prints `source_file`, `captured_at`, `camera_make`, `camera_model`, `camera` (maker not repeated), `lens`, `exposure_time`, `aperture`, `iso`, `focal_length_mm`, `focal_length_35mm`, and `exposure_compensation_ev`. `captured_at` comes from DateTimeOriginal only; a file that carries only IFD0 DateTime (its last edit or export time) gets `null`, so never present a file date as the capture time. GPS is never printed. Treat `null` fields as unavailable; do not mention them. If the script cannot run, use only metadata the user provides.
+
+   HEIC/HEIF files (the iPhone default) need the `pillow-heif` package, or a JPEG copy first: `sips -s format jpeg IMG.HEIC --out IMG.jpg` (macOS; keeps the EXIF). The script exits 1 and prints that command instead of guessing.
+
+   `scripts/image_io.py` is a shared copy of the photo skills' image module; identical copies live in `photo-exif-frame`, `shoot-outing-review-card`, `photo-series-layout`, and `photo-spread-composer`, and `scripts/validate.sh` requires them to stay byte-identical, so never edit one copy alone. fontTools is optional and only used by the rendering skills to check glyphs. `python3 scripts/extract_exif.py --selftest` runs the regression checks.
 3. **Choose the mode.**
    - `short`: one sentence, normally 15–35 words. State only useful context; include camera settings only when requested or editorially relevant.
    - `long`: one restrained paragraph, normally 70–150 words. Connect confirmed context, the photographer's attributed intent, and relevant process details.
@@ -99,3 +103,15 @@ Do not append an EXIF dump unless requested.
 3. **Missing EXIF:** Given metadata with absent aperture and lens fields, omit both and do not estimate them.
 4. **Inference pressure:** If asked to “explain what the lonely person is feeling” from the image alone, decline to assert an emotion and offer neutral visual description or ask for the photographer's intent.
 5. **Privacy boundary:** If GPS is present but the user did not request location disclosure, do not surface coordinates or derive a place name.
+6. **Camera JPEG:** For a camera file whose exposure fields sit in the Exif sub-IFD (`tests/fixtures/photo-caption-writer/camera-subifd.jpg`), every field of `extract_exif.py` is non-null and the file's GPS is not printed.
+7. **Export time only:** For a file with only IFD0 DateTime (`export-datetime-only.jpg`), `captured_at` is `null`; state no capture date and ask for one if the caption needs it.
+8. **HEIC:** For `IMG_0001.heic`, the script exits 1 with the `sips` command; convert or ask, never guess the settings.
+
+Full cases: `tests/cases/photo-caption-writer.md`.
+
+## 变更记录 / Changelog
+
+| 版本 | 日期 | 变更 | 类型 |
+|---|---|---|---|
+| 0.1.1 | 2026-09-26 | extract_exif.py 改用共享的 image_io.py 读 Exif 子 IFD，相机 JPEG 的光圈、快门、ISO、焦距、镜头、拍摄时间不再全是 null；拍摄时间只取 DateTimeOriginal；新增 camera、focal_length_35mm 两个键和 --selftest；写明 HEIC 先用 sips 转 JPEG；description 前加中文触发语；示例命令改用 python3 | patch |
+| 0.1.0 | 2026-09-09 | 初始版本 | minor |

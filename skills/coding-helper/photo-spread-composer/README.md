@@ -17,7 +17,8 @@ photo-spread-composer/
 │   └── spread.html              阶段二：语法的 CSS 实现，无任何写死的位置
 ├── scripts/
 │   ├── measure_photos.py        量长宽比、像素、EXIF 署名，标出不可用的
-│   └── build_spread.py          解带高方程 + 查分辨率 + 缩放内联 + 出 HTML
+│   ├── build_spread.py          解带高方程 + 查分辨率 + 缩放内联 + 出 HTML
+│   └── image_io.py              与摄影类 skill 共用的读图模块：EXIF 方向、ICC、HEIC 提示
 └── examples/
     ├── example-plan.md          阶段一产物
     ├── example-plan.json        阶段二输入
@@ -31,6 +32,9 @@ photo-spread-composer/
 把这些照片排成一版 @photos/
 做一张照片展示海报，A2 竖版
 ```
+
+脚本需要 Python 3 和 Pillow（`python3 -m pip install Pillow`）。HEIC 要先转成 JPEG：
+`sips -s format jpeg IMG_0001.HEIC --out IMG_0001.jpg`（macOS 自带，保留 EXIF）。
 
 先量一遍：
 

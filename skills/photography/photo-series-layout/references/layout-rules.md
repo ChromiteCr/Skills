@@ -4,14 +4,29 @@ These are defaults, not claims about universal aesthetics. User direction wins.
 
 ## Layout selection
 
-| Image count | Neutral starting point |
-|---:|---|
-| 3 | horizontal 3×1, vertical 1×3, or grid 2×2 with one empty cell only if requested |
-| 4 | grid 2×2 |
-| 5–6 | grid 3×2 on landscape canvas; grid 2×3 on portrait canvas |
-| 7–9 | grid 3×3 |
+Grids are written **columns × rows** here and in the renderer's report ("4 columns x 2 rows").
 
-The renderer's `auto` mode chooses the row/column pair whose grid aspect ratio is closest to the canvas aspect ratio, while avoiding empty cells when possible. Use an explicit layout when sequence direction matters.
+The renderer's `auto` mode (the default):
+
+1. For every column count c = 1…N, it takes r = ⌈N ÷ c⌉ rows, so no row is empty.
+2. It keeps the grids with the fewest empty cells. A single row or column always has none, so `auto` never leaves an empty cell.
+3. Among those, it picks the grid whose page shape at the nominal cell size (`--cell-width` × `--cell-height`, margin and gutter included) is closest to the target shape: the canvas (`--canvas-width` : `--canvas-height`) when one is given, otherwise one cell's shape (4:3 with the default 1200×900 cells). Closeness is |ln(grid ratio ÷ target ratio)|; ties go to fewer rows.
+
+What `auto` picks with the default cells, margin, and gutter:
+
+| Photos | No canvas | Portrait canvas 1080×1350 | Wide canvas 3000×1000 |
+|---:|---|---|---|
+| 3 | 3 × 1 | 1 × 3 | 3 × 1 |
+| 4 | 2 × 2 | 2 × 2 | 4 × 1 |
+| 5 | 5 × 1 | 1 × 5 | 5 × 1 |
+| 6 | 3 × 2 | 2 × 3 | 3 × 2 |
+| 7 | 7 × 1 | 1 × 7 | 7 × 1 |
+| 8 | 4 × 2 | 2 × 4 | 4 × 2 |
+| 9 | 3 × 3 | 3 × 3 | 3 × 3 |
+
+For 5 and 7 photos the only grids without an empty cell are single strips. The renderer then prints the `--columns` value of the most compact alternative (for 5 photos, `--columns 3`: 3 × 2 with one empty cell at the end); use it only after the user approves the empty cell.
+
+The other layouts: `horizontal` is N × 1 and `vertical` is 1 × N. `grid` is a roughly square contact sheet with ⌈√N⌉ columns, so 3, 5, 7, and 8 photos leave empty cells at the end. `--columns C` sets the column count directly. Use an explicit layout when sequence direction matters.
 
 ## Spacing
 
@@ -41,7 +56,9 @@ The script uses pixel values because output is deterministic. Convert percentage
 ## Color and output
 
 - Default background: white (`#ffffff`); black is a common alternative, not an automatic choice.
-- The script converts decoded pixels to RGB and does not provide full ICC color management.
+- The script writes one colour space. When every photo has the same RGB profile (for example all Display P3 from one iPhone), the page keeps that profile and embeds it. When profiles differ, or one is CMYK or grey, every photo is converted to sRGB (relative colorimetric) and sRGB is embedded; untagged photos count as sRGB. The background colour is given in sRGB and converted along with the page, so white stays white.
+- PDF output is always sRGB: Pillow's PDF writer stores pixels as DeviceRGB without a profile, which viewers read as sRGB.
+- This is colour conversion, not proofing. Print colour still depends on the printer's profile and a proof.
 - Prefer PNG for lossless digital review, JPEG for smaller photographic delivery, and PDF for a one-page print handoff.
 - A pixel-to-print conversion is `inches = pixels / DPI`; DPI metadata alone does not add detail.
 
