@@ -5,6 +5,19 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.22.5 — 2026-09-27
+
+`keynote-deck-builder` 升到 0.7.2：片上文字的硬性规则加第 8 条「避开 AI 腔词」。Library 层只动了索引与 README 的描述，按规则记 PATCH；
+skill 本身的改动细节记在它自己的 `CHANGELOG.md` 里。要点：
+
+- 范围比前七条宽：片上文字、图注、讲者备注、讲义，以及交给使用者确认的大纲。判断用删词测试：删掉或换成大白话，
+  句子没少具体信息就改（改成一个数、一个动作、一个时刻或一个取舍），少了就是术语或本义，照用
+- 完整词表 85 个词，分五类（这两年常见的抽象名词如「边界」「张力」「底色」、汇报腔与黑话、宣传腔、伪深刻意象、连接词套话），
+  每个词配替换写法，放在 `references/ai-tone-words.md`；来源是 2025–2026 年的七篇文章与工具，加本仓库 `writing-rules` 的禁用词表。
+  「边界」来自使用者的观察，外部来源没有专门点名，本库自查支持它是模型写中文时的高频词
+- 写完大纲与 deck.html 各跑一次 grep（词表的 grep 版是 `references/ai-tone-words.txt`），外加一条查「不是 A，是 B」句式的
+- 按词表改掉自带内容里的几处：示例大纲两处、大纲模板一处、deck.html 模板注释两处。注释改动不影响渲染，pptx 导出没有动
+
 ## 0.22.4 — 2026-09-26
 
 第二轮审计（`AUDIT-AND-IDEAS.md` 第一部分）的修复。没有新增或删除 skill，Library 按规则记 PATCH；
