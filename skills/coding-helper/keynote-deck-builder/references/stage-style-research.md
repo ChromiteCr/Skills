@@ -74,9 +74,16 @@
 | B | 它是发布会的招牌转场 | [Magic Move 教程](https://business.tutsplus.com/tutorials/keynote-magic-move--cms-31554) |
 | B | Apple 不公开发布真正的舞台模板文件；第三方"发布会风格模板"都是仿的 | [Apple 设计资源](https://developer.apple.com/design/resources/) |
 | C | 底色是"灰→深蓝→近黑的渐变加轻噪点" —— 只有一个 Quora 回答说过，方向可信但不能当定论，也没有可靠的十六进制值 | — |
+| A | 苹果官网的深浅两种底都是纯色：样式表里出现的底色是 `#000`、`#fff`、`#f5f5f7` 这类实色；iPhone 概览页的样式表里一共 4 处 `linear-gradient`，全是界面遮罩（滚动边缘、弹窗蒙层），**没有一处用作底色或文字填充**（`background-clip: text` 为 0 处） | apple.com.cn/iphone 的 `overview.built.css`，2026-09-28 取 |
+| A | 苹果官网文字与分隔线的常用实色：`#1d1d1f`（浅底正文）、`#f5f5f7`（深底正文，即 rgb 245,245,247）、`#6e6e73` 与 `#86868b`（次要文字）、`#d2d2d7`（浅底分隔线）、`#424245`（深底分隔线） | 同上，及 `globalheader.css` |
 | C | 动效时长（1.0 秒溶解、0.3–0.5 秒短揭示）—— 这些是 **Keynote 应用的默认值**，不是对真实发布会的实测 | — |
 
-**结论性判断**（据 A/B 档推出，写进规则）：底色用近黑的多层渐变而不是纯黑，浅色主题用近白而不是纯白；重点色一支为主；产品位放占位图。
+**结论性判断**（据 A/B 档推出，写进规则）：底色用纯色，深色纯黑、浅色 `#f5f5f7`，不加渐变、光晕与颗粒；
+文字三档用实色；重点色一支，一张片最多用在一处；产品位放占位图。
+
+**0.8.0 更正**：原来这里写的是「底色用近黑的多层渐变而不是纯黑」。那条结论实际只靠上表的 C 档一行，
+按本文件自己的约定不该写进规则。改成纯色的依据是苹果官网的样式表（上表 A 档两行）。
+另一个理由来自使用者的反馈：带光晕和颗粒的近黑底，恰恰是 AI 生成的片子一眼能认出来的样子。
 
 ## 4. 叙事结构 / Narrative
 
@@ -137,8 +144,12 @@
 | A | **`text-autospace: normal` 自 2025 年 11 月成为 baseline**（Chrome 140+、Safari 18.4+），自动在中日韩与拉丁字母数字之间插入约 1/4 em | [MDN text-autospace](https://developer.mozilla.org/en-US/docs/Web/CSS/text-autospace) |
 | A | W3C 建议中西文之间留至多 1/4 em | [W3C 行内间距](https://www.w3.org/International/articles/styling/inline-space) |
 | B | `line-break: strict` 只阻止**坏的**断行，不会替你挑**好的**断点。大字标题要精确控制断在哪，仍然得手写 `<br>` | [MDN line-break](https://developer.mozilla.org/en-US/docs/Web/CSS/line-break) |
-| B | 中文标题行高比拉丁紧：CJK 字身框没有升降部余量。正文级 1.0–1.3，100px 以上取 1.0–1.15 | [中文排版要点](https://pixelcake.com.tw/posts/chinese-typography-tips/) |
+| B | 中文标题行高比拉丁紧：CJK 字身框没有升降部余量。正文级 1.0–1.3，100px 以上取 1.0–1.15（**0.8.0 起被下面 A 档一行取代**） | [中文排版要点](https://pixelcake.com.tw/posts/chinese-typography-tips/) |
 | B | 大字中文字距容忍度远小于拉丁，0 或轻微负值常见，正值不要超过 0.15em | 同上 |
+| A | **苹果中文官网对 `:lang(zh)` 把字距一律归零**：`body`、各级标题、数字（`.stat-value`）、按钮、说明文字都写 `letter-spacing: 0em`，拉丁版里的 −0.015em 到 −0.022em 在中文里全部取消 | apple.com.cn/iphone 的 `overview.built.css`，2026-09-28 取；共 689 条 `:lang(zh)` 规则 |
+| A | **苹果中文官网的中文行高比拉丁略松**：80px 标题 1.05 → 1.0875，28px 卡片标题 1.1429 → 1.25，24px 小标题 1.1667 → 1.2917，正文约 1.357 | 同上 |
+| A | **苹果官网最大的标题也只用 600**：80px 的 `typography-headline-super` 与数字 `stat-value` 都是 `font-weight: 600`，正文 400；中文字体栈是 `SF Pro SC, SF Pro Display, SF Pro Icons, PingFang SC, …` | 同上 |
+| A | 苹果官网的字号阶梯（拉丁基准）：80 / 64 / 56 / 48 / 40 / 32 / 28 / 24 / 21 / 19 / 17 / 12px；相邻两档的比多在 1.1 到 1.4 之间，最大标题约是正文的 4.7 倍 | 同上 |
 | B | 显示级中文标题的可读字数约 8 到 15 字。中文单字信息密度高于拉丁单词，同样一张片装的**字数更少而信息更多** | [标题字数建议](https://zhuanlan.zhihu.com/p/582583945) |
 
 ## 6b. 片上文字的句式 / The grammar of slide copy

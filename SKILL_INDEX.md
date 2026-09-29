@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.22.5`
+Library Version: `0.22.6`
 
 ---
 
@@ -21,7 +21,7 @@ Built: interface, presentation and visual outputs. Planned: the token-efficient,
 | `maestrwave-ui-system` | P0 | draft | 0.1.1 | 直接套用 MaestrWave 那套深色衬线视觉，附可粘贴的 global.css 与组件层 |
 | `radio-quote-card` | P2 | draft | 0.1.1 | 名字＋内容＋主色生成车队无线电风格语录卡，单文件 800×1000，不带任何厂商徽标 |
 | `launch-summary-panel` | P1 | draft | 0.1.1 | 产品资料收成 16:9 bento 总结面板：先出策划稿再出单文件 HTML，数字必须有出处 |
-| `keynote-deck-builder` | P1 | draft | 0.7.2 | 描述／演讲稿／现有 PPT 做成发布会风格演示，也用于课堂、讲座与学术报告：先定场合与拍点再出片，一片一个概念，讲到才出现，课堂另出讲义；可导 PDF 与可编辑 pptx，pptx 带逐步出现、调暗、点名与 Morph 平滑切换；片上、备注与讲义避开 AI 腔词，有词表与 grep 自查 |
+| `keynote-deck-builder` | P1 | draft | 0.8.0 | 描述／演讲稿／现有 PPT 做成发布会风格演示，也用于课堂、讲座与学术报告：先定场合与拍点再出片，一片一个概念，讲到才出现，课堂另出讲义；可导 PDF 与可编辑 pptx，pptx 带逐步出现、调暗、点名与 Morph 平滑切换；片上、备注与讲义避开 AI 腔词，有词表与 grep 自查；视觉对照苹果中文官网：纯色底、中文字距 0、字重封顶 600、重点色一片一处 |
 | `photo-spread-composer` | P2 | draft | 0.1.1 | 一组照片排成带状构图的展示版面：位置由带高方程解出，主次与分带留给判断，分辨率不足直接拦下；自己拍的 3–9 张按原顺序拼一页或长图走 `photo-series-layout` |
 | `coding-project-brief-builder` | P0 | planned | — | 收敛需求，产出项目 brief |
 | `architecture-planner` | P0 | planned | — | 规划架构与模块边界 |

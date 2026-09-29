@@ -28,7 +28,7 @@
 要视觉精度就用 templates/deck.html；要可编辑就用这个。两者不冲突，可以都给。
 
 画布是 13.333 × 7.5 英寸，也就是 960 × 540pt，正好是 HTML 舞台（1920 × 1080px）的一半，
-所以版面上 px ÷ 2 = pt：大数字 320px 对应 160pt，标题 96px 对应 48pt。
+所以版面上 px ÷ 2 = pt：大数字 280px 对应 140pt，标题 80px 对应 40pt。
 小字这里用 30pt，比 HTML 的 40px（对应 20pt）相对更大，是有意偏严。塞不下就删字，不要调低。
 
 每张片都可以带 "notes"，写进 pptx 的演讲者备注。
@@ -43,7 +43,7 @@
         {"type": "title",   "value": "产品名", "caption": "一句话定位"},
         {"type": "phrase",  "value": "转账不该点七次"},
         {"type": "num",     "value": "7 次", "caption": "完成一笔转账",
-                            "unverified": false},
+                            "unverified": false, "accent": false},
         {"type": "section", "value": "章节名"},
         {"type": "feature", "value": "功能名", "caption": "一句话"},
         {"type": "quote",   "value": "用户原话", "caption": "出处，必填"},
@@ -93,6 +93,7 @@
 
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -123,11 +124,12 @@ PAD_X, PAD_Y = Inches(1.6), Inches(0.9)
 BODY_W = W - PAD_X * 2
 
 # 字号：下限 30pt，不可破
-SIZE = {"num": 160, "phrase": 90, "feature": 60, "title": 48,
+# 顶端几档与 HTML 模板同一套（0.8.0 起整体小一号：中文字身满格，180px 两行就重得像横幅）
+SIZE = {"num": 140, "phrase": 72, "feature": 56, "title": 40,
         "sub": 30, "label": 30}
 
 THEME = {
-    "dark":  {"bg": "0A0B0E", "ink": "F5F5F7", "muted": "8E8E93", "faint": 0.45},
+    "dark":  {"bg": "000000", "ink": "F5F5F7", "muted": "98989D", "faint": 0.45},
     "light": {"bg": "F5F5F7", "ink": "1D1D1F", "muted": "6E6E73", "faint": 0.52},
 }
 
@@ -327,8 +329,21 @@ class Deck:
 
     def num(self, d):
         s = self.slide()
-        self.anchor = self.text(s, d["value"], top=Inches(2.0), height=Inches(2.6),
-                                size=SIZE["num"], bold=True, color=self.accent)
+        # 大数字默认白字。重点色只给「要区分的那个数」，由片单写 "accent": true 决定
+        color = self.accent if d.get("accent") else self.ink
+        value = str(d["value"])
+        m = re.match(r"^\s*([-+−]?[\d.,，]+(?:\s*[×x/:：]\s*[\d.,]+)?)\s*(\D{1,4})$", value)
+        number, unit = (m.group(1), m.group(2)) if m else (value, "")
+        self.anchor = self.text(s, number, top=Inches(2.0), height=Inches(2.6),
+                                size=SIZE["num"], bold=True, color=color)
+        if unit:
+            # 单位缩到 0.4 倍，和 HTML 的 .unit 一致：「3 倍」的「倍」和 3 一样大，整片就重了
+            run = self.anchor.text_frame.paragraphs[0].add_run()
+            run.text = " " + unit.strip() if not unit.strip() in ("%",) else unit.strip()
+            run.font.size = Pt(round(SIZE["num"] * 0.4))
+            run.font.bold = True
+            run.font.name = self.font
+            run.font.color.rgb = color
         if d.get("caption"):
             self.text(s, d["caption"], top=Inches(4.7), height=Inches(0.7),
                       size=SIZE["sub"], color=self.muted)
@@ -382,7 +397,7 @@ class Deck:
             label = self.text(s, head, top=Inches(2.6), height=Inches(0.7),
                               size=SIZE["sub"], color=self.muted,
                               left=cx, width=col_w - Inches(0.4))
-            value = self.text(s, val, top=Inches(3.4), height=Inches(1.8), size=100,
+            value = self.text(s, val, top=Inches(3.4), height=Inches(1.8), size=88,
                               bold=True, color=self.accent if n else self.ink,
                               left=cx, width=col_w - Inches(0.4))
             if build:
@@ -397,8 +412,8 @@ class Deck:
             col_w = BODY_W / len(items)
             for n, (p, cfg) in enumerate(items):
                 cx = PAD_X + col_w * n
-                self.text(s, p, top=Inches(3.0), height=Inches(1.4), size=90,
-                          bold=True, color=self.accent if n == 0 else self.ink,
+                self.text(s, p, top=Inches(3.0), height=Inches(1.4), size=60,
+                          bold=True, color=self.ink,
                           left=cx, width=col_w)
                 self.text(s, cfg, top=Inches(4.4), height=Inches(0.7),
                           size=SIZE["sub"], color=self.muted,
@@ -429,7 +444,7 @@ class Deck:
             cx = PAD_X + col_w * n
             group = [
                 self.text(s, f"{n + 1:02d}", top=Inches(2.7), height=Inches(0.6),
-                          size=SIZE["label"], color=self.accent, align=PP_ALIGN.LEFT,
+                          size=SIZE["label"], color=self.faint, align=PP_ALIGN.LEFT,
                           left=cx, width=col_w - Inches(0.2)),
                 self.text(s, name, top=Inches(3.3), height=Inches(0.9), size=44,
                           bold=True, align=PP_ALIGN.LEFT,
@@ -521,7 +536,7 @@ class Deck:
             return
         col_w = BODY_W / len(stops)
         for n, name in enumerate(stops):
-            color = self.accent if n == cur else self.muted
+            color = self.ink if n == cur else self.muted
             self.text(s, name, top=Inches(3.1), height=Inches(1.2), size=SIZE["title"],
                       bold=(n == cur), color=color, left=PAD_X + col_w * n, width=col_w)
 
@@ -531,7 +546,7 @@ class Deck:
         s = self.slide()
         if d.get("kicker"):
             self.text(s, d["kicker"], top=Inches(1.3), height=Inches(0.6),
-                      size=SIZE["label"], bold=True, color=self.accent)
+                      size=SIZE["label"], bold=True, color=self.muted)
         self.text(s, d["value"], top=Inches(2.0), height=Inches(1.3),
                   size=SIZE["title"], bold=True)
         boxes = []
@@ -694,7 +709,7 @@ class Deck:
                          bold=True, color=self.ink if reveal else self.muted,
                          align=PP_ALIGN.LEFT)
         tag = self.text(s, "实际上", top=Inches(3.7), height=Inches(0.6), size=SIZE["label"],
-                        bold=True, color=self.accent, align=PP_ALIGN.LEFT)
+                        bold=True, color=self.muted, align=PP_ALIGN.LEFT)
         fact = self.text(s, d.get("caption", ""), top=Inches(4.3), height=Inches(1.1),
                          size=44, bold=True, align=PP_ALIGN.LEFT)
         if reveal:
@@ -840,8 +855,14 @@ def selftest() -> int:
         long = "这是一句为了测试而故意写得非常长的单句大字，一共三十六个字，排出来超出画"
         deck = deck_of({"type": "phrase", "value": long})[0]
         checks.append((f"{len(long)} 字的单句大字报放不下", any("要占" in w for w in deck.warnings)))
+        # 72pt 下一行放得下 10 个字（0.8.0 起的字号），所以用 12 个字：折成 10 + 2，末行是孤行
+        deck = deck_of({"type": "phrase", "value": "练了多久，还是没人说得清"})[0]
+        checks.append(("逗号连着的十二个字自己折行，报孤行", any("孤行" in w for w in deck.warnings)))
         deck = deck_of({"type": "phrase", "value": "练了多久，没人说得清"})[0]
-        checks.append(("逗号连着的十个字自己折行，报孤行", any("孤行" in w for w in deck.warnings)))
+        checks.append(("十个字的单句大字一行放得下，不报", not fit_notes(deck)))
+        deck = deck_of({"type": "num", "value": "3 倍"})[0]
+        runs = [r.text for r in deck.prs.slides[0].shapes[0].text_frame.paragraphs[0].runs]
+        checks.append(("大数字的单位单独一段、缩小", runs == ["3", " 倍"]))
         deck = deck_of({"type": "phrase", "value": "练了多久\n没人说得清"})[0]
         checks.append(("手工断成两行的单句大字不报", not deck.warnings))
 

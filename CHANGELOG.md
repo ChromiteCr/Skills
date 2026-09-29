@@ -5,6 +5,18 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.22.6 — 2026-09-29
+
+`keynote-deck-builder` 升到 0.8.0：视觉改向苹果对齐，去掉一眼像 AI 模板的几处。Library 层只动了索引与 README 的描述，按规则记 PATCH；
+skill 本身的改动细节记在它自己的 `CHANGELOG.md` 里。要点：
+
+- 依据换成苹果中文官网的样式表（apple.com.cn，2026-09-28 取）：中文字距一律 0、中文行高比拉丁略松、最大的标题也只用 600、
+  深浅两种底都是纯色，iPhone 概览页没有一处渐变底或渐变文字
+- 底色改纯色，去掉光晕与颗粒。旧的「近黑多层渐变」结论只靠一个 C 档来源，按 skill 自己的约定本不该成为规则，这次在 references 里写明更正
+- 字号顶端几档小一号（单句大字 180→144px 等），字重封顶 600，中文字距归零；重点色一张片最多一处；
+  路线图、提问选项等去掉胶囊与卡片按钮的样子。字数上限按新字号重算
+- pptx 导出同步到同一套字号与配色，动画 XML 除调暗色外与改动前相同
+
 ## 0.22.5 — 2026-09-27
 
 `keynote-deck-builder` 升到 0.7.2：片上文字的硬性规则加第 8 条「避开 AI 腔词」。Library 层只动了索引与 README 的描述，按规则记 PATCH；
