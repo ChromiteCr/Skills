@@ -12,6 +12,7 @@ import io
 import math
 import os
 from pathlib import Path
+import re
 import stat
 import warnings
 
@@ -200,22 +201,47 @@ def encode_png(image):
 
 
 def write_new_run(output_dir, png, report):
-    """Reserve a fresh directory atomically; report.json is the completion receipt.
+    """Backward-compatible single-render writer."""
+    write_new_bundle(output_dir, {'render.png': png}, report)
+
+
+def write_new_bundle(output_dir, images, report):
+    """Reserve a fresh directory; write all PNGs before the completion receipt.
 
     Parent must already exist. A failed write may leave a partial directory;
     keep it for inspection and retry with a new name. Never clean user data.
+    Names are flat ASCII PNG basenames, not user-provided paths.
     """
+    if (not isinstance(images, dict) or not images or not isinstance(report, bytes)
+            or any(not isinstance(name, str)
+                   or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*[.]png', name)
+                   or not isinstance(data, bytes) for name, data in images.items())):
+        raise InputError('bundle requires PNG basenames and encoded byte payloads')
     target = Path(output_dir)
     try:
         target.mkdir(mode=0o700, parents=False, exist_ok=False)
     except OSError:
         raise InputError('output must be a new directory under an existing writable parent') from None
     try:
-        for name, data in (('render.png', png), ('report.json', report)):
+        for name, data in images.items():
             with (target / name).open('xb') as stream:
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
+        # Keep the final receipt absent until write/flush/fsync/close succeed.
+        # Same-directory hard linking publishes without replacing another file.
+        pending = target / '.report.pending'
+        with pending.open('xb') as stream:
+            stream.write(report)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(pending, target / 'report.json')
+        # Publication already succeeded. A leftover private alias is harmless;
+        # do not turn an optional cleanup failure into an ambiguous failed run.
+        try:
+            pending.unlink()
+        except OSError:
+            pass
     except OSError:
         raise InputError('output write failed; preserve partial directory and retry with a new name') from None
 

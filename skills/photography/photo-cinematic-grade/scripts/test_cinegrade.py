@@ -360,9 +360,405 @@ class GradeTests(Fixtures):
         self.assertNotIn(str(self.root), proc.stdout)
 
 
+class CandidateTests(Fixtures):
+    def test_preview_integer_dimensions_no_upscale_and_minimum_one(self):
+        cases = [((7, 5), 4, (4, 3)), ((5, 7), 4, (3, 4)),
+                 ((4, 3), 2, (2, 2)), ((3, 4), 2, (2, 2)),
+                 ((100, 1), 2, (2, 1)), ((1, 100), 2, (1, 2)),
+                 ((3, 2), 3, (3, 2)), ((3, 2), 1024, (3, 2)),
+                 ((3, 2), 1, (1, 1)), ((2049, 1), 2048, (2048, 1))]
+        for size, cap, expected in cases:
+            with self.subTest(size=size, cap=cap):
+                image = Image.new('RGB', size, (17, 83, 201))
+                before = image.tobytes()
+                preview, record = cinegrade.candidate_preview(image, cap)
+                self.assertEqual(preview.size, expected)
+                self.assertEqual(preview.tobytes(), bytes((17, 83, 201)) * (expected[0] * expected[1]))
+                self.assertEqual(image.tobytes(), before)
+                self.assertEqual(record['resampling'], 'pillow-lanczos' if max(size) > cap else 'none')
+                self.assertFalse(record['upscaled'])
+                self.assertEqual(record['dimensions'], list(expected))
+        with self.assertRaises(image_io.InputError):
+            cinegrade.candidate_preview(self.image.convert('RGBA'), 1)
+
+    def test_fixed_order_defaults_receipt_and_original_preservation(self):
+        before = self.source.read_bytes()
+        output = self.root / 'candidates'
+        report = cinegrade.candidates(self.source, output, assume_srgb=True)
+        self.assertEqual(self.source.read_bytes(), before)
+        self.assertEqual(report['input']['source_sha256'], hashlib.sha256(before).hexdigest())
+        self.assertEqual(report['skill_version'], '0.2.0')
+        self.assertEqual(report['command'], 'candidates')
+        self.assertEqual(report['selection'], {'automatic_selection': False, 'selected_look': None})
+        self.assertEqual(report['preview']['max_edge'], 1024)
+        expected_names = ['01-neutral.png', '02-warm-muted.png', '03-cool-muted.png']
+        self.assertEqual([r['output']['file'] for r in report['candidates']], expected_names)
+        self.assertEqual([r['grade']['look'] for r in report['candidates']], ['neutral', 'warm-muted', 'cool-muted'])
+        self.assertEqual([r['grade']['strength_percent'] for r in report['candidates']], [0, 60, 60])
+        self.assertEqual({p.name for p in output.iterdir()}, set(expected_names) | {'report.json'})
+        self.assertEqual(json.loads((output / 'report.json').read_text()), report)
+        for item in report['candidates']:
+            blob = (output / item['output']['file']).read_bytes()
+            self.assertEqual(item['output']['png_sha256'], hashlib.sha256(blob).hexdigest())
+            with Image.open(io.BytesIO(blob)) as image:
+                self.assertEqual(item['output']['pixel_sha256'], hashlib.sha256(image.tobytes()).hexdigest())
+                self.assertEqual(image.size, (3, 2))
+                self.assertEqual(image.mode, 'RGB')
+                if item['grade']['look'] == 'neutral':
+                    self.assertEqual(image.tobytes(), self.image.tobytes())
+
+    def test_one_snapshot_one_icc_transform_before_resize(self):
+        exif = Image.Exif()
+        exif[274] = 6
+        profile = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
+        self.image.save(self.source, exif=exif, icc_profile=profile)
+        normalized = Image.new('RGB', (2, 3), (10, 30, 90))
+        with mock.patch.object(image_io, '_read_source', wraps=image_io._read_source) as read, \
+             mock.patch.object(ImageCms, 'profileToProfile', return_value=normalized) as convert, \
+             mock.patch.object(cinegrade, 'candidate_preview', wraps=cinegrade.candidate_preview) as resize:
+            report = cinegrade.candidates(self.source, self.root / 'out', max_edge=2)
+        self.assertEqual(read.call_count, 1)
+        self.assertEqual(convert.call_count, 1)
+        self.assertEqual(convert.call_args.args[0].size, (2, 3))
+        self.assertEqual(resize.call_count, 1)
+        self.assertEqual(resize.call_args.args[0].tobytes(), normalized.tobytes())
+        self.assertEqual(report['input']['orientation_applied'], 6)
+        self.assertEqual(report['input']['oriented_dimensions'], [2, 3])
+        self.assertEqual(report['preview']['dimensions'], [1, 2])
+        self.assertEqual(report['preview']['processing_order'], ['exif_orientation', 'normalize_srgb', 'resize', 'grade'])
+        with Image.open(self.root / 'out' / '01-neutral.png') as neutral:
+            self.assertEqual(neutral.tobytes(), bytes((10, 30, 90)) * 2)
+
+    def test_real_tagged_oriented_source_and_neutral_positions(self):
+        exif = Image.Exif()
+        exif[274] = 6
+        profile = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
+        self.image.save(self.source, exif=exif, icc_profile=profile)
+        report = cinegrade.candidates(self.source, self.root / 'out')
+        with Image.open(self.root / 'out' / '01-neutral.png') as neutral:
+            pixels = list(self.image.getdata())
+            self.assertEqual(list(neutral.getdata()), [pixels[i] for i in [3, 0, 4, 1, 5, 2]])
+            self.assertEqual(neutral.size, (2, 3))
+        self.assertEqual(report['input']['color_management']['action'], 'icc_to_srgb')
+
+    def test_lanczos_resize_precedes_grading_and_matches_render_of_preview(self):
+        preview = self.image.resize((2, 1), Image.Resampling.LANCZOS, reducing_gap=None)
+        preview_path = self.root / 'preview.png'
+        preview_path.write_bytes(image_io.encode_png(preview))
+        output = self.root / 'out'
+        report = cinegrade.candidates(self.source, output, max_edge=2, strength=75, assume_srgb=True)
+        self.assertEqual(report['qa']['scope'], 'resized_preview_only')
+        self.assertEqual(report['qa']['before']['pixel_count'], 2)
+        self.assertEqual(report['preview']['resampling'], 'pillow-lanczos')
+        self.assertIsNone(report['preview']['reducing_gap'])
+        for item in report['candidates']:
+            name = item['grade']['look']
+            amount = 0 if name == 'neutral' else 75
+            rendered = cinegrade.render(preview_path, self.root / ('render-' + name), look=name, strength=amount)
+            self.assertEqual(item['output']['pixel_sha256'], rendered['output']['pixel_sha256'])
+            self.assertEqual(item['qa']['after'], rendered['qa']['after'])
+            self.assertEqual(item['qa']['channel_sample_count'], 6)
+        # This nonlinear fixture detects accidentally swapping resize and grade.
+        full = cinegrade.render(self.source, self.root / 'full', strength=75, assume_srgb=True)
+        with Image.open(self.root / 'full' / 'render.png') as image:
+            wrong_order = image.resize((2, 1), Image.Resampling.LANCZOS).tobytes()
+        warm_hash = report['candidates'][1]['output']['pixel_sha256']
+        self.assertNotEqual(warm_hash, hashlib.sha256(wrong_order).hexdigest())
+        self.assertEqual(full['output']['dimensions'], [3, 2])
+
+    def test_hand_computed_candidates_and_full_strength_qa(self):
+        Image.new('RGB', (1, 1), (128, 128, 128)).save(self.source)
+        report = cinegrade.candidates(self.source, self.root / 'out', strength=50, assume_srgb=True)
+        # Warm full-strength midgray is (132,130,129); 50% integer blend -> (130,129,129).
+        with Image.open(self.root / 'out' / '02-warm-muted.png') as warm:
+            self.assertEqual(warm.getpixel((0, 0)), (130, 129, 129))
+        self.assertEqual(report['candidates'][0]['qa']['full_strength_pre_clamp_channel_samples'], 0)
+        looks = cinegrade.load_looks()
+        looks['warm-muted'] = copy.deepcopy(looks['neutral'])
+        looks['warm-muted']['shadow_rgb'] = [-16] * 3
+        looks['warm-muted']['highlight_rgb'] = [16] * 3
+        self.image.save(self.source)
+        with mock.patch.object(cinegrade, 'load_looks', return_value=looks):
+            report = cinegrade.candidates(self.source, self.root / 'excursions', strength=1, assume_srgb=True)
+        warm = report['candidates'][1]
+        self.assertEqual(warm['qa']['full_strength_pre_clamp_channel_samples'], 15)
+        self.assertEqual(warm['qa']['warnings'], ['grade_out_of_range_before_clamp'])
+        self.assertEqual(warm['qa']['channel_sample_count'], 18)
+
+    def test_repeatability_and_zero_strength_share_baseline(self):
+        first = cinegrade.candidates(self.source, self.root / 'one', max_edge=2, assume_srgb=True)
+        second = cinegrade.candidates(self.source, self.root / 'two', max_edge=2, assume_srgb=True)
+        self.assertEqual([i['output']['pixel_sha256'] for i in first['candidates']],
+                         [i['output']['pixel_sha256'] for i in second['candidates']])
+        zero = cinegrade.candidates(self.source, self.root / 'zero', strength=0, max_edge=2, assume_srgb=True)
+        self.assertEqual(len({i['output']['pixel_sha256'] for i in zero['candidates']}), 1)
+        for item in zero['candidates']:
+            self.assertEqual(item['qa']['full_strength_pre_clamp_channel_samples'], 0)
+            self.assertEqual(item['qa']['warnings'], [])
+        # The style-strength maximum is valid; neutral must still remain at zero.
+        full = cinegrade.candidates(self.source, self.root / 'hundred', strength=100, assume_srgb=True)
+        self.assertEqual([i['grade']['strength_percent'] for i in full['candidates']], [0, 100, 100])
+
+    def test_private_metadata_absent_from_all_previews_and_receipt(self):
+        exif = Image.Exif()
+        exif[271] = 'PRIVATE_CAMERA'
+        exif[315] = 'PRIVATE_OWNER'
+        exif[306] = '2026:01:02 03:04:05'
+        exif[34853] = {1: 'N', 2: (31.0, 13.0, 0.0)}
+        exif[34665] = {33434: 0.01, 33437: 2.8, 34855: 400, 37386: 50.0, 42033: 'PRIVATE_SERIAL'}
+        info = PngImagePlugin.PngInfo()
+        info.add_text('Comment', 'PRIVATE_LOCATION')
+        info.add_itxt('XML:com.adobe.xmp', 'PRIVATE_XMP')
+        self.image.save(self.source, exif=exif, pnginfo=info)
+        output = self.root / 'out'
+        report = cinegrade.candidates(self.source, output, max_edge=2, assume_srgb=True)
+        receipt = (output / 'report.json').read_text()
+        for value in ('PRIVATE_', self.source.name, str(self.root), '2026:01:02', 'GPS'):
+            self.assertNotIn(value, receipt)
+        self.assertEqual(report['input']['technical_exif'],
+                         {'exposure_seconds': 0.01, 'f_number': 2.8, 'iso': 400.0, 'focal_length_mm': 50.0})
+        for item in report['candidates']:
+            blob = (output / item['output']['file']).read_bytes()
+            self.assertLessEqual(set(png_chunks(blob)), {b'IHDR', b'iCCP', b'IDAT', b'IEND'})
+            self.assertIn(b'iCCP', png_chunks(blob))
+            with Image.open(io.BytesIO(blob)) as image:
+                self.assertFalse(image.getexif())
+                self.assertEqual(set(image.info), {'icc_profile'})
+                profile = ImageCms.ImageCmsProfile(io.BytesIO(image.info['icc_profile']))
+                self.assertIn('sRGB', ImageCms.getProfileDescription(profile))
+
+    def test_parameters_and_missing_recipes_rejected_before_source_read(self):
+        target = self.root / 'absent'
+        invalid = [{'strength': v} for v in (-1, 101, True, 1.5, '60', float('nan'))]
+        invalid += [{'max_edge': v} for v in (0, -1, 2049, True, 2.5, '1024', float('inf'))]
+        with mock.patch.object(cinegrade, 'load_image') as load:
+            for kwargs in invalid:
+                with self.subTest(kwargs=kwargs), self.assertRaises(image_io.InputError):
+                    cinegrade.candidates(self.source, target, assume_srgb=True, **kwargs)
+                self.assertFalse(target.exists())
+            looks = cinegrade.load_looks()
+            del looks['cool-muted']
+            with mock.patch.object(cinegrade, 'load_looks', return_value=looks), self.assertRaises(image_io.InputError):
+                cinegrade.candidates(self.source, target, assume_srgb=True)
+            load.assert_not_called()
+
+    def test_input_color_and_format_rejections_create_no_output(self):
+        target = self.root / 'absent'
+        with self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, target)
+        self.assertFalse(target.exists())
+        for kwargs in ({'icc_profile': b'PRIVATE_BROKEN_PROFILE'}, {'transparency': (0, 0, 0)}):
+            self.image.save(self.source, **kwargs)
+            with self.subTest(kwargs=kwargs), self.assertRaises(image_io.InputError):
+                cinegrade.candidates(self.source, target, assume_srgb=True)
+            self.assertFalse(target.exists())
+        Image.new('I;16', (3, 2)).save(self.source)
+        with self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertFalse(target.exists())
+
+    def test_no_overwrite_files_empty_directories_and_links(self):
+        before = self.source.read_bytes()
+        existing = self.root / 'existing'
+        existing.mkdir()
+        alias = self.root / 'alias'
+        alias.symlink_to(existing, target_is_directory=True)
+        dangling = self.root / 'dangling'
+        dangling.symlink_to(self.root / 'missing')
+        targets = [self.source, existing, alias, dangling, self.root]
+        for target in targets:
+            with self.subTest(target=target.name), self.assertRaises(image_io.InputError):
+                cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual(self.source.read_bytes(), before)
+        self.assertEqual(list(existing.iterdir()), [])
+        self.assertTrue(dangling.is_symlink())
+        with self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, self.root / 'missing-parent' / 'out', assume_srgb=True)
+        self.assertFalse((self.root / 'missing-parent').exists())
+
+    def test_all_encodes_finish_before_directory_reservation(self):
+        target = self.root / 'absent'
+        before = self.source.read_bytes()
+        calls = []
+        real_encode = cinegrade.encode_png
+        def encode(image):
+            self.assertFalse(target.exists())
+            calls.append(image.size)
+            if len(calls) == 3:
+                raise image_io.InputError('synthetic encode failure')
+            return real_encode(image)
+        with mock.patch.object(cinegrade, 'encode_png', side_effect=encode), self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual(len(calls), 3)
+        self.assertFalse(target.exists())
+        self.assertEqual(self.source.read_bytes(), before)
+
+    def test_bundle_writes_report_last_and_preserves_partial_on_failure(self):
+        target = self.root / 'partial'
+        events = []
+        real_open = Path.open
+        def fail_second(path, *args, **kwargs):
+            if path.parent == target:
+                events.append(path.name)
+                if path.name == '02-warm-muted.png':
+                    raise OSError('synthetic disk full')
+            return real_open(path, *args, **kwargs)
+        with mock.patch.object(Path, 'open', fail_second), self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual(events, ['01-neutral.png', '02-warm-muted.png'])
+        self.assertEqual({p.name for p in target.iterdir()}, {'01-neutral.png'})
+        before = (target / '01-neutral.png').read_bytes()
+        with self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual((target / '01-neutral.png').read_bytes(), before)
+        events.clear()
+        target = self.root / 'complete'
+        def record_open(path, *args, **kwargs):
+            if path.parent == target:
+                events.append(path.name)
+            return real_open(path, *args, **kwargs)
+        with mock.patch.object(Path, 'open', record_open):
+            cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual(events, ['01-neutral.png', '02-warm-muted.png', '03-cool-muted.png', '.report.pending'])
+
+    def test_bundle_directory_race_keeps_existing_content(self):
+        target = self.root / 'raced'
+        real_write = cinegrade.write_new_bundle
+        def reserve_first(output, images, receipt):
+            target.mkdir()
+            (target / 'keep.txt').write_text('keep')
+            real_write(output, images, receipt)
+        with mock.patch.object(cinegrade, 'write_new_bundle', side_effect=reserve_first), self.assertRaises(image_io.InputError):
+            cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual({p.name for p in target.iterdir()}, {'keep.txt'})
+        self.assertEqual((target / 'keep.txt').read_text(), 'keep')
+
+    def test_bundle_rejects_paths_and_bad_payloads_before_mkdir(self):
+        target = self.root / 'absent'
+        for name in ('../escape.png', '/escape.png', 'nested/escape.png', 'nested\\escape.png',
+                     'report.json', '.hidden.png', 'BAD.png', ''):
+            with self.subTest(name=name), self.assertRaises(image_io.InputError):
+                image_io.write_new_bundle(target, {name: b'png'}, b'{}')
+            self.assertFalse(target.exists())
+        for images, report in [({}, b'{}'), ({'x.png': 'text'}, b'{}'), ({'x.png': b'png'}, '{}')]:
+            with self.assertRaises(image_io.InputError):
+                image_io.write_new_bundle(target, images, report)
+            self.assertFalse(target.exists())
+
+    def test_cli_candidates_success_defaults_and_errors(self):
+        args = cinegrade.build_parser().parse_args(['candidates', 'source.png', '--output', 'run'])
+        self.assertEqual((args.strength, args.max_edge), (60, 1024))
+        base = [sys.executable, '-B', str(HERE / 'cinegrade.py'), 'candidates', str(self.source)]
+        for options in ([], ['--assume-srgb', '--max-edge', '0'], ['--assume-srgb', '--strength', '101'],
+                        ['--max-edge', 'nan'], ['--look', 'neutral']):
+            proc = subprocess.run([*base, '--output', str(self.root / 'absent'), *options],
+                                  capture_output=True, text=True, timeout=20)
+            self.assertEqual(proc.returncode, 2, proc.stderr)
+            self.assertNotIn('Traceback', proc.stderr)
+            self.assertFalse((self.root / 'absent').exists())
+        proc = subprocess.run([*base, '--output', str(self.root / 'cli'), '--assume-srgb', '--max-edge', '2'],
+                              capture_output=True, text=True, timeout=20)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result['status'], 'complete')
+        self.assertEqual(result['dimensions'], [2, 1])
+        self.assertEqual(result['outputs'], ['01-neutral.png', '02-warm-muted.png', '03-cool-muted.png'])
+        self.assertFalse(result['automatic_selection'])
+        self.assertIn('untagged_source_assumed_srgb', result['warnings'])
+        self.assertNotIn(str(self.root), proc.stdout)
+        self.assertNotIn(self.source.name, proc.stdout)
+
+
+    def test_report_write_flush_close_failures_leave_no_final_receipt(self):
+        real_open = Path.open
+        for stage in ('write', 'flush', 'close'):
+            target = self.root / ('report-fault-' + stage)
+            class FaultyStream:
+                def __init__(self, stream):
+                    self.stream = stream
+                def __enter__(self):
+                    return self
+                def __exit__(self, kind, value, traceback):
+                    self.stream.close()
+                    if stage == 'close' and kind is None:
+                        raise OSError('synthetic receipt close failure')
+                    return False
+                def write(self, data):
+                    if stage == 'write':
+                        self.stream.write(data[:3])
+                        raise OSError('synthetic receipt write failure')
+                    return self.stream.write(data)
+                def flush(self):
+                    if stage == 'flush':
+                        raise OSError('synthetic receipt flush failure')
+                    return self.stream.flush()
+                def fileno(self):
+                    return self.stream.fileno()
+            def opened(path, *args, **kwargs):
+                stream = real_open(path, *args, **kwargs)
+                return FaultyStream(stream) if path.name == '.report.pending' else stream
+            with self.subTest(stage=stage), mock.patch.object(Path, 'open', opened):
+                with self.assertRaises(image_io.InputError):
+                    cinegrade.candidates(self.source, target, assume_srgb=True)
+            self.assertFalse((target / 'report.json').exists())
+            self.assertTrue((target / '.report.pending').exists())
+            self.assertTrue((target / '03-cool-muted.png').exists())
+
+    def test_report_fsync_failure_leaves_no_final_receipt(self):
+        target = self.root / 'report-fsync-fault'
+        real_fsync = image_io.os.fsync
+        calls = []
+        def sync(fd):
+            calls.append(fd)
+            if len(calls) == 4:
+                raise OSError('synthetic receipt fsync failure')
+            return real_fsync(fd)
+        with mock.patch.object(image_io.os, 'fsync', side_effect=sync):
+            with self.assertRaises(image_io.InputError):
+                cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual(len(calls), 4)
+        self.assertFalse((target / 'report.json').exists())
+        self.assertEqual(json.loads((target / '.report.pending').read_text())['status'], 'complete')
+
+    def test_receipt_publication_collision_never_overwrites(self):
+        target = self.root / 'report-collision'
+        real_link = image_io.os.link
+        def collision(source, dest):
+            Path(dest).write_bytes(b'keep-existing-receipt')
+            return real_link(source, dest)
+        with mock.patch.object(image_io.os, 'link', side_effect=collision):
+            with self.assertRaises(image_io.InputError):
+                cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual((target / 'report.json').read_bytes(), b'keep-existing-receipt')
+        self.assertTrue((target / '.report.pending').exists())
+
+    def test_receipt_publication_failure_preserves_pending(self):
+        target = self.root / 'report-link-failure'
+        with mock.patch.object(image_io.os, 'link', side_effect=OSError('hard links unavailable')):
+            with self.assertRaises(image_io.InputError):
+                cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertFalse((target / 'report.json').exists())
+        self.assertTrue((target / '.report.pending').exists())
+
+    def test_optional_pending_cleanup_failure_is_not_false_failure(self):
+        target = self.root / 'report-cleanup-failure'
+        real_unlink = Path.unlink
+        def unlink(path, *args, **kwargs):
+            if path.parent == target and path.name == '.report.pending':
+                raise OSError('synthetic optional cleanup failure')
+            return real_unlink(path, *args, **kwargs)
+        with mock.patch.object(Path, 'unlink', unlink):
+            report = cinegrade.candidates(self.source, target, assume_srgb=True)
+        self.assertEqual(report['status'], 'complete')
+        self.assertEqual((target / '.report.pending').read_bytes(), (target / 'report.json').read_bytes())
+        for candidate in report['candidates']:
+            self.assertEqual(hashlib.sha256((target / candidate['output']['file']).read_bytes()).hexdigest(),
+                             candidate['output']['png_sha256'])
+
+
 def run_tests(group='all'):
     suite = unittest.TestSuite()
-    for cls in ([IOTests] if group == 'io' else [GradeTests] if group == 'grade' else [IOTests, GradeTests]):
+    for cls in ([IOTests] if group == 'io' else [GradeTests, CandidateTests] if group == 'grade' else [IOTests, GradeTests, CandidateTests]):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(cls))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1

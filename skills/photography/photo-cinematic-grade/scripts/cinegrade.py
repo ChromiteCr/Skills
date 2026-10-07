@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Deterministic, conservative SDR grading. First increment: render + numeric QA.
+"""Deterministic SDR grading: render, candidate previews and numeric QA.
 
 Pixel math uses integers in encoded sRGB, not scene-linear film simulation.
-Candidate samples, contact cards, comparisons and LUT export are not yet shipped.
+Contact cards, comparisons and LUT export are not yet shipped.
 """
 from __future__ import annotations
 
@@ -16,10 +16,12 @@ import sys
 import PIL
 from PIL import Image, ImageCms
 
-from image_io import InputError, encode_png, load_image, write_new_run
+from image_io import InputError, encode_png, load_image, write_new_bundle, write_new_run
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 ALGORITHM = 'encoded-srgb-integer-v1'
+CANDIDATE_LOOKS = ('neutral', 'warm-muted', 'cool-muted')
+MAX_PREVIEW_EDGE = 2048
 LOOK_LIBRARY = Path(__file__).resolve().parent.parent / 'references' / 'look-library.json'
 
 
@@ -173,6 +175,96 @@ def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False)
     return report
 
 
+def candidate_preview(image, max_edge):
+    """Resize normalized RGB once, without upscaling or implicit auto-enhancement."""
+    if image.mode != 'RGB':
+        raise InputError('candidate preview requires normalized 8-bit RGB')
+    if not _integer(max_edge, 1, MAX_PREVIEW_EDGE):
+        raise InputError('max-edge must be an integer within 1..2048')
+    longest = max(image.size)
+    if longest <= max_edge:
+        preview = Image.frombytes('RGB', image.size, image.tobytes())
+        resampling = 'none'
+    else:
+        size = tuple(max(1, round_div(d * max_edge, longest)) for d in image.size)
+        preview = image.resize(size, resample=Image.Resampling.LANCZOS, reducing_gap=None)
+        resampling = 'pillow-lanczos'
+    return preview, {
+        'max_edge': max_edge, 'dimensions': list(preview.size),
+        'resampling': resampling, 'reducing_gap': None,
+        'dimension_rounding': 'nearest_integer_ties_up_minimum_1',
+        'upscaled': False, 'working_space': 'encoded_sRGB',
+        'processing_order': ['exif_orientation', 'normalize_srgb', 'resize', 'grade'],
+    }
+
+
+def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False):
+    """One input snapshot, three fixed-order previews, one final completion receipt."""
+    target = Path(output)
+    if target.exists() or target.is_symlink():
+        raise InputError('output already exists; choose a new directory')
+    if not _integer(strength, 0, 100):
+        raise InputError('strength must be an integer within 0..100')
+    if not _integer(max_edge, 1, MAX_PREVIEW_EDGE):
+        raise InputError('max-edge must be an integer within 1..2048')
+    looks = load_looks()
+    if any(name not in looks for name in CANDIDATE_LOOKS):
+        raise InputError('candidate look library requires neutral, warm-muted and cool-muted')
+    loaded = load_image(source, assume_srgb=assume_srgb)
+    preview, resize_record = candidate_preview(loaded.image, max_edge)
+    images, records = {}, []
+    for index, name in enumerate(CANDIDATE_LOOKS, 1):
+        amount = 0 if name == 'neutral' else strength
+        graded, excursions = grade_pixels(preview, looks[name], amount)
+        png = encode_png(graded)
+        filename = f'{index:02d}-{name}.png'
+        images[filename] = png
+        records.append({
+            'grade': {'look': name, 'strength_percent': amount, 'recipe': looks[name]},
+            'output': {
+                'file': filename, 'format': 'PNG', 'mode': 'RGB',
+                'dimensions': list(graded.size), 'color_space': 'sRGB',
+                'png_sha256': hashlib.sha256(png).hexdigest(),
+                'pixel_sha256': hashlib.sha256(graded.tobytes()).hexdigest(),
+                'source_metadata_copied': False,
+            },
+            'qa': {
+                'after': endpoint_qa(graded),
+                'full_strength_pre_clamp_channel_samples': excursions,
+                'channel_sample_count': graded.width * graded.height * 3,
+                'warnings': ['grade_out_of_range_before_clamp'] if excursions else [],
+            },
+        })
+    report = {
+        'schema_version': 1, 'status': 'complete', 'command': 'candidates',
+        'skill_version': VERSION, 'algorithm': ALGORITHM,
+        'input': loaded.provenance, 'preview': resize_record,
+        'candidates': records,
+        'qa': {
+            'scope': 'resized_preview_only', 'before': endpoint_qa(preview),
+            'human_review_required': ['skin_and_memory_colors', 'highlight_detail', 'shadow_detail', 'banding'],
+        },
+        'selection': {'automatic_selection': False, 'selected_look': None},
+        'environment': {
+            'python': platform.python_version(), 'pillow': PIL.__version__,
+            'littlecms': ImageCms.core.littlecms_version,
+        },
+        'limitations': [
+            'candidate previews are for choosing a direction, not full-resolution deliverables',
+            'resize precedes grading; a resized full-resolution render can have different pixels',
+            'preview QA cannot certify full-resolution detail, banding, skin tones or aesthetics',
+            '8-bit encoded-sRGB creative transform, not a film-stock or scene-linear emulation',
+            'pixel reproducibility requires the same decode/ICC/resize environment; PNG bytes may differ',
+            'ICC conversion may already clip source colors; this QA does not detect source gamut loss',
+            'metadata privacy is not visual anonymization; review visible identifying details separately',
+            'the sidecar contains content hashes and technical values; keep private unless needed',
+        ],
+    }
+    receipt = (json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + '\n').encode('utf-8')
+    write_new_bundle(output, images, receipt)
+    return report
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--selftest', action='store_true', help='run synthetic grading/CLI tests')
@@ -183,6 +275,12 @@ def build_parser():
     command.add_argument('--output', required=True, type=Path, help='new run directory; parent must exist')
     command.add_argument('--look', default='warm-muted')
     command.add_argument('--strength', type=int, default=60, help='integer 0..100 (default: 60)')
+    command.add_argument('--assume-srgb', action='store_true', help='explicitly confirm sRGB for an untagged source')
+    command = sub.add_parser('candidates', help='write three candidate PNGs + report.json into a NEW directory')
+    command.add_argument('source', type=Path)
+    command.add_argument('--output', required=True, type=Path, help='new run directory; parent must exist')
+    command.add_argument('--strength', type=int, default=60, help='style strength 0..100; neutral stays 0 (default: 60)')
+    command.add_argument('--max-edge', type=int, default=1024, help='preview long-edge cap 1..2048; never upscale (default: 1024)')
     command.add_argument('--assume-srgb', action='store_true', help='explicitly confirm sRGB for an untagged source')
     return parser
 
@@ -204,6 +302,16 @@ def main(argv=None):
             print(json.dumps({'status': 'complete', 'output': 'render.png',
                               'look': args.look, 'pixel_sha256': report['output']['pixel_sha256'],
                               'warnings': report['input']['warnings'] + report['qa']['warnings']}))
+        elif args.command == 'candidates':
+            report = candidates(args.source, args.output, strength=args.strength,
+                                max_edge=args.max_edge, assume_srgb=args.assume_srgb)
+            print(json.dumps({
+                'status': 'complete', 'command': 'candidates',
+                'outputs': [item['output']['file'] for item in report['candidates']],
+                'dimensions': report['preview']['dimensions'], 'automatic_selection': False,
+                'warnings': sorted(set(report['input']['warnings'] + [
+                    warning for item in report['candidates'] for warning in item['qa']['warnings']])),
+            }))
         else:
             parser.print_help()
         return 0
