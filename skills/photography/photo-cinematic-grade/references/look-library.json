@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "looks": {
+    "neutral": {
+      "label": "中性基线，不改变归一后的 sRGB 像素",
+      "curve": [[0, 0], [255, 255]],
+      "shadow_rgb": [0, 0, 0],
+      "highlight_rgb": [0, 0, 0],
+      "saturation_percent": 100
+    },
+    "warm-muted": {
+      "label": "暖亮部、轻冷暗部、收饱和；非任何电影或胶片的精确复刻",
+      "curve": [[0, 8], [32, 29], [128, 129], [224, 229], [255, 248]],
+      "shadow_rgb": [0, 1, 4],
+      "highlight_rgb": [5, 1, -4],
+      "saturation_percent": 88
+    },
+    "cool-muted": {
+      "label": "冷暗部、克制暖亮部、收饱和；非任何电影或胶片的精确复刻",
+      "curve": [[0, 6], [32, 28], [128, 126], [224, 225], [255, 250]],
+      "shadow_rgb": [-3, 1, 5],
+      "highlight_rgb": [3, 1, -2],
+      "saturation_percent": 84
+    }
+  }
+}

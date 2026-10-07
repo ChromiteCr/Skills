@@ -1,0 +1,53 @@
+# Grading research — 实现依据与证据边界
+
+## 本版依据
+
+本文件是首增量的工程说明，不声称已完成电影样片研究或实测胶片建模。
+下列是规范/库文档参考入口；**本批次没有联网读取或复核这些页面**，没有把未访问的页面当作实测证据：
+
+- ICC profile 规范与色彩管理资料：https://www.color.org/icc_specs2.xalter
+- Pillow ImageCms API：https://pillow.readthedocs.io/en/stable/reference/ImageCms.html
+- Pillow ImageOps EXIF transpose：https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose
+- PNG 规范与色彩/元数据块：https://www.w3.org/TR/png-3/
+
+**本地实测证据**：Pillow 11.3.0 / LittleCMS 2.17 的合成夹具，通过该 skill 的 `scripts/test_cinegrade.py` 重跑。
+真实 Display P3/Adobe RGB 资料、不同平台解码差异、校色显示器视觉检查不在此证据范围，交付时不能写“已验证”。
+
+## 色彩管理决策
+
+1. 显示参照 SDR 输入先归一到 sRGB，再做创意变换；不在未识别的色彩空间上直接套数值。
+2. 有 ICC：LittleCMS 相对色度意图，RGB 输出，flags=0。这个选择不是“无损宽色域转换”；超出目标色域的颜色可能被裁切，当前 QA 看不到转换前的色域损失。
+3. 无 ICC：要求用户明确确认 sRGB。PNG gamma 与 sRGB 冲突或只有非明确 sRGB 色度声明时拒绝，不私自从几项数字拼 ICC。
+4. 拒绝可检测到的 cICP/HDR PNG 信号；没有全面的 JPEG HDR/增益图识别。调用前确认 SDR；8-bit 不能当成充分证明。
+5. ICC 转换/解码失败不降级；HDR、RAW、HEIC、高位深和打印交付需要专门流程，不靠改扩展名或重新贴 sRGB 标签解决。
+
+## 确定性像素契约：encoded-srgb-integer-v1
+
+以下是创意参数设计，并非来自 ICC 或 PNG 规范的推荐调色值。
+所有处理作用于 EXIF 转正并归一后的 RGB8 像素；对每个像素独立，无随机性。
+
+定义 `R(n,d) = floor((n + floor(d/2))/d)`，d 为正整数。
+它是最近整数舍入，恰好半整数时向正无穷方向，包括负数；避免宿主浮点舍入差异。
+
+1. **曲线**：对相邻点 `(x0,y0)` 与 `(x1,y1)`，`t(x)=y0 + R((x-x0)*(y1-y0), x1-x0)`。提前生成 256 项查表。
+2. **冷暖偏移**：各通道 `u=t + R(shadow*(255-t)+highlight*t, 255)`，三通道各有自己的偏移。
+3. **去/增饱和**：`Y=R(54*r+183*g+19*b,256)`；`v=Y+R((u-Y)*saturation_percent,100)`。
+   这里的权重只是编码 sRGB 上的亮度近似，不是线性光亮度，也不承诺保持知觉亮度或色相。
+4. **范围处理**：记录 v<0 或 v>255 的通道样本数，再钳位到 0..255。
+5. **强度混合**：`out=R(original*(100-strength)+bounded*strength,100)`。
+   strength=0 直接返回原像素，既不计算满强度变换，也不制造无效警告。
+
+`neutral` 的曲线恒等、偏移 0、饱和度 100，对任意强度都是恒等；这是数值回归的锚。
+手算夹具覆盖纯色、灰阶、曲线节点、负数舍入和一半强度，不能只用实现自身生成“期望值”。
+
+## 非目标与风险
+
+- 不是胶片特性曲线拟合、ACES、场景线性成像、自动白平衡或曝光修复。
+- 8-bit 再调色可能产生条带。保留原片，不建议把输出反复作为输入继续叠加。
+- 曲线提黑或收高光不能恢复已丢失的细节；端点下降不等于画质更好。
+- 数值独立性不等于文件字节不变：解码器、ICC 库、生成的 ICC 与编码器版本均记录并解释。比对像素散列，不误用 PNG 文件散列作跨版本一致性证明。
+- metadata 清除不是视觉脱敏，内容散列也不是匿名化。输出不带原始 ICC 文本，不传播其可能的设备信息。
+
+## 后续验收必须补的证据
+
+依队列 A 分增量补齐，不以此文档替代实现：候选小样、card/compare 的参数与像素对账、LUT 网格与 render 误差界、真实广色域输入的色彩管理核验、人工视觉确认。

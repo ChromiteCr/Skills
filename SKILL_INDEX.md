@@ -6,7 +6,7 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.22.6`
+Library Version: `0.23.0`
 
 ---
 
@@ -210,6 +210,7 @@ Chinese lyric writing plus LLM-to-MIDI composition.
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
+| `photo-cinematic-grade` | P2 | draft | 0.1.0 | 首增量：确定性 SDR sRGB 调色 render、原件保护、隐私边车与数值 QA；候选小样/card/compare/lut 待实现 |
 | `photo-caption-writer` | P2 | draft | 0.1.1 | 基于拍摄者确认的事实与 EXIF 写图注或作品阐述，不从画面脑补情绪与意图 |
 | `photo-exif-frame` | P2 | draft | 0.1.1 | 照片下方加信息带：光圈、快门、曝光补偿、ISO、时间、设备；缺字段留空不编造 |
 | `photo-poster-stylist` | P2 | draft | 0.1.1 | 按拍摄者描述把照片转译为极简几何 SVG 海报：受限色板、网格、出血，脚本校验 |

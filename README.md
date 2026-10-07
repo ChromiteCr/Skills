@@ -1,7 +1,7 @@
 # Skills
 
 [![library](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChromiteCr%2FSkills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=library&color=2f81f7&style=flat-square)](VERSIONING.md)
-[![skills](https://img.shields.io/badge/skills-61-2f81f7?style=flat-square)](SKILL_INDEX.md)
+[![skills](https://img.shields.io/badge/skills-62-2f81f7?style=flat-square)](SKILL_INDEX.md)
 [![last commit](https://img.shields.io/github/last-commit/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
 [![commit activity](https://img.shields.io/github/commit-activity/m/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/commits)
 [![stars](https://img.shields.io/github/stars/ChromiteCr/Skills?style=flat-square&color=555555)](https://github.com/ChromiteCr/Skills/stargazers)
@@ -116,6 +116,7 @@ The other half of this is token cost. Never read the whole repo by default. Comp
 
 **Photography**
 
+- **[`photo-cinematic-grade`](skills/photography/photo-cinematic-grade/SKILL.md)**: A first, render-only increment for restrained cinematic color: deterministic integer transforms on normalized SDR sRGB pixels, three explicit recipes, a new output directory for every run, and a privacy-first numeric QA sidecar. Originals stay untouched; bad profiles, unsupported bit depths and transparency fail closed. Candidate samples, cards, comparisons and LUT export are not implemented yet.
 - **[`photo-caption-writer`](skills/photography/photo-caption-writer/SKILL.md)**: Writes a caption or artist statement only from facts the photographer confirmed plus optional EXIF. It will not read emotions, intent, or a location into the pixels; gaps get asked about or left out.
 - **[`photo-exif-frame`](skills/photography/photo-exif-frame/SKILL.md)**: Adds a configurable information band below a photograph — aperture, shutter, exposure compensation, ISO, capture time, camera. Missing fields stay blank rather than invented, and the source file is never overwritten.
 - **[`photo-poster-stylist`](skills/photography/photo-poster-stylist/SKILL.md)**: Turns the photographer's own account of a photo into a minimal geometric SVG poster — restrained palette, grid, typography, bleed — with a script checking the palette and element counts stay minimal.

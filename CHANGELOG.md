@@ -5,6 +5,15 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.23.0 — 2026-10-07
+
+新增 `photo-cinematic-grade` 0.1.0（draft），Library 按新增 skill 记 MINOR，技能数 61 → 62。
+这是电影感调色的首个独立增量，不代表整项开发完成：
+
+- `cinegrade.py` / 独立 `image_io.py`：三份整数配方、render、EXIF 转正、实际 ICC 转 sRGB、原片与已有输出保护、技术 EXIF 白名单边车与逐通道数值 QA。
+- 8-bit SDR RGB/L JPEG/PNG 的明确输入契约；无 ICC 必须显式确认 sRGB；损坏 ICC、透明、多帧、高位深等拒绝。没有生成式重绘或自动上传。
+- 增加配方库、实现依据与合成测试；候选小样、card、compare、lut 及真实广色域/视觉验收留在队列 A 的后续增量。未创建 release 或单技能 ZIP。
+
 ## 0.22.6 — 2026-09-29
 
 `keynote-deck-builder` 升到 0.8.0：视觉改向苹果对齐，去掉一眼像 AI 模板的几处。Library 层只动了索引与 README 的描述，按规则记 PATCH；
