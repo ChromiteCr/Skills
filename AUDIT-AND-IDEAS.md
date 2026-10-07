@@ -2,7 +2,7 @@
 
 生成日期 2026-09-24 · 库版本 0.22.3 · 已建成 61 个 skill
 
-> **2026-10-07 补充：新增第四部分「发布会 bento 信息图」方案**（你点名要做，取代 `launch-summary-panel`；4.13 的五个问题已定）；第二部分的开头和 C、E、F 节各补了一处。
+> **2026-10-07 补充：新增第四部分「发布会 bento 信息图」方案**（你点名要做，取代 `launch-summary-panel`；4.13 的五个问题已定；4.12 已细化成 11 轮的逐轮执行计划）；第二部分的开头和 C、E、F 节各补了一处。
 
 第一轮（2026-08-21，库版本 0.16.0）提案的 skill 已全部建成。第一轮原文用 `git show 40e9001:AUDIT-AND-IDEAS.md` 查看；它没勾掉的遗留项在本轮第一部分 H 节逐条核对过。
 
@@ -372,7 +372,7 @@ HEIC：四个读图脚本都读不了，SKILL 里一句没提。至少写明"先
 5. **`essay-revision-coach` + Honors 扩展**（你今年申请的话，10 月内）。
 6. **`contest-ai-use-ledger`**（下一场建模赛之前）、**navigator 签到台账**（下一次办活动时）。
 
-**bento 信息图**（2026-10-07 加，你点名要的）不依赖上面任何一条，可以和调色并行。按 4.12 的顺序做：先把测量写成脚本，再做 16:9 模板，最后做排版器。它的自检和第二批的 `stage-render-checker` 量的是同一类东西，先做的那个把代码留给后做的。
+**bento 信息图**（2026-10-07 加，你点名要的）不依赖上面任何一条，可以和调色并行。按 4.12 的 11 轮做，第 1、2 轮可以同时开。它的自检和第二批的 `stage-render-checker` 量的是同一类东西，先做的那个把代码留给后做的。
 
 第二批：grade-series-matcher、modeling-data-source-auditor、claim_probe、stage-render-checker、application-consistency-auditor、recommender-brief-builder、lyric-structure-mapper 0.2.0、shoot-cull-assistant、experiment-video-tracker。
 
@@ -651,7 +651,7 @@ skills/photography/photo-cinematic-grade/
 
 **排版器：主图先放好，外圈在整数网格上铺满。**
 
-1. **网格**：画布切成接近正方形的小格，行列数都取 4 的倍数，1 : 2 : 1 才能整切。16:9 用 28 × 16（每格约 2.9u），1:1 用 16 × 16，3:4 用 12 × 16，9:16 用 16 × 28，21:9 用 28 × 12。粒度在原型阶段用回归测试定：太粗贴不上苹果带内自由切出的宽度，太细搜索变慢。
+1. **网格**：画布切成接近正方形的小格，行列数都取 4 的倍数，1 : 2 : 1 才能整切。16:9 用 28 × 16（每格连格缝约 2.9u），1:1 用 16 × 16，3:4 用 12 × 16，9:16 用 16 × 28，21:9 用 28 × 12。粒度在原型阶段用回归测试定：太粗贴不上苹果带内自由切出的宽度，太细搜索变慢。
 2. **主图**：中心对齐画布中心，默认占 1 : 2 : 1 的中间块；主图跨的格数和总格数奇偶相同，才能正好居中。产品图比画布窄时按图的长宽比收窄（下限 35% 宽）；竖版画布上遇到很宽的图（研究里的曲线图、横放的产品），改成通栏主图，外圈只剩上下两块。
 3. **铺满外圈**：深度优先搜索，每次填最左上角的空格，按权重随机挑一种跨度。约束全部来自 4.2：最小格 ≥ 6u × 6.5u；长宽比不超过 3.5（样图里最长的格是 3.45）；最小的那种格不超过三成；同尺寸的格不连着排三个以上；贯穿全图的直缝最多两条（样图 4 有上下两条横缝，样图 5 有一条竖缝，都在主图和外圈的交界上）；格数落在该画幅的范围内。子代理用标准库写的原型在六种较粗的网格上（16:9 用的是 9 × 5）各解 300 次，全部解出，每次 0.1–0.5 ms，细网格上的速度要在原型阶段再测；scipy 的 `milp`（HiGHS）可以当第二种解法，每次 1–3 ms。
 4. **打分与挑选**：跑几百个种子，扣分项是相邻等宽、纯文字格挨着、长宽比超过 3、两条边差一点对齐（差 1u 以内的"差一点"比明确错开 2u 以上更难看，这条是设计判断，样图里没有反例）；留分最高、结构不同的三个。同一种子，结果相同。
@@ -740,20 +740,31 @@ skills/photography/photo-cinematic-grade/
 
 ```text
 skills/coding-helper/bento-infographic/
-├── SKILL.md
+├── SKILL.md                    # 第 9 轮先写成 SKILL.draft.md，第 11 轮发版时改名
 ├── scripts/
-│   ├── bento.py               # plan / layout / render / check / --selftest
-│   └── cutout.swift           # 可选：Vision 前景分割抠图
+│   ├── bento.py                # 命令行入口：plan / layout / render / check / --selftest
+│   ├── bento_spec.py           # 唯一的数值来源：u 换算、主题色、字体栈、格数范围；bento.json 的读入与校验
+│   ├── bento_layout.py         # 网格、主图、外圈铺满、打分、内容进格
+│   ├── bento_render.py         # 生成 HTML；Chrome 渲染（DevTools 协议为主，命令行截图为后备）
+│   ├── bento_check.py          # 4.7 的质量护栏，出 qa.json
+│   ├── bento_chart.py          # 研究模式的小图表（内联 SVG）
+│   ├── measure_reference.py    # 量样图，也量自己的渲染（同一套量法）
+│   ├── test_bento.py           # unittest，由 bento.py --selftest 调用
+│   └── cutout.swift            # 可选：Vision 前景分割抠图
 ├── templates/
-│   └── bento.html             # 以 u 为单位的 CSS 变量与各种格子
-├── assets/icons/              # Phosphor Fill 或 Material Symbols Rounded 的子集，带 LICENSE
+│   └── bento.html              # 以 u 为单位的 CSS 变量与十种格子
+├── assets/icons/               # Phosphor Fill 子集（MIT）、LICENSE、index.json
 ├── references/
-│   ├── apple-measurements.md  # 4.2 的全部读数、量法与样图出处
-│   ├── tile-kinds.md          # 4.4 每种格子的版式细节
-│   └── label-grammar.md       # 中英标签写法；AI 腔词表直接引用 keynote 那份
-└── examples/                  # 用本库自己的真实内容做样例，例如拿电影感调色的 QA 数字做研究版；不编产品参数
+│   ├── apple-measurements.md   # 4.2 的全部读数、量法与样图出处
+│   ├── bento-json.md           # bento.json 字段说明与示例
+│   ├── tile-kinds.md           # 十种格子的版式细节
+│   └── label-grammar.md        # 中英标签写法；AI 腔词表引用 keynote 那份
+└── examples/                   # 产品版用本库自己的数字，研究版用调色原型的 QA 数字；不编产品参数
 tests/cases/bento-infographic.md
-tests/fixtures/bento-infographic/apple-reference/   # 五张样图与 README（出处、版权说明），已放好
+tests/fixtures/bento-infographic/
+├── apple-reference/            # 五张样图与 README（已放好）；labels.json、measurements.json（第 1 轮）
+├── specs/                      # 开发用的 bento.json 与手写 layout.json（第 2 轮起）
+└── images/                     # scikit-image 的公有领域 / CC0 样图与合成图（第 2 轮起）
 ```
 
 - 依赖：Python 3、Pillow、numpy、scipy（本机都有）；渲染用本机 Google Chrome，与 keynote 的 `export_pdf.sh` 相同；全程不联网。
@@ -793,15 +804,519 @@ tests/fixtures/bento-infographic/apple-reference/   # 五张样图与 README（�
 - **photo-series-layout**：一组照片排成一页成套作品，它管；照片在本 skill 里只是格子的一部分。
 - **model-fit-auditor**：研究成果里"和理论吻合"的写法，等吻合分级做完后照它的措辞。
 
-### 4.12 开发顺序与验收
+### 4.12 逐轮执行计划
 
-1. **测量脚本与回归数据**：把本轮的量法写成 `measure_reference.py`，对五张样图出 JSON，作为排版器的回归基准。
-2. **16:9 模板**：先把 4.2 做成 `bento.html`，手工摆一张"照样图结构、换成自己内容"的图，和样图并排看字号、格缝、圆角、主图比例。
-3. **排版器**：先过五张样图的结构回归，再做竖版、方图、长图。
-4. **研究模式**：小图表、不确定度写法；出处行默认不加，使用者要求时才加。
-5. **自检、废弃与登记**：`check`；launch-summary-panel 标 deprecated；SKILL_INDEX、README、用例。
+一轮就是一次新开的 agent 会话（或一个子代理任务）。下文 `S/` 指 `skills/coding-helper/bento-infographic/`，`F/` 指 `tests/fixtures/bento-infographic/`。
 
-**验收**：三份题目（产品浅色 16:9、产品深色 16:9、研究成果 3:4）各出一张，和五张样图并排，交给一个没参与开发的评审代理打分（1–10 分，要说出哪里不像），8 分以上才发 0.1.0；最后由你在自己的屏幕上看。
+**每轮怎么开工、怎么收工。** 开工时把下面这句话发给 agent，只改轮次号：
+
+> 照 AUDIT-AND-IDEAS.md 4.12 做第 N 轮。先读第四部分全文，以及 4.12 的通用规则、接口和交接记录，再按第 N 轮的步骤做；只改这一轮列出的文件。4.12「已经同意的事」里写的下载和做法直接照办，中途不用等我回复。收工前跑完这一轮的验证，在交接记录里补一行，并按 templates/handoff-template.md 给我交接单。不要提交。
+
+**已经同意的事。** 下面几条使用者 2026-10-07 在对话里同意了，各轮照做，不再停下来问；做了什么在交接单里写清楚：
+
+| 轮 | 做什么 | 具体 |
+|---|---|---|
+| 3 | 装两套兜底字体，PDF 要用 | `brew install --cask font-inter font-noto-sans-sc`（本机 Homebrew 7.0.6）。Inter 4.1 来自 rsms/inter 的 GitHub 发布页，`Inter-4.1.zip` 33.7 MB；Noto Sans SC 来自 google/fonts 仓库的 `NotoSansSC[wght].ttf`，17.8 MB；两者都是 OFL。装进本机字体目录，不进仓库 |
+| 5 | 下载图标 | Phosphor 的 Fill 一套（MIT），固定在 phosphor-icons/core 的提交 `2b75f3a`（2026-01-06）。只下用得到的约 60 个：`https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/fill/<名字>-fill.svg`，单个 0.3–1 KB；外加仓库根目录的 `LICENSE` |
+| 10 | 评审不过时怎么办 | 不到 8 分就接着改、换新评审再评，最多五次；五次后仍不到 8 分，停在第 10 轮，不做第 11 轮，交接单写清每项差多少、试过哪些改法、建议下一步怎么改 |
+| 全部 | 发图不等回复 | 对比图、线框图、矩阵图只是发给使用者看，发完接着做。第 11 轮不等使用者看完成图就能开工；使用者事后有意见，按 0.1.x 另修 |
+
+计划里没写到的下载一律不做；真需要的话写进交接单，留给下一轮。
+
+**顺序。** 1 和 2 可以同时开，3 和 4 可以同时开，其余按编号依次做：
+
+```text
+1 测量 ──────────────┐
+                     ├─> 4 排版器 ──┐
+2 规格与模板 ─> 3 渲染器 ───────────┴─> 5 端到端 ─> 6 自检 ─> 7 任意比例与中文 ─> 8 研究模式 ─> 9 文档与样例 ─> 10 独立评审 ─> 11 发版
+```
+
+#### 通用规则（每轮都适用）
+
+1. 只改这一轮"建 / 改"里列出的文件。发现非改不可的别的文件，先不动，把这一轮其余的事做完，再在交接单里写明要改哪个文件、为什么，交给下一轮。
+2. 环境（2026-10-07 查过）：macOS，Python 3 加 Pillow 11、numpy 2、scipy 1.15、fontTools 4.55、scikit-image 0.25，Google Chrome 154（`/Applications/Google Chrome.app`），Swift 6.3。不用 pip 装新包，运行时不联网。开发期间只有两次下载（第 3 轮的兜底字体、第 5 轮的图标），都在「已经同意的事」里写明了。本机目前没装 Inter 和思源黑体，第 3 轮装。
+3. 第 1–10 轮不建 `S/SKILL.md`：`validate.sh` 一看到 SKILL.md，就要求索引、README、用例同时登记好。脚本照样放在 `S/scripts/`，`run-selftests.sh` 会跑到它们；文档写在 `S/SKILL.draft.md`，第 11 轮改名。
+4. 尺寸、颜色、字体栈、格数范围只在 `S/scripts/bento_spec.py` 里定义一次，模板和其他脚本都从那里取。数值照 4.2、4.3、4.13，不在别处另写一份。
+5. 测试一律是合成数据或本仓库已有的样图，写在 `S/scripts/test_bento.py`（unittest），由 `python3 S/scripts/bento.py --selftest` 调起，做法和 photo-cinematic-grade 的 `cinegrade.py --selftest` 一样。用到 `F/` 的测试，找不到文件就跳过（单技能 zip 里没有 fixtures）；要 Chrome 的测试，没装 Chrome 就跳过，但在本机必须跑通。
+6. 产物里不出现苹果的东西（4.8）。五张样图只给测量和回归用。样例内容只有三种来源：本库自己的真实数字；scikit-image 自带的公有领域或 CC0 图（astronaut、coffee、chelsea、rocket）；脚本画的合成图。不读使用者电脑里的个人照片。
+7. 写了中文文案（标签、SKILL.draft.md、references）就跑一遍 AI 腔词表：`grep -nFf skills/coding-helper/keynote-deck-builder/references/ai-tone-words.txt <文件>`，命中的逐条过删词测试。
+8. 收工前必跑三条，全部通过才算完：`python3 S/scripts/bento.py --selftest`、`./scripts/run-selftests.sh bento-infographic`、`./scripts/validate.sh`。
+9. 实测结果和第四部分写的数字对不上：差别在 ±2% 以内，照第四部分；超出时，以能复现的新读数为准，代码和第四部分的数字一起改，交接单里列出旧值、新值和量法。不停下来等回复。
+10. 要给使用者看的图（对比图、矩阵图）写到会话的临时目录，用发文件的方式发出去，不放进仓库；发完接着做，不等回复。
+
+#### 接口（各轮都按这里的名字和格式写；要改接口，在交接单里写明）
+
+**`bento.json`**，使用者确认过的内容清单，`schema: "bento/1"`：
+
+```json
+{
+  "schema": "bento/1",
+  "canvas": {"use": "screen", "width": 3840, "height": 2160, "dpr": 2},
+  "theme": "light",
+  "mode": "product",
+  "lang": "zh-CN",
+  "font": "system",
+  "accent": null,
+  "source_line": null,
+  "seed": 0,
+  "tiles": [
+    {"id": "hero", "kind": "hero", "word": "Skills", "weight": 3},
+    {"id": "skills", "kind": "stat", "value": "62", "unit": "个", "label": "技能", "weight": 2,
+     "facts": [{"text": "62 个技能", "source": "./scripts/validate.sh 的输出"}]},
+    {"id": "grade", "kind": "photo", "image": "images/coffee.jpg", "fit": "cover",
+     "label": "电影感调色", "weight": 2}
+  ],
+  "dropped": [{"text": "被舍掉的条目", "reason": "为什么舍掉"}]
+}
+```
+
+（示例里的数字只是示意，样例要在当轮现数。）
+
+| 字段 | 取值 | 说明 |
+|---|---|---|
+| `canvas.use` | `screen` / `print` / `phone` / `custom` | 决定 u（4.3） |
+| `canvas.width`、`height` | 整数 | 输出像素；CSS 像素 = 输出像素 ÷ `dpr`（默认 2） |
+| `theme` | `light` / `light-inverse` / `dark` | 4.2 的三种底与格 |
+| `mode` | `product` / `research` | 只有 research 能用 `chart` |
+| `lang` | `zh-CN` / `en` | 决定行高与标签长度规则 |
+| `font` | `system`（默认）/ `open` | PDF 一律按 `open` 出 |
+| `accent` | `null` 或 `"#rrggbb"` | 产品自己的颜色 |
+| `source_line` | `null`（默认）或字符串 | 使用者要求时才填 |
+| `tiles[].kind` | `hero` `stat` `word` `icon` `object` `photo` `ui` `row` `flank` `chart` | 4.4 的十种；`hero` 恰好一个 |
+| `tiles[].weight` | 1–3 | 3 最大 |
+| `tiles[].label` | 字符串，`\n` 是手写换行 | 英文 ≤ 6 词；中文 ≤ 12 字、每行 ≤ 11 字 |
+| `tiles[].label_pos` | `bottom` / `top` / `side` | 可选，按种类有默认值 |
+| `value`、`unit` | 字符串 | `stat`、`flank` 用；研究模式另有 `uncertainty`、`n`、`condition` |
+| `word` | 字符串 | `word` 与 `hero` 的大字 |
+| `image`、`fit`、`focus` | 路径；`contain` / `cover`；`"50% 40%"` | `hero` `object` `photo` `ui` `flank` |
+| `icon` | `S/assets/icons/index.json` 里的名字 | `icon` |
+| `items` | 字符串或图片路径的列表 | `row` |
+| `series`、`highlight` | 数列；下标 | `chart` |
+| `accent`（格子级） | 布尔 | 只允许 `stat`、`word`、`hero` |
+| `facts` | `[{"text", "source"}]` | 有数字的格必填；找不到出处就写 `"unverified": true` |
+
+**`layout.json`**，`schema: "bento-layout/1"`。格位是 `[列, 行, 宽, 高]`，从 0 数，单位是网格小格：
+
+```json
+{"schema": "bento-layout/1", "grid": {"cols": 28, "rows": 16}, "seed": 7, "score": -3.2,
+ "cells": {"hero": [7, 4, 14, 8], "skills": [0, 0, 3, 4]}}
+```
+
+**`qa.json`**，`schema: "bento-qa/1"`。检查项的 `id` 固定为：`hero_center` `hero_area` `gutter_uniform` `radius_uniform` `unit_size` `type_scale` `weight` `overflow` `label_lines` `label_length` `fonts` `contrast` `accent_hues` `text_only_share` `tile_count` `min_tile` `image_upscale` `output_size` `cjk_spacing`：
+
+```json
+{"schema": "bento-qa/1", "pass": false,
+ "checks": [{"id": "contrast", "value": 3.1, "limit": ">= 4.5", "pass": false, "where": "dive"}],
+ "fonts": {"system": 31, "fallback": 0, "other": 0},
+ "warnings": []}
+```
+
+**`dom.json`**，渲染时从页面量出来，供自检用：每格的矩形与圆角；每段文字的矩形、计算后的字号与字重、颜色、行数、是否溢出；每张图的原始像素与显示矩形。
+
+**Python 函数**：
+
+```python
+# bento_spec.py
+def unit_px(css_w: float, css_h: float, use: str) -> float          # screen/print/custom: 0.022 × 短边；phone: 0.028 × 宽
+def tokens(css_w: float, css_h: float, use: str, theme: str, lang: str) -> dict
+def count_range(use: str, css_w: float, css_h: float) -> tuple[int, int]
+def load_spec(path) -> dict
+def validate_spec(spec: dict, base_dir) -> list[str]                # 空列表表示通过
+# bento_layout.py
+def grid_for(css_w: float, css_h: float, u: float) -> tuple[int, int]
+def place_hero(cols: int, rows: int, hero: dict, canvas_aspect: float, use: str) -> tuple[int, int, int, int]
+def fill_ring(cols: int, rows: int, hero: tuple, rules: dict, rng) -> list[tuple] | None
+def score(rects: list[tuple], cols: int, rows: int, rules: dict) -> float
+def assign(tiles: list[dict], rects: list[tuple], cell: tuple[float, float], u: float) -> dict
+def candidates(spec: dict, n: int = 3, seeds: int = 500) -> list[dict]   # 每个元素是一份 layout.json
+# bento_render.py
+def build_html(spec: dict, layout: dict, out_dir) -> Path
+def screenshot_cli(html_path, png_path, css_w: int, css_h: int, dpr: int = 2) -> Path   # 后备
+class Chrome:                                                        # with Chrome() as c: ...
+    def open(self, html_path, css_w: int, css_h: int, dpr: int = 2): ...
+    def wait_fonts(self): ...
+    def screenshot(self, png_path): ...
+    def print_pdf(self, pdf_path): ...
+    def fonts_used(self) -> list[dict]: ...
+    def dom_metrics(self) -> dict: ...
+def render(spec_path, layout_path, out_dir, pdf: bool = False) -> dict
+# bento_check.py
+def check(spec: dict, layout: dict, dom: dict, png_path, textless_png_path) -> dict   # 返回 qa.json
+# bento_chart.py
+def svg(series: list, highlight: int | None, kind: str, width: float, height: float, u: float, ink: str, accent: str | None) -> str
+# measure_reference.py
+def measure(image_path, method: str = "color", cuts=None) -> dict
+```
+
+命令行（`bento.py`）：`plan SPEC`、`layout SPEC --n 3 --out DIR`、`render SPEC LAYOUT --out DIR [--pdf] [--cli] [--no-check]`、`check SPEC LAYOUT --dir DIR`、`--selftest`。
+
+#### 第 1 轮：测量脚本与回归基准
+
+- **目标**：把 4.2 的量法写成脚本，量出五张样图的结构、格缝、圆角和字号，存成排版器回归要用的 JSON。
+- **前置**：无。
+- **读**：4.2；`F/apple-reference/README.md`。
+- **建**：`S/scripts/measure_reference.py`；`S/scripts/test_bento.py`（这一轮的测试）；`S/scripts/bento.py`（先只有 `--selftest`，转调 `test_bento.run_tests()`）；`F/apple-reference/labels.json`；`F/apple-reference/measurements.json`（脚本生成）。
+- **步骤**：
+  1. 先写合成图测试。用 Pillow 画 1600×900 的图：底 #e8e8e8，12 个白色圆角格，圆角 32 px，格缝 12 px，主图居中 784×432。断言找出 12 格、每格边框误差 ≤ 1 px、圆角读数 30–34 px、格缝读数 11–13 px、主图识别正确。同样的布局画一张深色版（底 #181818、格 #000）再断言一遍。先跑一次，确认失败。
+  2. 写 `measure(image_path, method)`：
+     - `method="color"`：取画布最外 3 px 一圈的中位色当底色；和底色差值不超过容差的算底（浅色底 4、深色底 6，按底色亮度选）；其余做 3×3 开运算、取连通域，丢掉面积小于画布 1% 的。
+     - `method="gutter"`：给样图 1 那种磨砂格用。先高斯模糊（σ = 1），把梯度 < 0.9 且长度 ≥ 60 px 的横竖平坦段当格缝，剩下的是格。这张图自动切会粘连两处（USB-C 与 C1，Satellite 与 Apple Intelligence），允许在 `labels.json` 里给 `cuts`（人工切线），用了要在 `measurements.json` 里注明。
+     - 每格记：边框；填充色（离上边 8–14 px 那一条的中位色）；四角半径（沿对角线找第一个格内像素，r = d ÷ (1 − 1/√2)）；曲线起点（沿边找偏离直边超过 0.35 px 的最远处）。
+     - 整张图记：底色、四边外边距、格缝（垂直方向重叠 > 40 px、间隔 < 40 px 的相邻格）、格数、主图（包含画布中心的最大格）、主图中心偏差、主图面积占比。
+  3. 写 `labels.json`，每张样图标几条标签的框和原文。下面这些框本轮已经量过，照抄：
+
+     ```json
+     {
+       "01-iphone-16e.webp": {"method": "gutter", "labels": [
+         {"box": [1140, 225, 1490, 262], "text": "Action button", "polarity": "dark"},
+         {"box": [912, 640, 1042, 680], "text": "Face ID", "polarity": "dark"}]},
+       "02-apple-watch-ultra-2.webp": {"method": "color", "labels": [
+         {"box": [575, 735, 826, 770], "text": "Precision Finding for iPhone", "polarity": "dark"},
+         {"box": [990, 735, 1380, 770], "text": "A new gesture for Apple Watch", "polarity": "dark"}]},
+       "03-ios-18.webp": {"method": "color", "labels": [
+         {"box": [30, 660, 388, 735], "text": "Biggest-ever Photos update", "polarity": "dark"},
+         {"box": [424, 120, 982, 185], "text": "Categorization in Mail", "polarity": "dark"},
+         {"box": [1413, 670, 1972, 720], "text": "Home Screen customization", "polarity": "dark"}]},
+       "04-iphone-duo.webp": {"method": "color", "labels": [
+         {"box": [26, 570, 468, 615], "text": "Largest iPhone display ever", "polarity": "dark"},
+         {"box": [27, 822, 658, 870], "text": "Most versatile iPhone", "polarity": "dark"}]},
+       "05-iphone-17-pro.webp": {"method": "color", "labels": [
+         {"box": [23, 865, 485, 915], "text": "Three stunning finishes", "polarity": "light"},
+         {"box": [520, 1050, 1082, 1100], "text": "Eight pro lenses in your pocket", "polarity": "light"}]}
+     }
+     ```
+
+     对每条标签：按行投影量字高（字顶到基线）与行距；再用本机 `/System/Library/Fonts/SFNS.ttf`（可变字体，Weight 600，光学尺寸 60）按同样字高渲染同一段文字，用宽度反推字号 u。没有这个字体文件就跳过，结果里写明。
+  4. 跑五张样图，写 `measurements.json`：每张一节放上面的全部读数，最后一节汇总成 u 的倍数。
+  5. 写真实样图的回归测试（找不到 `F/` 就跳过）：
+     - 格数依次是 16、17、18、17、14；
+     - 主图中心偏差 ≤ 0.3%；样图 1、4、5 的主图宽占 48–50%、高占 47–49%；
+     - 样图 2–5 的 u 在画布宽的 1.18–1.28% 之间，格缝 0.50–0.65u，圆角 1.50–1.70u；
+     - 样图 3、4、5 的"曲线起点 ÷ 半径"中位数在 0.8–1.2（普通圆角）。
+- **验证**：
+
+  ```bash
+  python3 skills/coding-helper/bento-infographic/scripts/measure_reference.py all tests/fixtures/bento-infographic/apple-reference -o tests/fixtures/bento-infographic/apple-reference/measurements.json
+  python3 skills/coding-helper/bento-infographic/scripts/bento.py --selftest
+  ./scripts/run-selftests.sh bento-infographic
+  ./scripts/validate.sh
+  ```
+
+  第一条打印五行汇总（格数、主图占比、u、格缝 ÷ u、圆角 ÷ u），和 4.2 一致；后三条全部通过。
+- **交接**：汇总表贴进交接单；和 4.2 有出入的读数单独列出。
+- **不做**：模板、排版、渲染。
+- **规模**：脚本约 350 行，测试约 150 行。
+
+#### 第 2 轮：尺寸规格、模板和第一张图
+
+- **目标**：把 4.2、4.3 的数值写进 `bento_spec.py`；做出十种格子的 HTML 模板；照样图 4 的结构手工摆一张 16:9 图，内容换成本库自己的，和样图并排比。
+- **前置**：无。第 1 轮已完成的话，用它的 `measure_reference.py` 量本轮的成图。
+- **读**：4.2；4.3 的 u 表；4.4；4.8 的字体一条；4.13。
+- **建**：`S/scripts/bento_spec.py`；`S/templates/bento.html`；`S/scripts/bento_render.py`（这一轮只有 `build_html` 和后备的 `screenshot_cli`）；`F/specs/replica-16x9.json` 与 `F/specs/replica-16x9.layout.json`（手写格位）；`F/images/`（scikit-image 样图导出，附 README 写明每张图的授权，授权原文从本机 `skimage.data` 各函数的文档字符串里抄）。
+- **改**：`S/scripts/test_bento.py`；`S/scripts/bento.py`（加 `render ... --cli`）。
+- **步骤**：
+  1. 先写测试并确认失败：
+     - `unit_px(1920, 1080, "screen")` ≈ 23.76；`unit_px(621, 828, "phone")` ≈ 17.39；
+     - `tokens()` 里格缝、外边距、圆角、文字离格边、功能名、大数字依次是 0.6u、0.6u、1.6u、0.95u、1.75u、3.2u；行高英文 1.18、中文 1.3；字重 600；
+     - `validate_spec()` 能抓出：两个 hero；中文标签超过 12 字；一行超过 11 字；带数字的格既没有 `facts` 也没写 `unverified`；产品模式里出现 `chart`；未知的 kind；图片路径不存在。
+  2. 写 `bento_spec.py`，数值照抄：
+
+     ```python
+     U_SHORT_SIDE = 0.022        # screen / print / custom：短边的 2.2%
+     U_PHONE_WIDTH = 0.028       # phone：宽的 2.8% 起
+     RATIOS = {"gutter": 0.6, "margin": 0.6, "radius": 1.6, "inset": 0.95,
+               "word": 1.75, "number": 3.2, "number_min": 2.2, "number_max": 4.3,
+               "hero_word_min": 5.0, "hero_word_max": 8.0, "icon": 3.5,
+               "min_tile_w": 6.0, "min_tile_h": 6.5, "max_aspect": 3.5}
+     LINE_HEIGHT = {"en": 1.18, "zh-CN": 1.3}
+     WEIGHT = 600
+     THEMES = {
+         "light":         {"canvas": "#e8e8e8", "tile": "#ffffff", "ink": "#000000"},
+         "light-inverse": {"canvas": "#ffffff", "tile": "#ececec", "ink": "#000000"},
+         "dark":          {"canvas": "#181818", "tile": "#000000", "ink": "#ffffff"},
+     }
+     FONT_STACKS = {
+         "system": 'system-ui, BlinkMacSystemFont, "PingFang SC", "Inter", "Noto Sans SC", sans-serif',
+         "open":   '"Inter", "Noto Sans SC", "Source Han Sans SC", sans-serif',
+     }
+     LABEL_LIMITS = {"en_words": 6, "en_lines": 3, "zh_chars": 12, "zh_line_chars": 11, "zh_lines": 2}
+     ```
+
+     图标 3.5u 来自样图上四个图标的实测（Face ID 3.4u、游戏手柄 4.1u、骑行 3.1u、手电筒 3.1u，取最长边）。
+  3. 写 `templates/bento.html`：一个 `<style>`，CSS 变量 `--u --gutter --margin --radius --inset --canvas --tile --ink --accent --font --cols --rows` 由 `build_html` 填。
+     - `.stage`：CSS Grid，`grid-template-columns: repeat(var(--cols), minmax(0, 1fr))`，行同理；`gap` 是格缝，`padding` 是外边距；底色 `--canvas`；宽高等于 CSS 画布。
+     - `.tile`：`border-radius: var(--radius)`，`overflow: hidden`，`position: relative`，底色 `--tile`；不写 `box-shadow`、`filter`、`backdrop-filter`。
+     - `.label`：字号 `--u`，字重 600，字距 0，居中；离格边 `--inset`，用绝对定位放在下、上或侧边。每行一个 `<span class="line">`，各自 `white-space: nowrap`。
+     - 十种格子各一个类（`.k-hero` `.k-stat` `.k-word` `.k-icon` `.k-object` `.k-photo` `.k-ui` `.k-row` `.k-flank` `.k-chart`），字号都写成 `calc(var(--u) * 倍数)`，倍数取自 `RATIOS`。
+     - 照片格白字压在底部；不加渐变遮罩，字看不清就换照片或换格子（第 6 轮的对比度检查会抓）。
+  4. 写 `build_html`：文字一律 `html.escape`；标签按 `\n` 拆行；图片复制到输出目录的 `assets/` 再用相对路径引用；格位写成行内 `grid-column: c+1 / span w; grid-row: r+1 / span h`。这一轮的样例不放图标格，图标第 5 轮才有。
+  5. 写 `replica-16x9.json` 与手写格位。内容是本库自己：主图是"Skills"这个词（照样图 3 的写法），数字格当轮现数并写明出处（skill 数看 `validate.sh` 的输出，分类数看 `ls skills`，用例数看 `ls tests/cases`）；照片格用 `F/images/` 里的图。格位照样图 4 的结构，放在 28 × 16 的网格上：
+     - 上带第 0–3 行通栏，6 格，宽 3 / 4 / 4 / 6 / 4 / 7；
+     - 左栏第 4–11 行、第 0–6 列，上 5 行一格、下 3 行一格；
+     - 主图第 7–20 列、第 4–11 行；
+     - 右栏第 21–27 列：第 4–7 行并排两格（宽 4 和 3），第 8–11 行一格；
+     - 下带第 12–15 行通栏，5 格，宽 10 / 4 / 5 / 3 / 6。
+     合计 17 格。
+  6. 用 `screenshot_cli` 出图：`--headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1920,1080 --default-background-color=00000000 --virtual-time-budget=3000 --screenshot=...`，得到 3840×2160 的 PNG。
+  7. 量自己的图。第 1 轮已经完成的话，用 `measure_reference.py` 量这张 PNG：格缝 0.57–0.63u，圆角 1.55–1.65u，主图宽高占比 48–50%，中心偏差 ≤ 0.3%。再拼一张"左边本轮成图、右边样图 4"的对比图，发给使用者，接着往下做。
+- **验证**：`python3 S/scripts/bento.py render F/specs/replica-16x9.json F/specs/replica-16x9.layout.json --out <临时目录> --cli` 出 3840×2160 的 PNG；通用规则第 8 条的三条命令全部通过；对比图已发出。
+- **交接**：成图和对比图的路径；量出的格缝、圆角、主图读数；看得出来的不像之处（字偏大偏小、格子太花、颜色不对）。
+- **不做**：排版器、DevTools 渲染、自检。
+- **规模**：`bento_spec.py` 约 200 行，模板约 350 行，`build_html` 约 200 行，测试约 150 行。
+
+#### 第 3 轮：Chrome 渲染器（DevTools 协议）、字体与可重复性
+
+- **目标**：只用标准库，通过 `--remote-debugging-pipe` 驱动 Chrome：精确视口、2 倍像素、等字体加载完再截图、出 PDF、查每段文字实际用上的字体、量出 `dom.json`；同一份输入渲染两次，PNG 字节相同。
+- **前置**：第 2 轮。
+- **读**：4.5 第 4 步；4.8 的字体一条；4.9 渲染方案的几条实测。
+- **改**：`S/scripts/bento_render.py`（加 `Chrome` 类和 `render()`）；`S/scripts/test_bento.py`；`S/scripts/bento.py`（`render` 默认走 DevTools 协议，`--cli` 才走后备）。
+- **步骤**：
+  1. 先写测试：
+     - 600×400 的页面、`dpr = 2`，(50, 50) 处一个 100×100 的红块：PNG 是 1200×800，(200, 200) 那个像素是红的；
+     - 页面把 `window.__bentoReady` 设成一个 1.5 秒后才兑现、兑现前插入一段文字的 Promise：截图里有这段字（说明渲染器等到了页面就绪）；
+     - 系统字体栈下的"AB 中文"：英文落到 SF 系列，中文落到 PingFang SC；
+     - 只写 `-apple-system` 的页面：英文也落到 PingFang SC（把子代理测到的 Chrome 行为钉成测试，防止以后有人改回去）；
+     - 第 2 轮的 `replica-16x9` 连渲两次，sha256 相同；
+     - 1:1 与 9:16 两个页面出 PDF：都是单页，`/MediaBox` 尺寸和页面一致。本机没装 Inter 和思源黑体时，这条跳过。
+  2. 启动 Chrome。管道的接法照下面写（Chrome 从 fd 3 读、往 fd 4 写，消息之间用 `\0` 分隔）：
+
+     ```python
+     CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+     def launch(profile_dir):
+         to_r, to_w = os.pipe()        # 我们写 → Chrome 读
+         from_r, from_w = os.pipe()    # Chrome 写 → 我们读
+         def child():
+             os.dup2(to_r, 3)
+             os.dup2(from_w, 4)
+         proc = subprocess.Popen(
+             [CHROME, "--headless=new", "--remote-debugging-pipe",
+              f"--user-data-dir={profile_dir}", "--no-first-run", "--no-default-browser-check",
+              "--hide-scrollbars", "--force-color-profile=srgb", "about:blank"],
+             preexec_fn=child, close_fds=False,
+             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+         os.close(to_r)
+         os.close(from_w)
+         return proc, to_w, from_r
+     ```
+
+     `os.pipe()` 拿到的 fd 号有可能正好是 3 或 4。为保险，先把四个端点 `os.dup` 到 10 以上，再在子进程里接到 3 和 4。
+  3. 消息循环：自增 `id`；`Target.createTarget` 后用 `Target.attachToTarget`（`flatten: true`）拿 `sessionId`；`Page.enable`；`Emulation.setDeviceMetricsOverride`（宽、高、`deviceScaleFactor: 2`、`mobile: false`）；`Page.navigate` 打开 `file://` 地址，等 `Page.loadEventFired`；`Runtime.evaluate` 等 `window.__bentoReady`（`awaitPromise: true`）。这个 Promise 由模板定义，等于 `document.fonts.ready` 加上页面里每张图的 `decode()`；`document.fonts.ready` 本身不会等图片和脚本；`Page.captureScreenshot`（`format: "png"`）。PDF 用 `Page.printToPDF`（`printBackground: true`，`preferCSSPageSize: true`），页面里写 `@page { size: Wpx Hpx; margin: 0 }`。
+  4. `fonts_used()`：`DOM.getDocument` → `DOM.querySelectorAll('.label .line, .num, .word, .hero-word, .source')` → 每个节点调 `CSS.getPlatformFontsForNode`，记下字族、PostScript 名和字形数。`document.fonts.check()` 不能用：字体不存在它也返回 true。
+  5. `dom_metrics()`：注入一段 JS，返回 4.12 接口里 `dom.json` 列的字段。行数用 `Range.getClientRects()` 数不同的行顶。
+  6. `render()`：`build_html` → `open` → `wait_fonts` → `screenshot` → `dom_metrics` → `fonts_used`；再把文字设成 `visibility: hidden` 截一张 `*.textless.png`，第 6 轮算照片上文字的对比度要用；`pdf=True` 时先把字体栈切到 `open` 再打印。
+  7. 装兜底字体（已同意）：`brew install --cask font-inter font-noto-sans-sc`，装完重跑 PDF 那条测试。交接单写明装了哪两个包、版本和大小。brew 失败（网络或权限）就让 PDF 测试保持跳过，交接单写明原因，不换别的下载渠道。
+- **验证**：通用规则第 8 条；`python3 S/scripts/bento.py render F/specs/replica-16x9.json F/specs/replica-16x9.layout.json --out <临时目录>` 出 PNG、`dom.json`、`fonts.json`、`*.textless.png`。
+- **交接**：`fonts.json` 的汇总（哪几段用了哪套字体）；可重复测试的结果；PDF 是否跳过、为什么跳过。
+- **不做**：自检（第 6 轮）、排版器。
+- **规模**：约 300 行，测试约 120 行。
+
+#### 第 4 轮：排版器与样图结构回归
+
+- **目标**：实现 4.3 的排版器（按画幅选网格、主图居中、外圈精确覆盖、打分挑三个、内容进格），五张样图的结构回归全部通过。
+- **前置**：第 1 轮（要用 `measurements.json`）。可以和第 3 轮同时开。
+- **读**：4.2 的主图与外圈两节；4.3 的排版器一节。
+- **建**：`S/scripts/bento_layout.py`。
+- **改**：`S/scripts/test_bento.py`；`S/scripts/bento.py`（加 `layout` 子命令，每个方案顺带出一张线框 PNG：灰块上写格子 id）。
+- **步骤**：
+  1. 先写测试：
+     - `grid_for(1920, 1080, 23.76) == (28, 16)`，`grid_for(621, 828, 17.39) == (12, 16)`，`grid_for(540, 960, 15.12) == (12, 20)`。规则是 `m4(W ÷ 3u)` 和 `m4(H ÷ 3u)`，`m4` 取最近的 4 的倍数，下限 8。
+     - `place_hero`：16:9 产品主图得 `(7, 4, 14, 8)`；主图是词（只有 `word`）得 `(9, 5, 10, 6)`；正方形的产品图（长宽比 1.0）在 16:9 上收窄成宽 10 格；竖版 3:4 上放长宽比 1.6 的图，改成通栏主图（宽 = 全部列数）。主图跨的格数和总格数奇偶相同。
+     - `fill_ring`：28 × 16 加居中主图，种子 0–49 全部铺满；每格 ≥ 最小格；长宽比 ≤ 3.5；贯穿全图的直缝 ≤ 2 条；同尺寸的格不连着排三个以上；最小那种尺寸的格不超过三成；格数在 `count_range` 里。
+     - `assign`：标签放不下的格不会被分到；`weight` 3 的内容分到面积前 20% 的格；同一份输入、同一个种子，结果相同。
+  2. 写 `grid_for`、`place_hero`。主图默认宽 `C/2`、高 `R/2`；只有词的主图宽取最接近 `0.39C` 的偶数、高取最接近 `0.32R` 的偶数；产品图比画布窄时，按"主图框长宽比 ≈ 图的长宽比 × 1.25"收窄，宽不小于画布宽的 35%。
+  3. 写 `fill_ring`：占用表记录哪些小格已占；每次取行优先的第一个空格，从允许的跨度里按权重随机挑（中等大小权重最高）；放不下就回溯；剩余面积已经凑不出格数下限时提前剪枝。
+  4. 写 `score` 与 `candidates`：扣分项照 4.3；结构签名 =（四个角归带还是归栏，跨度排序后的元组），只留签名不同的前三个。
+  5. 写 `assign`：代价矩阵每格 =「格子长宽比和内容偏好长宽比之差的对数绝对值」+「重要程度和面积名次之差」+「大数字不在角上加一点」；标签估宽（中文每字 1u、英文每字符 0.55u）超过"格宽 − 2.4u"记为无穷大；用 `scipy.optimize.linear_sum_assignment` 求解。纯文字格挨在一起时换下一个方案。
+  6. 样图结构回归：每张样图按 `measurements.json` 造一份只有格数、主图框长宽比的空内容清单，跑 `candidates(n=3)`。前三个里至少一个满足：
+     - 样图 1、4、5（产品主图）：主图框 IoU ≥ 0.9，格数相同，上带高度和左栏宽度与原图相差不超过画布对应尺寸的 2%；
+     - 样图 2、3（手表和"iOS"这两种窄主图）：IoU ≥ 0.75，格数相同。28 列的网格加上奇偶规则，主图宽只能两格一跳（每跳约 7%），这两张贴不到 0.9；样图 3 的外圈也切得太碎，不比厚度。
+     第 2 轮手写的 16:9 格位，主图算下来宽 48.9%、高 48.0%，和样图 4 的 IoU 约 0.99，可以当这一步的自检。
+  7. 量性能：16:9 跑 500 个种子不超过 2 秒，超了先查剪枝；实在不行再试 `scipy.optimize.milp`。
+- **验证**：通用规则第 8 条；`python3 S/scripts/bento.py layout F/specs/replica-16x9.json --n 3 --out <临时目录>` 出三份 `layout-*.json` 和三张线框图。
+- **交接**：回归表（每张样图的 IoU、厚度差、格数）；耗时；16:9 与 3:4 的线框图发给使用者。
+- **不做**：渲染成图、自检。
+- **规模**：约 550 行，测试约 250 行。
+
+#### 第 5 轮：内容清单、图标与端到端
+
+- **目标**：从 `bento.json` 一路到 PNG：`plan`（可读表加线框）→ `layout` → `render` 串通；加入图标；出 16:9 浅色和深色两张产品图。
+- **前置**：第 3、4 轮。
+- **下载图标（已同意）**：照「已经同意的事」里的地址，从 Phosphor 固定的那次提交下载用得到的约 60 个 Fill 图标和 `LICENSE`。按两份样例和常见的产品、研究内容挑：设备、相机、电池、时钟、锁、地球、闪电、芯片、图表、烧瓶、原子、尺子、书、对勾、星形、云、麦克风、耳机、汽车、心形等。哪个下载失败就换同义的图标，交接单列出最终清单。
+- **建**：`S/assets/icons/*.svg`；`S/assets/icons/LICENSE`；`S/assets/icons/index.json`（名字 → 文件，外加中英关键词，方便模型挑）；`F/specs/product-16x9-light.json`、`F/specs/product-16x9-dark.json`。
+- **改**：`S/scripts/bento.py`（加 `plan`）；`S/scripts/bento_render.py`（图标格：内联 SVG，`fill: currentColor`，最长边 3.5u）；`S/scripts/test_bento.py`。
+- **步骤**：
+  1. 先写测试：`plan` 对一份坏清单（中文标签 14 字、有数字没出处）报出两条问题，并返回非零退出码；对好清单打印表格并写出 `wireframe.png`。
+  2. `plan` 打印：每格一行（id、种类、标签、重要程度、图或图标、出处或【未确认】），再打印格数、纯文字格占比、超限的标签；用 `candidates()[0]` 画线框图。
+  3. 产品样例的内容是本库自己：skill 数、分类数、用例数、自检数在当轮现数，`facts` 写清楚是哪条命令的输出；功能格写库里真有的能力（发布会演示片、电影感调色、写作规则等）；照片格用 `F/images/` 的图，愿意的话先用 photo-cinematic-grade 调一遍色（那也是本库的真实产物）。深色版换成 `theme: "dark"`，其余不变。
+  4. 端到端：`plan` → `layout --n 3` → 挑第一个 → `render`。两张图各和样图 3（词做主图）、样图 5（深色）拼成对比图，发给使用者，不等回复。
+- **验证**：通用规则第 8 条；两张产品图都出了 PNG、`dom.json`、`fonts.json`；`fonts.json` 里没有落到字体栈以外的字体。
+- **交接**：两张成图和对比图的路径；自己看出来的不像之处。使用者之后提的意见，由后面的轮次处理。
+- **不做**：自检的阈值判断（第 6 轮）。
+- **规模**：约 250 行代码，外加图标与样例。
+
+#### 第 6 轮：自检
+
+- **目标**：4.7 的每条护栏都能自动判断，出 `qa.json`；故意做坏的输入每一种都能抓到，好样例全部通过。
+- **前置**：第 5 轮。
+- **建**：`S/scripts/bento_check.py`。
+- **改**：`S/scripts/bento.py`（加 `check`；`render` 收尾默认跑一遍，`--no-check` 关掉）；`S/scripts/test_bento.py`。
+- **步骤**：
+  1. 先做坏样本，每种对应一个检查项，写成测试（期望该项 `pass: false`）：
+     - 中文标签超长，一行放不下 → `overflow`
+     - 在测试页面里把一处字重改成 700 → `weight`
+     - 白字压在很亮的照片上 → `contrast`
+     - 两个不同色相的重点色 → `accent_hues`
+     - 一半格子是纯文字 → `text_only_share`
+     - 200×200 的小图放进大格 → `image_upscale`
+     - 16:9 只排 9 格 → `tile_count`
+     - 手写格位让主图偏离中心 → `hero_center`
+     - 字体栈只写一个不存在的字体 → `fonts`
+     - "测量结果 3mm"（汉字和数字之间没有空格）→ `cjk_spacing`
+  2. 逐项实现（数据都来自 `dom.json`、`layout.json`、`bento.json` 和两张 PNG）：
+     - 主图中心偏差与面积；格缝与圆角是否全图统一（偏差 ≤ 1 px）；
+     - 所有文字的计算字号与字重（标签 = u；其余落在各自倍数范围；字重一律 600）；
+     - 溢出（`scrollWidth > clientWidth`，或文字矩形越出格子）；标签行数与长度；
+     - 字体：每段文字都落在字体栈列出的字体上，用了兜底的写进 `warnings`；
+     - 对比度：文字色对格子底色；照片格在 `*.textless.png` 上取文字背后那块，按最不利的 10% 亮度算；标签 ≥ 4.5:1，1.6u 以上 ≥ 3:1；
+     - 重点色：文字和图标里饱和度 > 0.2 的颜色按色相聚类，类数 ≤ 1，而且不出现在标签上；
+     - 纯文字格占比 ≤ 30%；格数在 `count_range` 里；最小格 ≥ 6u × 6.5u；
+     - 图片放大倍数：原图像素 ÷（显示尺寸 × dpr），小于 1 记录，小于 0.8 报警；
+     - 输出 PNG 的像素和 `canvas` 完全一致。
+  3. 两张产品图跑 `check`，全部通过；不通过的改内容或换排版方案，不放宽阈值。
+- **验证**：通用规则第 8 条；`python3 S/scripts/bento.py check F/specs/product-16x9-light.json <layout> --dir <渲染目录>` 输出 `pass: true`。
+- **交接**：坏样本对照表（输入 → 抓到的检查项）；两张产品图的 `qa.json` 摘要。
+- **不做**：新画幅、研究模式。
+- **规模**：约 450 行，测试约 250 行。
+
+#### 第 7 轮：任意比例与中文
+
+- **目标**：九种画幅都排得出、都过自检；中文标签的规则全部落实。
+- **前置**：第 6 轮。
+- **改**：`S/scripts/bento_spec.py`（`count_range`、手机信息流的 u）；`S/scripts/bento_layout.py`（竖版通栏主图、超宽画幅）；`S/scripts/bento_render.py`（中文行高 1.3、逐行不换行、名字里的不换行空格）；`S/scripts/bento_check.py`（`cjk_spacing`）；`S/scripts/test_bento.py`。
+- **建**：`F/specs/matrix/` 下九份内容相同、画幅不同的清单（同一份 12 格中文内容）。
+- **画幅与格数范围**（初值，本轮按实际渲染校准，改了在交接单里写明）：
+
+  | 画幅 | 输出像素 | use | 格数（含主图） |
+  |---|---|---|---|
+  | 16:9 | 3840×2160 | screen | 14–18 |
+  | 4:3 | 2048×1536 | screen | 13–17 |
+  | 21:9 | 3440×1440 | screen | 15–19 |
+  | A4 竖版 | 2480×3508 | print | 13–17 |
+  | 1:1 | 2160×2160 | phone | 8–11 |
+  | 3:4 | 1242×1656 | phone | 9–12 |
+  | 4:5 | 1080×1350 | phone | 9–12 |
+  | 9:16 | 1080×1920 | phone | 10–13 |
+  | 1:2 长图 | 1080×2160 | phone | 11–14 |
+
+- **步骤**：
+  1. 先写测试：每种画幅的 `grid_for` 结果，行列都是 4 的倍数、小格长宽比在 0.8–1.25 之间；竖版画布遇到长宽比 > 1.3 的主图，主图通栏；中文标签一行超过 11 字被拒；"iPhone 18 Pro Max"里的不换行空格保留；汉字紧挨拉丁字母或数字时 `cjk_spacing` 给警告。
+  2. 中文规则（4.2 中文一节）：行高 1.3，字距 0；换行由模型写在 `label` 里（`\n`），每行单独不换行，不靠浏览器自动折行；汉字与拉丁字母、数字之间要有空格。
+  3. 九份清单逐一 `plan` → `layout` → `render` → `check`，全部通过。
+  4. 拼一张九宫格总览图，发给使用者。
+- **验证**：通用规则第 8 条；九份 `qa.json` 全部 `pass: true`。
+- **交接**：九宫格总览图；校准后的格数范围；哪种画幅最难排、为什么。
+- **不做**：研究模式。
+- **规模**：约 200 行，测试约 150 行。
+
+#### 第 8 轮：研究模式与抠图
+
+- **目标**：研究成果能排：小图表格、带不确定度的数字格、可选的出处行；产品照片可以选择抠图。
+- **前置**：第 7 轮。
+- **建**：`S/scripts/bento_chart.py`；`S/scripts/cutout.swift`；`F/specs/research-3x4.json`。
+- **改**：`S/scripts/bento_spec.py`（研究模式字段与校验）；`S/scripts/bento_render.py`（图表格、出处行）；`S/scripts/bento_check.py`（出处行字号可以是 0.75u）；`S/scripts/test_bento.py`。
+- **步骤**：
+  1. 先写测试：
+     - `bento_chart.svg(series=[...], highlight=3, kind="line")` 输出的 SVG 只有一条折线、一个高亮点、一个数值标注，没有网格线和坐标刻度；
+     - 研究模式的数字格没写 `uncertainty` 也没写 `"exact": true` 时，`validate_spec` 报错；有不确定度时渲染成"1.23 ± 0.04 s"，`n` 和 `condition` 写进下面那行小标签；
+     - 没填 `source_line` 就不出出处行；填了才出，0.75u，对比度 ≥ 4.5:1；
+     - `cutout.swift` 只在 macOS 14 以上跑：对 `F/images/coffee.jpg` 输出带 alpha 的 PNG，前景占画面 10–80%。
+  2. 小图表：一条折线或几根柱，线宽 0.12u，颜色用 `ink`，高亮点用 `accent`（没有重点色就用 `ink`），只标关键值。
+  3. 研究版样例：用第三部分 3.5、3.9 里调色原型的实测数字（LUT 回读误差、肤色色相漂移、区分度、全尺寸渲染耗时），出处写"第三部分 3.9，原型 0.4.1 实测"；照片格用 rocket、coffee、chelsea；画幅 3:4、浅色、研究模式。
+  4. `cutout.swift`：约 25 行，`VNGenerateForegroundInstanceMaskRequest`，用法 `swift cutout.swift in.jpg out.png`；在 SKILL 文档里写明这是可选步骤，只处理使用者自己的照片。
+- **验证**：通用规则第 8 条；研究版 `qa.json` 为 `pass: true`；`swift S/scripts/cutout.swift F/images/coffee.jpg <临时目录>/coffee-cut.png` 出带透明底的 PNG。
+- **交接**：研究版成图；抠图前后对比。
+- **不做**：文档。
+- **规模**：约 250 行，外加 25 行 Swift。
+
+#### 第 9 轮：说明文档、用例与样例
+
+- **目标**：写好 `S/SKILL.draft.md`、四份 references、`tests/cases/bento-infographic.md` 和 examples，让一个没看过本节的 agent 只读这些文件就能把 skill 用对。
+- **前置**：第 8 轮。
+- **读**：第四部分全文；`skills/coding-helper/launch-summary-panel/SKILL.md` 的「事实校验规则」一节；`templates/skill-template.md`；`CONTRIBUTING.md` 第 3 节。
+- **建**：
+  - `S/SKILL.draft.md`：frontmatter 照 skill 模板写，`name: bento-infographic`，`category: coding-helper`，`version: 0.1.0`，`status: draft`，`priority: P1`，`display_name: 发布会 bento 信息图`，`compatible_agents` 照 photo-cinematic-grade 写 claude-code、codex、cursor、codebuddy、nestudy；description 用 4.1 的草稿，不超过 1024 字。正文依次是：何时使用与分流（keynote、photo-series-layout；launch-summary-panel 已废弃）；输入；工作流（4.5）；尺寸规则（u 表，细节链到 references）；格子种类；标签写法；事实校验规则（从 launch-summary-panel 搬过来，加上研究模式的两条）；不做的事（4.8）；自检（4.7 表）；输出格式；没有 Chrome 或不在 Mac 上时的降级（按 CONTRIBUTING 3.2）；变更记录。正文控制在 25 KB 以内，细节放进 references。
+  - `S/references/apple-measurements.md`（4.2 全文 + `measurements.json` 汇总 + 出处）、`bento-json.md`（4.12 接口里的字段表，配两份完整示例）、`tile-kinds.md`（十种格子各自的版式：标签位置、图的大小、字号倍数，配样图里的例子名）、`label-grammar.md`（中英标签写法，好坏例子各五条，AI 腔词表用相对路径 `../../keynote-deck-builder/references/ai-tone-words.txt` 引用：文件在 `references/` 里，要上两级，`validate.sh` 会按这个算法检查路径是否存在）。
+  - `tests/cases/bento-infographic.md`：4.10 的 14 条，格式照仓库其他用例（输入 / 期望 / 反例）。
+  - `S/examples/`：产品浅色、产品深色、研究 3:4 三份，每份是 `bento.json`、PNG、`qa.json`。
+- **步骤**：
+  1. 先写用例文件，再写 SKILL.draft.md，写完逐条对照：每条用例的"期望"都能在 SKILL.draft.md 或 references 里找到依据。
+  2. 所有中文文件跑 AI 腔词表。
+  3. 可以派一个 Sonnet 子代理起草四份 references，主会话写 SKILL.draft.md；交回后主会话通读一遍，统一说法。
+- **验证**：通用规则第 8 条（`validate.sh` 会检查 references 里的相对路径都存在）；AI 腔词表无命中，或命中的都是本义；三份样例的 `qa.json` 全部通过。
+- **交接**：文件清单与各自大小；对照用例时发现的缺口。
+- **不做**：登记索引、改名 SKILL.md（第 11 轮）。
+
+#### 第 10 轮：独立评审（验收）
+
+- **目标**：按原定的验收标准，由没参与开发的评审代理给三张图打分，平均 8 分以上才进入发版。
+- **前置**：第 9 轮。
+- **步骤**：
+  1. 重渲三份样例：产品浅色 16:9、产品深色 16:9、研究 3:4。
+  2. 开一个新的评审子代理（Sonnet 即可）。只给它三张成图、五张样图、4.2 的规矩表和下面的评分表，不给开发记录：
+
+     | 项 | 看什么 |
+     |---|---|
+     | 字体 | 字族、字重 600、字距 |
+     | 字号层级 | 标签、功能名、大数字、主图字四档拉没拉开，比例对不对 |
+     | 主图 | 是否居中、够不够突出 |
+     | 格子与留白 | 格缝、圆角、外边距是否统一，切分像不像 |
+     | 颜色 | 底与格、文字纯黑纯白、重点色是否只有一支 |
+     | 文案 | 标签短不短、是不是名词短语 |
+     | 整体 | 像不像苹果的收尾总结片 |
+
+     每项 1–10 分，必须指出哪一格、哪里不像；总分取平均。
+  3. 主会话按意见改：只动模板、规格、排版参数和样例内容；改数值要写依据。改完重渲、换一个新的评审代理重评。
+  4. 不到 8 分就接着改、换一个新的评审代理再评，最多五次。五次后仍不到 8 分：停在这一轮，不做第 11 轮，交接单写清每一项差多少、试过哪些改法、建议下一步怎么改（这条使用者已同意，不必问）。
+  5. 通过后，把三张成图和五张样图的对照图发给使用者，由使用者在自己的屏幕上看；不等回复，第 11 轮可以直接开工。
+- **验证**：评审平均分 ≥ 8；通用规则第 8 条。
+- **交接**：每次评审的分数与主要意见；改了什么；对照图的路径。
+
+#### 第 11 轮：发版
+
+- **目标**：登记 0.1.0；废弃 launch-summary-panel；顺带改掉 keynote 研究文件里那条"8–12 格"。
+- **前置**：第 10 轮通过（评审平均 ≥ 8）。不必等使用者看完成图；使用者事后有意见，按 0.1.x 另修。
+- **改**：
+  - `S/SKILL.draft.md` 改名为 `S/SKILL.md`。
+  - `SKILL_INDEX.md`：coding-helper 表加一行 `bento-infographic`（P1、draft、0.1.0）；`launch-summary-panel` 那行状态改成 `deprecated`；Library Version 升一个 MINOR。
+  - `.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json`：同一个新版本号。
+  - `README.md`：coding-helper 一段加上本 skill，注明 launch-summary-panel 已废弃；skills 徽章数加 1。
+  - `CHANGELOG.md`（仓库根）：新版本一节。
+  - `skills/coding-helper/launch-summary-panel/SKILL.md`：`status: deprecated`，description 开头写"已废弃，改用 bento-infographic"，变更记录加一行（PATCH）。
+  - `skills/coding-helper/keynote-deck-builder/SKILL.md:41`：那句改指本 skill；`references/stage-style-research.md` §10 那一行降为 C 档并注明出处的问题；keynote 的变更记录加一行（PATCH）。
+  - `tests/cases/launch-summary-panel.md`：开头注明已废弃，用例保留到删除那一版。
+  - 本文第二部分 C 节那一行勾上；4.12 交接记录补最后一行。
+  - `./scripts/package.sh` 重打 bento-infographic、keynote-deck-builder、launch-summary-panel 三个包。
+- **验证**：`./scripts/validate.sh`；`./scripts/run-selftests.sh`（全部，不只本 skill）；`./scripts/package.sh --check`；`grep -rn "launch-summary-panel" skills README.md SKILL_INDEX.md`，除了它自己的文件和变更记录，没有地方还在推荐它。
+- **交接**：改动文件清单（给使用者提交用）；新的 Library 版本号。
+
+#### 交接记录
+
+每轮收工补一行。
+
+| 轮 | 日期 | 结果 | 遗留 |
+|---|---|---|---|
+| 1 | | | |
+| 2 | | | |
+| 3 | | | |
+| 4 | | | |
+| 5 | | | |
+| 6 | | | |
+| 7 | | | |
+| 8 | | | |
+| 9 | | | |
+| 10 | | | |
+| 11 | | | |
 
 ### 4.13 已定的事（2026-10-07）
 
