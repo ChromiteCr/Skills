@@ -387,7 +387,7 @@ class CandidateTests(Fixtures):
         report = cinegrade.candidates(self.source, output, assume_srgb=True)
         self.assertEqual(self.source.read_bytes(), before)
         self.assertEqual(report['input']['source_sha256'], hashlib.sha256(before).hexdigest())
-        self.assertEqual(report['skill_version'], '0.2.0')
+        self.assertEqual(report['skill_version'], '0.3.0')
         self.assertEqual(report['command'], 'candidates')
         self.assertEqual(report['selection'], {'automatic_selection': False, 'selected_look': None})
         self.assertEqual(report['preview']['max_edge'], 1024)
@@ -756,9 +756,224 @@ class CandidateTests(Fixtures):
                              candidate['output']['png_sha256'])
 
 
+
+class CompareTests(Fixtures):
+    # Synthetic pixels only. Values below are test inputs, not observed photos
+    # or new grading recipes; no photographic-effect approval is implied.
+    def compare(self, target="comparison", **kwargs):
+        options = {"look": "warm-muted", "strength": 50, "assume_srgb": True}
+        options.update(kwargs)
+        return cinegrade.compare(self.source, self.root / target, **options)
+
+    def test_full_resolution_pair_matches_original_and_render(self):
+        before = self.source.read_bytes()
+        expected = cinegrade.render(self.source, self.root / "rendered", look="warm-muted",
+                                    strength=50, assume_srgb=True)
+        report = self.compare()
+        target = self.root / "comparison"
+        self.assertEqual(set(p.name for p in target.iterdir()), {"compare.png", "report.json"})
+        self.assertEqual(report["command"], "compare")
+        self.assertEqual(report["output"]["dimensions"], [6, 2])
+        self.assertEqual(report["panels"][0]["box_xywh"], [0, 0, 3, 2])
+        self.assertEqual(report["panels"][1]["box_xywh"], [3, 0, 3, 2])
+        self.assertEqual([p["role"] for p in report["panels"]], ["before", "after"])
+        self.assertEqual(report["panels"][1]["pixel_sha256"], expected["output"]["pixel_sha256"])
+        self.assertEqual(report["grade"], expected["grade"])
+        self.assertEqual(report["qa"]["before"], expected["qa"]["before"])
+        self.assertEqual(report["qa"]["after"], expected["qa"]["after"])
+        self.assertEqual(report["qa"]["scope"], "full_resolution_panels")
+        self.assertEqual(report["qa"]["channel_sample_count"], 18)
+        blob = (target / "compare.png").read_bytes()
+        self.assertEqual(report["output"]["png_sha256"], hashlib.sha256(blob).hexdigest())
+        self.assertEqual(json.loads((target / "report.json").read_text()), report)
+        with Image.open(io.BytesIO(blob)) as image:
+            self.assertEqual(image.mode, "RGB")
+            self.assertEqual(image.size, (6, 2))
+            self.assertEqual(image.crop((0, 0, 3, 2)).tobytes(), self.image.tobytes())
+            self.assertEqual(report["output"]["pixel_sha256"], hashlib.sha256(image.tobytes()).hexdigest())
+            self.assertEqual(report["panels"][0]["pixel_sha256"], hashlib.sha256(self.image.tobytes()).hexdigest())
+            with Image.open(self.root / "rendered/render.png") as rendered:
+                self.assertEqual(image.crop((3, 0, 6, 2)).tobytes(), rendered.tobytes())
+        self.assertEqual(self.source.read_bytes(), before)
+        self.assertEqual(report["input"]["source_sha256"], hashlib.sha256(before).hexdigest())
+
+    def test_hand_computed_pixels_and_no_preview_resize(self):
+        image = Image.new("RGB", (3, 1))
+        image.putdata([(0, 0, 0), (255, 255, 255), (128, 128, 128)])
+        image.save(self.source)
+        with mock.patch.object(cinegrade, "candidate_preview", side_effect=AssertionError("must not resize")):
+            self.compare()
+        with Image.open(self.root / "comparison/compare.png") as result:
+            self.assertEqual(list(result.getdata()), [(0, 0, 0), (255, 255, 255), (128, 128, 128),
+                                                      (4, 5, 6), (254, 252, 250), (130, 129, 129)])
+
+    def test_all_exif_orientations_use_same_normalized_baseline(self):
+        positions = {1: [0, 1, 2, 3, 4, 5], 2: [2, 1, 0, 5, 4, 3],
+                     3: [5, 4, 3, 2, 1, 0], 4: [3, 4, 5, 0, 1, 2],
+                     5: [0, 3, 1, 4, 2, 5], 6: [3, 0, 4, 1, 5, 2],
+                     7: [5, 2, 4, 1, 3, 0], 8: [2, 5, 1, 4, 0, 3]}
+        pixels = list(self.image.getdata())
+        profile = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
+        for orientation, order in positions.items():
+            exif = Image.Exif()
+            exif[274] = orientation
+            self.image.save(self.source, icc_profile=profile, exif=exif)
+            report = self.compare(str(orientation), look="neutral", strength=100, assume_srgb=False)
+            width, height = (2, 3) if orientation >= 5 else (3, 2)
+            with Image.open(self.root / str(orientation) / "compare.png") as result:
+                self.assertEqual(result.size, (2 * width, height))
+                self.assertEqual(list(result.crop((0, 0, width, height)).getdata()), [pixels[i] for i in order])
+                self.assertEqual(result.crop((0, 0, width, height)).tobytes(),
+                                 result.crop((width, 0, 2 * width, height)).tobytes())
+            self.assertEqual(report["input"]["orientation_applied"], orientation)
+
+    def test_one_snapshot_one_icc_transform_no_second_read(self):
+        profile = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
+        self.image.save(self.source, icc_profile=profile)
+        normalized = Image.new("RGB", (3, 2), (17, 83, 201))
+        with mock.patch.object(image_io, "_read_source", wraps=image_io._read_source) as read, \
+             mock.patch.object(ImageCms, "profileToProfile", return_value=normalized) as convert:
+            report = self.compare(assume_srgb=False)
+        self.assertEqual(read.call_count, 1)
+        self.assertEqual(convert.call_count, 1)
+        self.assertEqual(report["panels"][0]["pixel_sha256"], hashlib.sha256(normalized.tobytes()).hexdigest())
+        self.assertEqual(report["input"]["color_management"]["action"], "icc_to_srgb")
+
+    def test_zero_neutral_repeatability_and_single_pixel(self):
+        for look in cinegrade.load_looks():
+            for strength in ((0, 100) if look == "neutral" else (0,)):
+                report = self.compare(look + str(strength), look=look, strength=strength)
+                self.assertEqual(report["panels"][0]["pixel_sha256"], report["panels"][1]["pixel_sha256"])
+        first = self.compare("first")
+        second = self.compare("second")
+        self.assertEqual(first["output"]["pixel_sha256"], second["output"]["pixel_sha256"])
+        Image.new("RGB", (1, 1), (128, 128, 128)).save(self.source)
+        report = self.compare("single")
+        self.assertEqual(report["output"]["dimensions"], [2, 1])
+
+    def test_qa_counts_one_panel_and_reports_excursions(self):
+        looks = cinegrade.load_looks()
+        looks["warm-muted"] = copy.deepcopy(looks["neutral"])
+        looks["warm-muted"]["shadow_rgb"] = [-16] * 3
+        looks["warm-muted"]["highlight_rgb"] = [16] * 3
+        with mock.patch.object(cinegrade, "load_looks", return_value=looks):
+            report = self.compare(strength=1)
+        self.assertEqual(report["qa"]["channel_sample_count"], 18)
+        self.assertEqual(report["qa"]["before"]["pixel_count"], 6)
+        self.assertEqual(report["qa"]["after"]["pixel_count"], 6)
+        self.assertEqual(report["qa"]["full_strength_pre_clamp_channel_samples"], 15)
+        self.assertIn("grade_out_of_range_before_clamp", report["qa"]["warnings"])
+
+    def test_privacy_profile_and_no_source_metadata(self):
+        exif = Image.Exif()
+        exif[315] = "PRIVATE_OWNER"
+        exif[34853] = {1: "N", 2: (31.0, 13.0, 0.0)}
+        exif[34665] = {33434: 0.01, 33437: 2.8, 34855: 400, 37386: 50.0, 42033: "PRIVATE_SERIAL"}
+        info = PngImagePlugin.PngInfo()
+        info.add_text("Comment", "PRIVATE_LOCATION")
+        info.add_itxt("XML:com.adobe.xmp", "PRIVATE_XMP")
+        self.image.save(self.source, exif=exif, pnginfo=info)
+        report = self.compare()
+        text = (self.root / "comparison/report.json").read_text()
+        for secret in ("PRIVATE_", "GPS", self.source.name, str(self.root)):
+            self.assertNotIn(secret, text)
+        self.assertEqual(report["input"]["technical_exif"],
+                         {"exposure_seconds": 0.01, "f_number": 2.8, "iso": 400.0, "focal_length_mm": 50.0})
+        blob = (self.root / "comparison/compare.png").read_bytes()
+        self.assertLessEqual(set(png_chunks(blob)), {b"IHDR", b"iCCP", b"IDAT", b"IEND"})
+        with Image.open(io.BytesIO(blob)) as result:
+            self.assertEqual(set(result.info), {"icc_profile"})
+            profile = ImageCms.ImageCmsProfile(io.BytesIO(result.info["icc_profile"]))
+            self.assertIn("sRGB", ImageCms.getProfileDescription(profile))
+            self.assertFalse(result.getexif())
+
+    def test_invalid_parameters_rejected_before_source_read(self):
+        invalid = [{"strength": v} for v in (-1, 101, True, 1.5, float("nan"), "50")]
+        invalid += [{"look": "unknown"}]
+        with mock.patch.object(cinegrade, "load_image") as load:
+            for options in invalid:
+                with self.subTest(options=options), self.assertRaises(image_io.InputError):
+                    self.compare(**options)
+                self.assertFalse((self.root / "comparison").exists())
+            load.assert_not_called()
+
+    def test_input_rejections_leave_no_output(self):
+        with self.assertRaises(image_io.InputError):
+            self.compare(assume_srgb=False)
+        for options in ({"icc_profile": b"PRIVATE_INVALID"}, {"transparency": (0, 0, 0)}):
+            self.image.save(self.source, **options)
+            with self.assertRaises(image_io.InputError):
+                self.compare()
+            self.assertFalse((self.root / "comparison").exists())
+        Image.new("I;16", (3, 2)).save(self.source)
+        with self.assertRaises(image_io.InputError):
+            self.compare()
+        self.assertFalse((self.root / "comparison").exists())
+
+    def test_existing_outputs_and_links_preserved(self):
+        before = self.source.read_bytes()
+        existing = self.root / "existing"
+        existing.mkdir()
+        alias = self.root / "alias"
+        alias.symlink_to(existing, target_is_directory=True)
+        dangling = self.root / "dangling"
+        dangling.symlink_to(self.root / "missing")
+        for target in (self.source, self.root, existing, alias, dangling):
+            with self.subTest(target=target), self.assertRaises(image_io.InputError):
+                cinegrade.compare(self.source, target, look="neutral", strength=0, assume_srgb=True)
+        self.assertEqual(self.source.read_bytes(), before)
+        self.assertEqual(list(existing.iterdir()), [])
+        self.assertTrue(dangling.is_symlink())
+        with self.assertRaises(image_io.InputError):
+            self.compare("missing-parent/out")
+        self.assertFalse((self.root / "missing-parent").exists())
+
+    def test_encode_failure_before_output_reservation(self):
+        with mock.patch.object(cinegrade, "encode_png", side_effect=image_io.InputError("synthetic encoding failure")):
+            with self.assertRaises(image_io.InputError):
+                self.compare()
+        self.assertFalse((self.root / "comparison").exists())
+
+    def test_write_failure_preserves_partial_without_final_receipt(self):
+        target = self.root / "comparison"
+        real_open = Path.open
+        def fail_receipt(path, *args, **kwargs):
+            if path.parent == target and path.name == ".report.pending":
+                raise OSError("synthetic disk full")
+            return real_open(path, *args, **kwargs)
+        with mock.patch.object(Path, "open", fail_receipt), self.assertRaises(image_io.InputError):
+            self.compare()
+        self.assertEqual(set(p.name for p in target.iterdir()), {"compare.png"})
+        before = (target / "compare.png").read_bytes()
+        with self.assertRaises(image_io.InputError):
+            self.compare()
+        self.assertEqual((target / "compare.png").read_bytes(), before)
+
+    def test_cli_explicit_selection_and_error_contract(self):
+        base = [sys.executable, "-B", str(HERE / "cinegrade.py"), "compare", str(self.source),
+                "--output", str(self.root / "cli")]
+        for options in ([], ["--look", "neutral"], ["--strength", "0"],
+                        ["--look", "neutral", "--strength", "101", "--assume-srgb"],
+                        ["--look", "neutral", "--strength", "0"]):
+            proc = subprocess.run([*base, *options], capture_output=True, text=True, timeout=20)
+            self.assertEqual(proc.returncode, 2, proc.stderr)
+            self.assertNotIn("Traceback", proc.stderr)
+            self.assertFalse((self.root / "cli").exists())
+        proc = subprocess.run([*base, "--look", "warm-muted", "--strength", "50", "--assume-srgb"],
+                              capture_output=True, text=True, timeout=20)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["command"], "compare")
+        self.assertEqual(result["output"], "compare.png")
+        self.assertEqual(result["dimensions"], [6, 2])
+        self.assertIn("untagged_source_assumed_srgb", result["warnings"])
+        self.assertNotIn(str(self.root), proc.stdout)
+        self.assertNotIn(self.source.name, proc.stdout)
+
 def run_tests(group='all'):
     suite = unittest.TestSuite()
-    for cls in ([IOTests] if group == 'io' else [GradeTests, CandidateTests] if group == 'grade' else [IOTests, GradeTests, CandidateTests]):
+    for cls in ([IOTests] if group == 'io' else [GradeTests, CandidateTests, CompareTests] if group == 'grade' else [IOTests, GradeTests, CandidateTests, CompareTests]):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(cls))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1

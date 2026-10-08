@@ -1,8 +1,8 @@
 ---
 name: photo-cinematic-grade
-description: 照片电影感调色、低饱和冷暖分离、先保原片再调色。用确定性像素处理而不是生成式重绘；先确认用途与色彩输入，输出带 sRGB ICC 的新图和隐私优先的参数/QA 边车。支持 8-bit SDR JPEG/PNG 的 render、固定三选候选小样 candidates 与数值 QA；card、compare、LUT 尚未实现。不负责 RAW 显影、修图换景、冲印交付或精确复刻电影/胶片。
+description: 照片电影感调色、低饱和冷暖分离、先保原片再调色。用确定性像素处理而不是生成式重绘；先确认用途与色彩输入，输出带 sRGB ICC 的新图和隐私优先的参数/QA 边车。支持 8-bit SDR JPEG/PNG 的 render、固定三选候选小样 candidates 与数值 QA，以及原尺寸前后对比 compare；card、LUT 尚未实现。不负责 RAW 显影、修图换景、冲印交付或精确复刻电影/胶片。
 category: photography
-version: 0.2.0
+version: 0.3.0
 status: draft
 priority: P2
 compatible_agents:
@@ -20,10 +20,10 @@ compatible_agents:
 
 ## 当前能力与未完成项
 
-当前累计完成 render 基础与候选小样两个增量，不代表整个 skill 已验收完成。
+当前累计完成 render 基础、候选小样和前后对比三个功能增量，不代表整个 skill 已验收完成。
 
-- **已实现**：`scripts/cinegrade.py render`、`looks`、`candidates`（中性基线 + 两个风格的固定三选小样）、确定性整数调色、三份基础配方、独立 `image_io.py`、数值 QA、隐私边车、原件与已有输出保护。
-- **尚未实现**：`card`、`compare`、`lut` 命令，以及相应的集成测试。不得暗示它们已经可用，不能用生成图或口头描述冒充实际小样。候选固定列出而不自动排名或替摄影者选定。
+- **已实现**：`scripts/cinegrade.py render`、`looks`、`candidates`（中性基线 + 两个风格的固定三选小样）、`compare`（左原图、右调色的原尺寸并排）、确定性整数调色、三份基础配方、独立 `image_io.py`、数值 QA、隐私边车、原件与已有输出保护。
+- **尚未实现**：`card`、`lut` 命令，以及相应的集成测试；计划中的 analyze/sheet、浮点线性光与 OkLCh 管线、六个规定风格、完整 QA、JPEG/16 位输出仍待补齐。不得暗示它们已经可用，不能用生成图或口头描述冒充实际小样。候选固定列出而不自动排名或替摄影者选定。
 - 不提供局部蒙版、人物/肤色识别、白平衡或曝光自动矫正、颗粒、暗角、锐化、降噪、裁剪。避免把调色变成无法追溯的整图修饰。
 
 ## 触发与分流
@@ -79,7 +79,7 @@ python3 scripts/cinegrade.py render source.png \
 
 输出必须是一个全新的目录；已有文件、空目录、链接都拒绝，不提供 `--force`。
 脚本先在内存中完成解码、调色、编码，再原子占用新目录。写盘失败可能留部分文件，**保留现场**，用新目录重试；不要删旧目录或改写原片。
-只有命令有可靠的成功退出记录，同时 `report.json` 可解析、`status` 为 `complete` 且每个输出的 `png_sha256` 与实际文件一致才视为完成（render 检查 `output`；candidates 检查 `candidates` 中全部三项）。退出码 0 为成功，2 为输入/写盘拒绝；未通过时不能宣称已交付。
+只有命令有可靠的成功退出记录，同时 `report.json` 可解析、`status` 为 `complete` 且每个输出的 `png_sha256` 与实际文件一致才视为完成（render/compare 检查 `output`；candidates 检查 `candidates` 中全部三项；compare 另按 `panels` 的矩形裁出两幅核验像素散列）。退出码 0 为成功，2 为输入/写盘拒绝；未通过时不能宣称已交付。
 
 ## 候选小样：先看方向，不自动选片
 
@@ -121,6 +121,33 @@ python3 scripts/cinegrade.py candidates source.jpg \
 运行 `render` 到另一个新目录并做全尺寸 QA；不要把候选 PNG 当原片再次调色，也不要直接放大小样交付。
 显示环境不可用时，如实写“已生成三张候选，视觉未验收”，不代用户选定或声称好看。
 本命令只输出独立 PNG 与收据，不生成拼卡、滑块对比、LUT，也不扩展到社交/冲印导出。
+
+## 前后对比：原尺寸像素并排
+
+摄影者已选定方向与强度后，使用原始输入运行 `compare`。这一步对应计划 3.2 的前后对比交付。
+本版从现有安全读写和调色函数重新实现，没有移植历史 0.4.1 原型的对比排版，也没有复现其视觉评分。
+
+```bash
+python3 scripts/cinegrade.py compare source.jpg \
+  --output run-compare-01 --look warm-muted --strength 60
+```
+
+`--look` 与 `--strength` 都必填，不隐式替摄影者选定方向。无 ICC 时仍须先确认，才能加 `--assume-srgb`。
+
+- 输出 `compare.png` 与 `report.json`，目录必须全新。只读一次原片快照，先转正并归一 sRGB，再调色。
+- 左边为归一后的原图，右边为同一原图的调色结果。每幅保持 W×H，整图为 2W×H。
+  不缩放、不放大、不裁切、不加间隔或文字，不需要系统字体。左右含义写在收据与交付说明中。
+- 右边与同一输入快照、配方、强度及解码/ICC 环境下 `render` 的输出像素逐字节一致。
+  左边用于隔离创意调色的差别，无法展示 ICC 转换之前的宽色域源像素。
+- 收据 `panels` 按 before、after 排列，逐项给出 `box_xywh`（左上 x、y、宽、高）及像素 SHA-256；
+  `output` 记录整图的像素与文件散列。比较的是像素，PNG 文件字节不作跨运行恒等保证。
+- `qa.scope=full_resolution_panels`。before/after 端点计数、通道样本数各按一幅原尺寸图计算，
+  不把两幅重复计数。完整配方与现有护栏限制保留。
+- 复用隐私白名单、ICC 编码、全新目录占用和最终收据发布。编码先于写盘；失败保留现场。
+  对比图最多为输入像素上限的两倍，内存用量高于单幅 render。查看器可能自动缩小，请按 1:1 检查细节。
+
+此版本是无装饰的像素对比，不提供 2.39:1 剧照卡、中文标题或滑块。合成像素测试用于检查结构和对应关系，
+不能据此宣称真实照片肤色、电影感或整项 skill 验收通过。
 
 ## 调色契约
 
@@ -174,18 +201,19 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_cinegrade.py
 
 以下为本 skill 尚未完成的功能；实际开发顺序以每轮同步后只读的 AUDIT-AND-IDEAS.md 时间表为准，不在本文件固定全仓项目顺序：
 
-1. 下一增量：`card` / `compare` 与对应可视校验，复用已完成的候选参数和像素收据。
+1. `card` 与对应可视校验，复用已完成的候选参数和像素收据；`compare` 已具备无装饰的原尺寸并排输出。
 2. 再做 `lut`、LUT 与 render 数值对账、综合色彩/隐私/QA 验收。
 
 ## 变更记录
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.3.0 | 2026-10-08 | 新增 compare：显式配方/强度、原尺寸左右像素对账、单幅 QA 计数、隐私与失败保护；新增 13 项合成测试；核心六风格管线及真实效果仍未验收 | minor |
 | 0.2.0 | 2026-10-07 | 新增 candidates 固定三选小样：一次颜色归一、确定性限边缩放、逐图配方/散列/QA、整组新目录保护及隐私/失败测试；card/compare/lut 仍待实现 | minor |
 | 0.1.0 | 2026-10-07 | 首个独立增量：确定性 render、三份基础配方、安全 I/O、技术 EXIF 白名单边车与数值 QA；小样/card/compare/lut 待后续 | minor |
 
 ### 收据发布与文件系统边界
 
-PNG 写完后，先将报告写为 `.report.pending`，成功 flush/fsync/close 后，以同目录硬链接、不覆盖的方式发布 `report.json`。此前任一步失败均保留现场，不发布最终收据。若文件系统不支持硬链接则安全失败，不改用会覆盖目标的发布方式。发布成功后尝试移除临时别名；此可选清理失败时可能多留 `.report.pending`，但最终收据与三图仍有效。
+PNG 写完后，先将报告写为 `.report.pending`，成功 flush/fsync/close 后，以同目录硬链接、不覆盖的方式发布 `report.json`。此前任一步失败均保留现场，不发布最终收据。若文件系统不支持硬链接则安全失败，不改用会覆盖目标的发布方式。发布成功后尝试移除临时别名；此可选清理失败时可能多留 `.report.pending`，但最终收据与本次 PNG 仍有效。
 
 只在可信、不会被其他进程并发替换的输出父目录运行；这不是恶意路径替换防护，也不承诺任意断电后的目录持久性。恢复时必须同时核对成功退出、最终收据和全部输出散列，不能凭孤立的 complete 字段判定成功。

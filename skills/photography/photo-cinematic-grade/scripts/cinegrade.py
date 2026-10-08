@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Deterministic SDR grading: render, candidate previews and numeric QA.
+"""Deterministic SDR grading: render, candidate previews, comparisons and QA.
 
 Pixel math uses integers in encoded sRGB, not scene-linear film simulation.
-Contact cards, comparisons and LUT export are not yet shipped.
+Comparisons use exact full-size before/after panels. Cards and LUT export remain pending.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from PIL import Image, ImageCms
 
 from image_io import InputError, encode_png, load_image, write_new_bundle, write_new_run
 
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 ALGORITHM = 'encoded-srgb-integer-v1'
 CANDIDATE_LOOKS = ('neutral', 'warm-muted', 'cool-muted')
 MAX_PREVIEW_EDGE = 2048
@@ -265,6 +265,80 @@ def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False)
     return report
 
 
+
+def compare(source, output, *, look, strength, assume_srgb=False):
+    """Full-resolution before/after pair; caller explicitly selects look and strength."""
+    target = Path(output)
+    if target.exists() or target.is_symlink():
+        raise InputError("output already exists; choose a new directory")
+    if not _integer(strength, 0, 100):
+        raise InputError("strength must be an integer within 0..100")
+    looks = load_looks()
+    if look not in looks:
+        raise InputError("unknown look; use the looks command")
+    loaded = load_image(source, assume_srgb=assume_srgb)
+    original = loaded.image
+    recipe = looks[look]
+    graded, excursions = grade_pixels(original, recipe, strength)
+    width, height = original.size
+    # Exact abutting panels, no resize/crop/text/gutter or extra color transform.
+    # The 2x width is a layout consequence, not a new aesthetic coefficient.
+    pair = Image.new("RGB", (2 * width, height))
+    pair.paste(original, (0, 0))
+    pair.paste(graded, (width, 0))
+    png = encode_png(pair)
+    report = {
+        "schema_version": 1, "status": "complete", "command": "compare",
+        "skill_version": VERSION, "algorithm": ALGORITHM,
+        "input": loaded.provenance,
+        "grade": {"look": look, "strength_percent": strength, "recipe": recipe},
+        "output": {
+            "file": "compare.png", "format": "PNG", "mode": "RGB",
+            "dimensions": list(pair.size), "color_space": "sRGB",
+            "png_sha256": hashlib.sha256(png).hexdigest(),
+            "pixel_sha256": hashlib.sha256(pair.tobytes()).hexdigest(),
+            "source_metadata_copied": False,
+        },
+        "panels": [
+            {"role": "before", "box_xywh": [0, 0, width, height],
+             "pixel_sha256": hashlib.sha256(original.tobytes()).hexdigest()},
+            {"role": "after", "box_xywh": [width, 0, width, height],
+             "pixel_sha256": hashlib.sha256(graded.tobytes()).hexdigest()},
+        ],
+        "layout": {
+            "order": "before_left_after_right", "resampling": "none",
+            "cropped": False, "text_overlay": False,
+            "processing_order": ["exif_orientation", "normalize_srgb", "grade", "pair"],
+        },
+        "qa": {
+            "scope": "full_resolution_panels",
+            "before": endpoint_qa(original), "after": endpoint_qa(graded),
+            "full_strength_pre_clamp_channel_samples": excursions,
+            "channel_sample_count": width * height * 3,
+            "human_review_required": ["skin_and_memory_colors", "highlight_detail", "shadow_detail", "banding"],
+            "warnings": ["grade_out_of_range_before_clamp"] if excursions else [],
+        },
+        "environment": {
+            "python": platform.python_version(), "pillow": PIL.__version__,
+            "littlecms": ImageCms.core.littlecms_version,
+        },
+        "limitations": [
+            "before means EXIF-oriented, ICC-normalized sRGB pixels, not the original file bytes",
+            "after matches render pixels only with the same source snapshot, recipe, strength and environment",
+            "the pair has two full-size panels; a viewer may scale it down, inspect at 1:1 for detail",
+            "8-bit encoded-sRGB creative transform, not a film-stock or scene-linear emulation",
+            "pixel reproducibility requires the same decode/ICC environment; PNG bytes may differ",
+            "ICC conversion may already clip source colors; this QA does not detect source gamut loss",
+            "no automatic aesthetic, skin-tone, HDR, or print suitability verdict",
+            "metadata privacy is not visual anonymization; review visible identifying details separately",
+            "the sidecar contains content hashes and technical values; keep private unless needed",
+        ],
+    }
+    receipt = (json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+    write_new_bundle(output, {"compare.png": png}, receipt)
+    return report
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--selftest', action='store_true', help='run synthetic grading/CLI tests')
@@ -282,6 +356,13 @@ def build_parser():
     command.add_argument('--strength', type=int, default=60, help='style strength 0..100; neutral stays 0 (default: 60)')
     command.add_argument('--max-edge', type=int, default=1024, help='preview long-edge cap 1..2048; never upscale (default: 1024)')
     command.add_argument('--assume-srgb', action='store_true', help='explicitly confirm sRGB for an untagged source')
+
+    command = sub.add_parser("compare", help="write full-resolution before-left/after-right compare.png + report.json")
+    command.add_argument("source", type=Path)
+    command.add_argument("--output", required=True, type=Path, help="new run directory; parent must exist")
+    command.add_argument("--look", required=True, help="explicitly selected look; no automatic selection")
+    command.add_argument("--strength", required=True, type=int, help="explicitly selected integer 0..100")
+    command.add_argument("--assume-srgb", action="store_true", help="explicitly confirm sRGB for an untagged source")
     return parser
 
 
@@ -311,6 +392,17 @@ def main(argv=None):
                 'dimensions': report['preview']['dimensions'], 'automatic_selection': False,
                 'warnings': sorted(set(report['input']['warnings'] + [
                     warning for item in report['candidates'] for warning in item['qa']['warnings']])),
+            }))
+
+        elif args.command == "compare":
+            report = compare(args.source, args.output, look=args.look,
+                             strength=args.strength, assume_srgb=args.assume_srgb)
+            print(json.dumps({
+                "status": "complete", "command": "compare", "output": "compare.png",
+                "dimensions": report["output"]["dimensions"],
+                "look": args.look, "strength_percent": args.strength,
+                "pixel_sha256": report["output"]["pixel_sha256"],
+                "warnings": report["input"]["warnings"] + report["qa"]["warnings"],
             }))
         else:
             parser.print_help()
