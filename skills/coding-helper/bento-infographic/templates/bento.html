@@ -1,0 +1,129 @@
+<!doctype html>
+<!--
+  发布会 bento 信息图模板。bento_render.build_html 会把双花括号占位符换成实际内容；不要手改生成后的文件，改 bento.json 重新生成。
+
+  规矩（AUDIT-AND-IDEAS.md 第四部分 4.2，数值都在 scripts/bento_spec.py）：
+  - 所有尺寸都是标签字号 --u 的倍数：格缝 0.68u、外边距 0.68u、圆角 1.55u、文字离格边 0.95u
+  - 字重一律 600，字距 0；英文行高 1.18，中文 1.3
+  - 格子纯色平涂，不加投影、渐变、模糊、毛玻璃
+  - 白格配纯黑字，黑格配纯白字；照片上用白字，不加遮罩
+-->
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<title>{{title}}</title>
+<style>
+  :root {
+{{css_vars}}
+  }
+  @page { size: {{page_w}}px {{page_h}}px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: var(--w); height: var(--h); overflow: hidden; background: var(--canvas); }
+  body {
+    font-family: var(--font); font-weight: 600; color: var(--ink);
+    letter-spacing: 0; font-synthesis: none; font-kerning: normal;
+    font-variation-settings: "opsz" 28;   /* 固定 SF 的 Display 光学尺寸：苹果的片子按 4K 做，标签也是 Display */
+    -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+  }
+  .stage {
+    width: var(--w); height: var(--h); padding: var(--margin) var(--margin) var(--margin-bottom);
+    display: grid; gap: var(--gutter);
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+    background: var(--canvas);
+  }
+  .tile { position: relative; overflow: hidden; border-radius: var(--radius); background: var(--tile); min-width: 0; min-height: 0; }
+
+  /* 标签：每行一个 span，不交给浏览器自动折行 */
+  .label { position: absolute; left: var(--pad); right: var(--pad); text-align: center;
+           font-size: var(--u); line-height: var(--lh); }
+  .label .line, .sub .line, .word .line { display: block; white-space: nowrap; }
+  .label.pos-bottom { bottom: calc(var(--inset) - var(--shift-bottom)); }
+  .label.pos-top { top: calc(var(--inset) - var(--shift-top)); }
+  .on-photo { color: #ffffff; }
+
+  /* 图片区：标签以外的空间 */
+  .media { position: absolute; display: flex; align-items: center; justify-content: center; }
+  .media img { display: block; width: 100%; height: 100%; }
+  .fit-contain img { object-fit: contain; }
+  .fit-cover img { object-fit: cover; }
+  .k-photo .media, .bleed .media { inset: 0; }
+
+  /* 数字格、功能名格：一组居中 */
+  .stack { position: absolute; inset: 0; padding: var(--inset) var(--pad);
+           display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .stack.at-top { justify-content: flex-start; padding-top: calc(var(--inset) - var(--num-shift-top)); }
+  .stack .sub.above { margin-top: 0; margin-bottom: calc(var(--u) * -0.02); }   /* 官方 Next-generation 到 Vapor chamber：墨迹间隙约 0.62u（第 10 轮重量） */
+  .num { line-height: 1; white-space: nowrap; font-feature-settings: "kern"; }
+  .num .unit.cjk { font-size: {{cjk_unit_scale}}em; }
+  .num .pm { font-size: {{pm_scale}}em; }   /* 研究模式："1.23 ± 0.04 s" 里的 "± 0.04 s" */
+  .word { line-height: 1.1; }
+  .sub { font-size: var(--u); line-height: var(--lh); margin-top: calc(var(--u) * 0.05); }
+  .accent { color: var(--accent); }
+  /* 深色主题里次要大字的银灰渐变（苹果 Pro 机型总结片的做法）：每一行各自上深下浅 */
+  .tone-silver, .tone-silver .line { background: linear-gradient(180deg, {{silver_top}}, {{silver_bottom}});
+                 -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* 图标 */
+  .icon svg { width: var(--icon); height: var(--icon); fill: currentColor; display: block; }
+  .media .icon-img { width: auto; height: auto; object-fit: contain; }
+
+  /* 格里的截图和图片：一律同样的圆角，不加描边（苹果样图里内嵌图没有描边，第 10 轮第 4 次评审）；出格的那边不留圆角 */
+  .media img.screen { border-radius: calc(var(--u) * 0.6); }
+  .media img.screen.bleed-bottom { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .media img.screen.bleed-top { border-top-left-radius: 0; border-top-right-radius: 0; }
+  /* 单色底的图（片子、公式）铺成一张卡：卡的底就是图的底，图的内容按卡的大小放；底和格子同色时卡用 --raised，
+     图用 screen（深色）或 multiply（浅色）叠上去，图的黑底或白底变成卡色，字和小面板不变（bento_render._picture） */
+  .media .card { position: relative; overflow: hidden; border-radius: calc(var(--u) * 0.6); isolation: isolate; flex: none; }
+  .media .card img.fitted { position: absolute; display: block; max-width: none; max-height: none; }
+  .media .card img.blend-screen { mix-blend-mode: screen; }
+  .media .card img.blend-multiply { mix-blend-mode: multiply; }
+  /* 边看不见的整张图（黑格里的深色卡片）垫一层 --raised 的框 */
+  .media .frame { border-radius: calc(var(--u) * 1.05); flex: none; display: flex; }
+
+  /* 一排小元素 */
+  .row { display: flex; align-items: center; justify-content: space-evenly; width: 100%; height: 100%; }
+  .row .item { font-size: calc(var(--u) * 1.4); line-height: 1; white-space: nowrap; }
+  .row img { height: 70%; width: auto; max-width: 30%; object-fit: contain; }
+
+  /* 两侧标注 */
+  .flank-side { position: absolute; top: 0; bottom: 0; display: flex; align-items: center;
+                font-size: var(--word); line-height: 1; white-space: nowrap; }
+
+  /* 主图 */
+  .hero-word { position: absolute; left: 0; right: 0; text-align: center; line-height: 1; white-space: nowrap; }
+
+  /* 研究模式的小图表（bento_chart.py）：数值标注和标签同字号 */
+  .chart { display: block; overflow: visible; }
+
+  /* 出处行（默认不出）：占下边距那一条，上下各留一个外边距 */
+  .source { position: absolute; left: var(--margin); right: var(--margin); bottom: 0; height: var(--margin-bottom);
+            display: flex; align-items: center; justify-content: center;
+            font-size: var(--source); line-height: 1; color: var(--ink); }
+  .source .line { white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="stage">
+{{tiles}}
+</div>
+{{source_line}}
+<script>
+  // 图标按墨迹居中，不按 256 × 256 的框：Phosphor 有的图标墨迹偏在框的一边（音符偏左约 4%），
+  // 第 10 轮第 5 次评审量到"歌词诊断"的音符比格心偏左 9 px。只平移 viewBox，大小不变。
+  for (const svg of document.querySelectorAll('.icon svg')) {
+    const vb = svg.viewBox.baseVal;
+    if (!vb || !vb.width) continue;
+    const b = svg.getBBox();
+    if (!b.width || !b.height) continue;
+    svg.setAttribute('viewBox', [b.x + b.width / 2 - vb.width / 2, b.y + b.height / 2 - vb.height / 2,
+                                 vb.width, vb.height].join(' '));
+  }
+  // 渲染器等这个 Promise：字体加载完、每张图解码完。
+  window.__bentoReady = Promise.all([
+    document.fonts.ready,
+    ...Array.from(document.images).map(img => img.decode().catch(() => null)),
+  ]).then(() => true);
+</script>
+</body>
+</html>

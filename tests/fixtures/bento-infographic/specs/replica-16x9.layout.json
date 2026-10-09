@@ -1,0 +1,26 @@
+{
+  "schema": "bento-layout/1",
+  "note": "第 2 轮手写：照样图 4（iPhone Duo）的结构放在 28 × 16 的网格上",
+  "grid": {"cols": 28, "rows": 16},
+  "seed": null,
+  "score": null,
+  "cells": {
+    "skills":      [0, 0, 3, 4],
+    "grade":       [3, 0, 4, 4],
+    "deck":        [7, 0, 4, 4],
+    "slide-types": [11, 0, 6, 4],
+    "pptx":        [17, 0, 4, 4],
+    "physics":     [21, 0, 7, 4],
+    "radio":       [0, 4, 7, 5],
+    "formats":     [0, 9, 7, 3],
+    "hero":        [7, 4, 14, 8],
+    "tone":        [21, 4, 4, 4],
+    "photo":       [25, 4, 3, 4],
+    "writing":     [21, 8, 7, 4],
+    "one-idea":    [0, 12, 10, 4],
+    "cases":       [10, 12, 4, 4],
+    "modeling":    [14, 12, 5, 4],
+    "selftests":   [19, 12, 3, 4],
+    "report":      [22, 12, 6, 4]
+  }
+}

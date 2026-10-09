@@ -1,0 +1,178 @@
+{
+  "01-iphone-16e.webp": {
+    "method": "gutter",
+    "cuts": [
+      {
+        "x": 826,
+        "y0": 0,
+        "y1": 212,
+        "width": 10,
+        "note": "Satellite services 与 Apple Intelligence 之间"
+      },
+      {
+        "y": 281,
+        "x0": 150,
+        "x1": 376,
+        "width": 10,
+        "note": "USB-C 与 Apple-designed modem 之间"
+      }
+    ],
+    "labels": [
+      {
+        "box": [
+          1140,
+          225,
+          1490,
+          262
+        ],
+        "text": "Action button",
+        "polarity": "dark"
+      },
+      {
+        "box": [
+          912,
+          640,
+          1042,
+          680
+        ],
+        "text": "Face ID",
+        "polarity": "dark"
+      }
+    ]
+  },
+  "02-apple-watch-ultra-2.webp": {
+    "method": "color",
+    "labels": [
+      {
+        "box": [
+          575,
+          735,
+          826,
+          770
+        ],
+        "text": "Precision Finding for iPhone",
+        "polarity": "dark"
+      },
+      {
+        "box": [
+          990,
+          735,
+          1380,
+          770
+        ],
+        "text": "A new gesture for Apple Watch",
+        "polarity": "dark"
+      }
+    ]
+  },
+  "03-ios-18.webp": {
+    "method": "color",
+    "labels": [
+      {
+        "box": [
+          30,
+          660,
+          388,
+          735
+        ],
+        "text": "Biggest-ever Photos update",
+        "polarity": "dark"
+      },
+      {
+        "box": [
+          424,
+          120,
+          982,
+          185
+        ],
+        "text": "Categorization in Mail",
+        "polarity": "dark"
+      },
+      {
+        "box": [
+          1413,
+          670,
+          1972,
+          720
+        ],
+        "text": "Home Screen customization",
+        "polarity": "dark"
+      }
+    ]
+  },
+  "04-iphone-duo.webp": {
+    "method": "color",
+    "labels": [
+      {
+        "box": [
+          26,
+          570,
+          468,
+          615
+        ],
+        "text": "Largest iPhone display ever",
+        "polarity": "dark"
+      },
+      {
+        "box": [
+          27,
+          822,
+          658,
+          870
+        ],
+        "text": "Most versatile iPhone",
+        "polarity": "dark"
+      }
+    ]
+  },
+  "05-iphone-17-pro.webp": {
+    "method": "color",
+    "labels": [
+      {
+        "box": [
+          23,
+          865,
+          485,
+          915
+        ],
+        "text": "Three stunning finishes",
+        "polarity": "light"
+      },
+      {
+        "box": [
+          520,
+          1050,
+          1082,
+          1100
+        ],
+        "text": "Eight pro lenses in your pocket",
+        "polarity": "light"
+      }
+    ]
+  },
+  "06-iphone-18-pro.webp": {
+    "method": "color",
+    "labels": [
+      {
+        "box": [
+          1530,
+          305,
+          1960,
+          350
+        ],
+        "text": "Beautiful new colors",
+        "polarity": "light"
+      },
+      {
+        "box": [
+          815,
+          1050,
+          990,
+          1095
+        ],
+        "text": "Siri AI",
+        "polarity": "light"
+      }
+    ]
+  }
+}

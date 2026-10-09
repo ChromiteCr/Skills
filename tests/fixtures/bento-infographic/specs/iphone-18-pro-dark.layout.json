@@ -1,0 +1,25 @@
+{
+  "schema": "bento-layout/1",
+  "note": "手写：照官方 iPhone 18 Pro 总结片的结构放在 56 × 32 的网格上（左栏通高，上下两带在左栏右边）",
+  "grid": {"cols": 56, "rows": 32},
+  "seed": null,
+  "score": null,
+  "cells": {
+    "pro-controls":        [0, 0, 14, 9],
+    "intelligence":        [0, 9, 14, 4],
+    "dynamic-island":      [0, 13, 14, 5],
+    "main-camera":         [0, 18, 14, 14],
+    "battery":             [14, 0, 8, 8],
+    "telephoto":           [22, 0, 8, 8],
+    "sizes":               [30, 0, 12, 8],
+    "vapor":               [42, 0, 14, 8],
+    "hero":                [14, 8, 28, 16],
+    "colors":              [42, 8, 14, 8],
+    "reference-image":     [42, 16, 7, 8],
+    "charging":            [49, 16, 7, 8],
+    "cinematic":           [14, 24, 8, 8],
+    "siri":                [22, 24, 6, 8],
+    "a20":                 [28, 24, 16, 8],
+    "photographic-styles": [44, 24, 12, 8]
+  }
+}

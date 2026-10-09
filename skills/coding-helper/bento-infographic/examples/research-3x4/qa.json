@@ -1,0 +1,145 @@
+{
+ "schema": "bento-qa/1",
+ "pass": true,
+ "checks": [
+  {
+   "id": "hero_center",
+   "pass": true,
+   "value": 1e-05,
+   "limit": "<= 0.005"
+  },
+  {
+   "id": "hero_area",
+   "pass": true,
+   "value": 0.2308,
+   "limit": "0.18–0.30"
+  },
+  {
+   "id": "gutter_uniform",
+   "pass": true,
+   "value": {
+    "gutter": 8.08,
+    "off": [],
+    "margins_off": []
+   },
+   "limit": "±0.5 px"
+  },
+  {
+   "id": "radius_uniform",
+   "pass": true,
+   "value": {
+    "radius": 18.41,
+    "off": []
+   },
+   "limit": "±0.5 px"
+  },
+  {
+   "id": "unit_size",
+   "pass": true,
+   "value": 11.88,
+   "limit": "labels = u"
+  },
+  {
+   "id": "type_scale",
+   "pass": true,
+   "value": 0,
+   "limit": "number 2.2–4.3u, word 1.6–3.4u, hero 5–8u"
+  },
+  {
+   "id": "weight",
+   "pass": true,
+   "value": 0,
+   "limit": "600"
+  },
+  {
+   "id": "overflow",
+   "pass": true,
+   "value": 0,
+   "limit": "0"
+  },
+  {
+   "id": "label_lines",
+   "pass": true,
+   "value": 0,
+   "limit": "<= 2, as written"
+  },
+  {
+   "id": "label_length",
+   "pass": true,
+   "value": 0,
+   "limit": "en <= 7 words; zh <= 12, line <= 11"
+  },
+  {
+   "id": "fonts",
+   "pass": true,
+   "value": {
+    "system": 117,
+    "fallback": 0,
+    "other": 0
+   },
+   "limit": "only the listed fonts"
+  },
+  {
+   "id": "contrast",
+   "pass": true,
+   "value": 0,
+   "limit": "labels >= 4.5, large >= 3"
+  },
+  {
+   "id": "accent_hues",
+   "pass": true,
+   "value": 1,
+   "limit": "<= 1, not on labels"
+  },
+  {
+   "id": "text_only_share",
+   "pass": true,
+   "value": 0.273,
+   "limit": "<= 0.30"
+  },
+  {
+   "id": "tile_count",
+   "pass": true,
+   "value": 12,
+   "limit": "8–18 (usual 12–15)"
+  },
+  {
+   "id": "min_tile",
+   "pass": true,
+   "value": 0,
+   "limit": ">= 6u × 4.8u"
+  },
+  {
+   "id": "image_upscale",
+   "pass": true,
+   "value": 1.36,
+   "limit": "warn > 1.25",
+   "where": [
+    "hero 1.36×"
+   ]
+  },
+  {
+   "id": "output_size",
+   "pass": true,
+   "value": [
+    1080,
+    1440
+   ],
+   "limit": "1080×1440"
+  },
+  {
+   "id": "cjk_spacing",
+   "pass": true,
+   "value": 0,
+   "limit": "space between Han and Latin/digits"
+  }
+ ],
+ "fonts": {
+  "system": 117,
+  "fallback": 0,
+  "other": 0
+ },
+ "warnings": [
+  "图片被放大超过 1.25 倍，会糊：hero 1.36×"
+ ]
+}

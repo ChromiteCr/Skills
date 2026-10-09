@@ -1,0 +1,815 @@
+{
+ "source": "Phosphor Icons, Fill weight, github.com/phosphor-icons/core @ 2b75f3ad12b420c9504ef05df8d2564a28f8500e (2026-01-06)",
+ "license": "MIT (assets/icons/LICENSE)",
+ "icons": {
+  "airplane": {
+   "file": "airplane.svg",
+   "zh": [
+    "飞机",
+    "旅行",
+    "飞行"
+   ],
+   "en": [
+    "airplane",
+    "travel",
+    "flight"
+   ]
+  },
+  "aperture": {
+   "file": "aperture.svg",
+   "zh": [
+    "光圈",
+    "镜头",
+    "影像"
+   ],
+   "en": [
+    "aperture",
+    "lens",
+    "imaging"
+   ]
+  },
+  "atom": {
+   "file": "atom.svg",
+   "zh": [
+    "原子",
+    "物理",
+    "科学",
+    "实验"
+   ],
+   "en": [
+    "atom",
+    "physics",
+    "science"
+   ]
+  },
+  "battery-charging": {
+   "file": "battery-charging.svg",
+   "zh": [
+    "充电",
+    "快充",
+    "电池"
+   ],
+   "en": [
+    "charging",
+    "fast",
+    "charge",
+    "battery"
+   ]
+  },
+  "battery-full": {
+   "file": "battery-full.svg",
+   "zh": [
+    "电池",
+    "续航",
+    "电量"
+   ],
+   "en": [
+    "battery",
+    "life",
+    "charge"
+   ]
+  },
+  "bluetooth": {
+   "file": "bluetooth.svg",
+   "zh": [
+    "蓝牙",
+    "连接"
+   ],
+   "en": [
+    "bluetooth",
+    "connection"
+   ]
+  },
+  "book-open": {
+   "file": "book-open.svg",
+   "zh": [
+    "书",
+    "阅读",
+    "学习",
+    "文档"
+   ],
+   "en": [
+    "book",
+    "reading",
+    "study",
+    "docs"
+   ]
+  },
+  "calculator": {
+   "file": "calculator.svg",
+   "zh": [
+    "计算器",
+    "计算"
+   ],
+   "en": [
+    "calculator",
+    "compute"
+   ]
+  },
+  "calendar": {
+   "file": "calendar.svg",
+   "zh": [
+    "日历",
+    "日程",
+    "截止"
+   ],
+   "en": [
+    "calendar",
+    "schedule",
+    "deadline"
+   ]
+  },
+  "camera": {
+   "file": "camera.svg",
+   "zh": [
+    "相机",
+    "拍照",
+    "摄影"
+   ],
+   "en": [
+    "camera",
+    "photo"
+   ]
+  },
+  "car": {
+   "file": "car.svg",
+   "zh": [
+    "汽车",
+    "车",
+    "出行"
+   ],
+   "en": [
+    "car",
+    "vehicle"
+   ]
+  },
+  "chart-bar": {
+   "file": "chart-bar.svg",
+   "zh": [
+    "柱状图",
+    "对比",
+    "统计"
+   ],
+   "en": [
+    "bar",
+    "chart",
+    "comparison",
+    "statistics"
+   ]
+  },
+  "chart-line": {
+   "file": "chart-line.svg",
+   "zh": [
+    "折线",
+    "趋势",
+    "数据",
+    "建模"
+   ],
+   "en": [
+    "line",
+    "chart",
+    "trend",
+    "data",
+    "model"
+   ]
+  },
+  "chart-pie-slice": {
+   "file": "chart-pie-slice.svg",
+   "zh": [
+    "饼图",
+    "占比",
+    "份额"
+   ],
+   "en": [
+    "pie",
+    "chart",
+    "share"
+   ]
+  },
+  "check-circle": {
+   "file": "check-circle.svg",
+   "zh": [
+    "对勾",
+    "通过",
+    "完成",
+    "校验"
+   ],
+   "en": [
+    "check",
+    "pass",
+    "done",
+    "verify"
+   ]
+  },
+  "clock": {
+   "file": "clock.svg",
+   "zh": [
+    "时钟",
+    "时间"
+   ],
+   "en": [
+    "clock",
+    "time"
+   ]
+  },
+  "cloud": {
+   "file": "cloud.svg",
+   "zh": [
+    "云",
+    "同步",
+    "云端"
+   ],
+   "en": [
+    "cloud",
+    "sync"
+   ]
+  },
+  "code": {
+   "file": "code.svg",
+   "zh": [
+    "代码",
+    "编程"
+   ],
+   "en": [
+    "code",
+    "programming"
+   ]
+  },
+  "compass": {
+   "file": "compass.svg",
+   "zh": [
+    "指南针",
+    "导航",
+    "方向"
+   ],
+   "en": [
+    "compass",
+    "navigation",
+    "direction"
+   ]
+  },
+  "cpu": {
+   "file": "cpu.svg",
+   "zh": [
+    "芯片",
+    "处理器",
+    "算力"
+   ],
+   "en": [
+    "chip",
+    "processor",
+    "compute"
+   ]
+  },
+  "device-mobile": {
+   "file": "device-mobile.svg",
+   "zh": [
+    "手机",
+    "移动端"
+   ],
+   "en": [
+    "phone",
+    "mobile"
+   ]
+  },
+  "drop": {
+   "file": "drop.svg",
+   "zh": [
+    "水滴",
+    "防水",
+    "液体"
+   ],
+   "en": [
+    "drop",
+    "water",
+    "liquid"
+   ]
+  },
+  "eye": {
+   "file": "eye.svg",
+   "zh": [
+    "眼睛",
+    "视觉",
+    "观察"
+   ],
+   "en": [
+    "eye",
+    "vision"
+   ]
+  },
+  "file-text": {
+   "file": "file-text.svg",
+   "zh": [
+    "文件",
+    "文档",
+    "报告"
+   ],
+   "en": [
+    "file",
+    "document",
+    "report"
+   ]
+  },
+  "fingerprint": {
+   "file": "fingerprint.svg",
+   "zh": [
+    "指纹",
+    "身份",
+    "认证"
+   ],
+   "en": [
+    "fingerprint",
+    "identity",
+    "auth"
+   ]
+  },
+  "flask": {
+   "file": "flask.svg",
+   "zh": [
+    "烧瓶",
+    "化学",
+    "实验"
+   ],
+   "en": [
+    "flask",
+    "chemistry",
+    "experiment"
+   ]
+  },
+  "folder": {
+   "file": "folder.svg",
+   "zh": [
+    "文件夹",
+    "项目",
+    "目录"
+   ],
+   "en": [
+    "folder",
+    "project",
+    "directory"
+   ]
+  },
+  "function": {
+   "file": "function.svg",
+   "zh": [
+    "函数",
+    "数学",
+    "公式"
+   ],
+   "en": [
+    "function",
+    "math",
+    "formula"
+   ]
+  },
+  "globe": {
+   "file": "globe.svg",
+   "zh": [
+    "地球",
+    "全球",
+    "网络",
+    "语言"
+   ],
+   "en": [
+    "globe",
+    "world",
+    "web"
+   ]
+  },
+  "graduation-cap": {
+   "file": "graduation-cap.svg",
+   "zh": [
+    "学位帽",
+    "学习",
+    "升学"
+   ],
+   "en": [
+    "graduation",
+    "study",
+    "admissions"
+   ]
+  },
+  "headphones": {
+   "file": "headphones.svg",
+   "zh": [
+    "耳机",
+    "音频",
+    "听"
+   ],
+   "en": [
+    "headphones",
+    "audio"
+   ]
+  },
+  "heart": {
+   "file": "heart.svg",
+   "zh": [
+    "心",
+    "健康",
+    "喜欢"
+   ],
+   "en": [
+    "heart",
+    "health",
+    "like"
+   ]
+  },
+  "image": {
+   "file": "image.svg",
+   "zh": [
+    "图片",
+    "照片",
+    "画面"
+   ],
+   "en": [
+    "image",
+    "photo",
+    "picture"
+   ]
+  },
+  "laptop": {
+   "file": "laptop.svg",
+   "zh": [
+    "笔记本",
+    "电脑"
+   ],
+   "en": [
+    "laptop",
+    "computer"
+   ]
+  },
+  "leaf": {
+   "file": "leaf.svg",
+   "zh": [
+    "叶子",
+    "环保",
+    "自然"
+   ],
+   "en": [
+    "leaf",
+    "environment",
+    "nature"
+   ]
+  },
+  "lightbulb": {
+   "file": "lightbulb.svg",
+   "zh": [
+    "灯泡",
+    "想法",
+    "创意"
+   ],
+   "en": [
+    "lightbulb",
+    "idea"
+   ]
+  },
+  "lightning": {
+   "file": "lightning.svg",
+   "zh": [
+    "闪电",
+    "速度",
+    "性能"
+   ],
+   "en": [
+    "lightning",
+    "speed",
+    "performance"
+   ]
+  },
+  "lock": {
+   "file": "lock.svg",
+   "zh": [
+    "锁",
+    "隐私",
+    "安全"
+   ],
+   "en": [
+    "lock",
+    "privacy",
+    "security"
+   ]
+  },
+  "magic-wand": {
+   "file": "magic-wand.svg",
+   "zh": [
+    "魔杖",
+    "自动",
+    "一键"
+   ],
+   "en": [
+    "magic",
+    "wand",
+    "automatic"
+   ]
+  },
+  "map-pin": {
+   "file": "map-pin.svg",
+   "zh": [
+    "地点",
+    "定位",
+    "地图"
+   ],
+   "en": [
+    "location",
+    "pin",
+    "map"
+   ]
+  },
+  "microphone": {
+   "file": "microphone.svg",
+   "zh": [
+    "麦克风",
+    "录音",
+    "语音"
+   ],
+   "en": [
+    "microphone",
+    "recording",
+    "voice"
+   ]
+  },
+  "moon": {
+   "file": "moon.svg",
+   "zh": [
+    "月亮",
+    "夜间",
+    "深色"
+   ],
+   "en": [
+    "moon",
+    "night",
+    "dark"
+   ]
+  },
+  "music-notes": {
+   "file": "music-notes.svg",
+   "zh": [
+    "音乐",
+    "作词",
+    "作曲",
+    "歌"
+   ],
+   "en": [
+    "music",
+    "lyrics",
+    "song"
+   ]
+  },
+  "palette": {
+   "file": "palette.svg",
+   "zh": [
+    "调色",
+    "配色",
+    "颜色"
+   ],
+   "en": [
+    "palette",
+    "colour",
+    "grading"
+   ]
+  },
+  "pen-nib": {
+   "file": "pen-nib.svg",
+   "zh": [
+    "钢笔",
+    "写作",
+    "文书"
+   ],
+   "en": [
+    "pen",
+    "writing",
+    "essay"
+   ]
+  },
+  "pencil-simple": {
+   "file": "pencil-simple.svg",
+   "zh": [
+    "铅笔",
+    "编辑",
+    "修改"
+   ],
+   "en": [
+    "pencil",
+    "edit"
+   ]
+  },
+  "presentation-chart": {
+   "file": "presentation-chart.svg",
+   "zh": [
+    "演示",
+    "幻灯片",
+    "汇报"
+   ],
+   "en": [
+    "presentation",
+    "slides",
+    "report"
+   ]
+  },
+  "robot": {
+   "file": "robot.svg",
+   "zh": [
+    "机器人",
+    "AI",
+    "智能"
+   ],
+   "en": [
+    "robot",
+    "AI"
+   ]
+  },
+  "rocket-launch": {
+   "file": "rocket-launch.svg",
+   "zh": [
+    "火箭",
+    "发射",
+    "发布"
+   ],
+   "en": [
+    "rocket",
+    "launch",
+    "release"
+   ]
+  },
+  "ruler": {
+   "file": "ruler.svg",
+   "zh": [
+    "尺子",
+    "测量",
+    "尺寸"
+   ],
+   "en": [
+    "ruler",
+    "measure",
+    "size"
+   ]
+  },
+  "shield-check": {
+   "file": "shield-check.svg",
+   "zh": [
+    "盾牌",
+    "防护",
+    "安全",
+    "可靠"
+   ],
+   "en": [
+    "shield",
+    "protection",
+    "secure"
+   ]
+  },
+  "sparkle": {
+   "file": "sparkle.svg",
+   "zh": [
+    "闪光",
+    "亮点",
+    "新功能"
+   ],
+   "en": [
+    "sparkle",
+    "highlight",
+    "new"
+   ]
+  },
+  "star": {
+   "file": "star.svg",
+   "zh": [
+    "星",
+    "收藏",
+    "评分"
+   ],
+   "en": [
+    "star",
+    "favourite",
+    "rating"
+   ]
+  },
+  "sun": {
+   "file": "sun.svg",
+   "zh": [
+    "太阳",
+    "白天",
+    "亮度"
+   ],
+   "en": [
+    "sun",
+    "day",
+    "brightness"
+   ]
+  },
+  "target": {
+   "file": "target.svg",
+   "zh": [
+    "靶心",
+    "目标",
+    "精准"
+   ],
+   "en": [
+    "target",
+    "goal",
+    "precision"
+   ]
+  },
+  "terminal-window": {
+   "file": "terminal-window.svg",
+   "zh": [
+    "终端",
+    "命令行",
+    "脚本"
+   ],
+   "en": [
+    "terminal",
+    "command",
+    "line",
+    "script"
+   ]
+  },
+  "thermometer": {
+   "file": "thermometer.svg",
+   "zh": [
+    "温度",
+    "散热",
+    "发热"
+   ],
+   "en": [
+    "temperature",
+    "thermal",
+    "heat"
+   ]
+  },
+  "timer": {
+   "file": "timer.svg",
+   "zh": [
+    "计时",
+    "秒表",
+    "时长"
+   ],
+   "en": [
+    "timer",
+    "stopwatch",
+    "duration"
+   ]
+  },
+  "translate": {
+   "file": "translate.svg",
+   "zh": [
+    "翻译",
+    "多语言"
+   ],
+   "en": [
+    "translate",
+    "languages"
+   ]
+  },
+  "trophy": {
+   "file": "trophy.svg",
+   "zh": [
+    "奖杯",
+    "获奖",
+    "比赛"
+   ],
+   "en": [
+    "trophy",
+    "award",
+    "competition"
+   ]
+  },
+  "users-three": {
+   "file": "users-three.svg",
+   "zh": [
+    "人群",
+    "社群",
+    "团队"
+   ],
+   "en": [
+    "people",
+    "community",
+    "team"
+   ]
+  },
+  "watch": {
+   "file": "watch.svg",
+   "zh": [
+    "手表",
+    "腕表"
+   ],
+   "en": [
+    "watch",
+    "wearable"
+   ]
+  },
+  "wifi-high": {
+   "file": "wifi-high.svg",
+   "zh": [
+    "无线",
+    "网络",
+    "连接"
+   ],
+   "en": [
+    "wifi",
+    "wireless",
+    "network"
+   ]
+  }
+ }
+}

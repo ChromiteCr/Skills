@@ -1,0 +1,220 @@
+{
+ "schema": "bento/1",
+ "note": "研究版样例（第 10 轮按两次评审改过）：电影感调色原型 0.4.1 的实测数字（AUDIT-AND-IDEAS.md 第三部分 3.5、3.9），外加本库 photo-cinematic-grade 0.3.0 的渲染耗时（本机实测）；重点色用本库徽章的蓝 #2f81f7，给全部数字和柱图的高亮",
+ "canvas": {
+  "use": "screen",
+  "width": 1536,
+  "height": 2048,
+  "dpr": 2
+ },
+ "theme": "light",
+ "mode": "research",
+ "lang": "zh-CN",
+ "font": "system",
+ "accent": "#2f81f7",
+ "source_line": null,
+ "seed": 0,
+ "tiles": [
+  {
+   "id": "hero",
+   "kind": "hero",
+   "image": "../images/astronaut-graded.jpg",
+   "fit": "cover",
+   "weight": 3,
+   "facts": [
+    {
+     "text": "主图是宇航员样图（肤色护栏的测试对象）经本库 photo-cinematic-grade 0.3.0 调色（warm-muted，强度 70）的结果，只作示意",
+     "source": "tests/fixtures/bento-infographic/images/README.md"
+    }
+   ]
+  },
+  {
+   "id": "hue",
+   "kind": "stat",
+   "value": "4.4",
+   "unit": "°",
+   "label": "最大肤色漂移",
+   "exact": true,
+   "weight": 3,
+   "facts": [
+    {
+     "text": "肤色色相平均漂移：色板测试最大 4.4°（霓虹夜），护栏 ≤ 6°；确定性计算，四张样图 × 六个风格",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "lut",
+   "kind": "stat",
+   "value": "5/6",
+   "label": "合格的 LUT 回读",
+   "exact": true,
+   "weight": 1,
+   "facts": [
+    {
+     "text": "LUT 回读（33³，四面体插值）p99 上限 0.02：五个风格达标（0.003–0.016），粉彩在宇航员上 0.053 未达标",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "render",
+   "kind": "stat",
+   "value": "42.3",
+   "uncertainty": "0.3",
+   "unit": "s",
+   "label": "全尺寸渲染",
+   "n": 5,
+   "weight": 2,
+   "facts": [
+    {
+     "text": "cinegrade.py render，warm-muted 70，6000×4000 JPEG；5 次 41.89、42.40、42.59、42.60、42.01 s，均值 42.30，标准差 0.33；峰值内存 0.89–1.07 GB",
+     "source": "本库 photo-cinematic-grade 0.3.0，Apple M4 Pro，2026-10-08 本机实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "distinct",
+   "kind": "stat",
+   "value": "0.036",
+   "label": "最小原图色差",
+   "exact": true,
+   "image": "../images/chelsea.jpg",
+   "fit": "cover",
+   "weight": 2,
+   "facts": [
+    {
+     "text": "鲜明风格与原图的 ΔE_OK 全部 ≥ 0.035，最小 0.036（猫，青橙）",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "between",
+   "kind": "stat",
+   "value": "0.027",
+   "label": "最小风格间色差",
+   "exact": true,
+   "image": "../images/rocket.jpg",
+   "fit": "cover",
+   "weight": 1,
+   "facts": [
+    {
+     "text": "任意两个风格之间的 ΔE_OK 全部 ≥ 0.025，最小 0.027（火箭，青橙对拷贝片浓郁）",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "banding",
+   "kind": "stat",
+   "value": "+0.19",
+   "unit": "码值",
+   "label": "最大断层增量",
+   "exact": true,
+   "image": "../images/coffee.jpg",
+   "fit": "cover",
+   "weight": 1,
+   "facts": [
+    {
+     "text": "最平滑区域的量化残差比源图增加 ≤ 0.35 个码值，最大 +0.19（咖啡，粉彩）",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "scores",
+   "kind": "chart",
+   "chart": "bar",
+   "series": [
+    5.2,
+    10.7,
+    21.6,
+    42.3
+   ],
+   "highlight": 2,
+   "highlight_label": "21.6 s",
+   "label": "渲染耗时",
+   "weight": 2,
+   "facts": [
+    {
+     "text": "cinegrade.py render，warm-muted 70，同一张图缩放到 2000×1500、3000×2000、4000×3000、6000×4000：5.20、10.69、21.63 s（各测 1 次），42.30 s（5 次均值）；耗时和像素数大致成正比",
+     "source": "本库 photo-cinematic-grade 0.3.0，Apple M4 Pro，2026-10-09 本机实测"
+    }
+   ],
+   "accent": true
+  },
+  {
+   "id": "selftest",
+   "kind": "icon",
+   "icon": "terminal-window",
+   "label": "自检 54/55",
+   "weight": 1,
+   "facts": [
+    {
+     "text": "自检 55 项，54 项通过；没过的是粉彩在宇航员上的 LUT 回读",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.9，原型 0.4.1 实测"
+    }
+   ]
+  },
+  {
+   "id": "repeat",
+   "kind": "icon",
+   "icon": "fingerprint",
+   "label": "确定性输出",
+   "weight": 1,
+   "facts": [
+    {
+     "text": "同一种子，输出字节相同：通过",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ]
+  },
+  {
+   "id": "skin",
+   "kind": "icon",
+   "icon": "shield-check",
+   "label": "人像肤色护栏",
+   "weight": 1,
+   "facts": [
+    {
+     "text": "宇航员人像上，肤色色相漂移与色度比全部在护栏内",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.5，原型 0.4.1 实测"
+    }
+   ]
+  },
+  {
+   "id": "looks",
+   "kind": "icon",
+   "icon": "palette",
+   "label": "六个调色风格",
+   "weight": 1,
+   "facts": [
+    {
+     "text": "青橙、霓虹夜、金色时刻、拷贝片浓郁、粉彩童话、素净",
+     "source": "AUDIT-AND-IDEAS.md 第三部分 3.6"
+    }
+   ]
+  }
+ ],
+ "dropped": [
+  {
+   "text": "原型的全尺寸渲染 18 秒、峰值内存 2.7 GB",
+   "reason": "只测了一次，原型也不在了，不能重测；改用本库 0.3.0 本机连跑 5 次的耗时"
+  },
+  {
+   "text": "六个风格的自评分（8、7、7、7、6.5、6）",
+   "reason": "作者自评，不是测量；六根柱子差不多高，放上去没有信息量"
+  },
+  {
+   "text": "高光剪切增量、死黑增量",
+   "reason": "都是 0 或接近 0，放上去没有信息量"
+  }
+ ]
+}

@@ -1,0 +1,167 @@
+{
+  "schema": "bento/1",
+  "note": "调试用：照官方 iPhone 18 Pro 总结片（apple-reference/06-iphone-18-pro.webp）对齐。图片是从官方图上裁的，只供本仓库测试，不进 examples，也不对外展示。",
+  "canvas": {
+    "use": "screen",
+    "width": 4000,
+    "height": 2250,
+    "dpr": 2
+  },
+  "theme": "dark",
+  "mode": "product",
+  "lang": "en",
+  "font": "system",
+  "accent": null,
+  "source_line": null,
+  "seed": 0,
+  "tiles": [
+    {
+      "id": "hero",
+      "kind": "hero",
+      "image": "../apple-reference/iphone-18-pro-crops/hero.png",
+      "fit": "cover",
+      "weight": 3
+    },
+    {
+      "id": "pro-controls",
+      "kind": "photo",
+      "image": "../apple-reference/iphone-18-pro-crops/pro-controls.png",
+      "label": "Pro controls",
+      "weight": 2,
+      "label_pos": "bottom"
+    },
+    {
+      "id": "battery",
+      "kind": "word",
+      "word": "Best battery\nlife ever",
+      "tone": "silver",
+      "weight": 1
+    },
+    {
+      "id": "telephoto",
+      "kind": "photo",
+      "image": "../apple-reference/iphone-18-pro-crops/telephoto.png",
+      "label": "4x/8x\nFusion Telephoto",
+      "label_pos": "top",
+      "weight": 2,
+      "facts": [
+        {
+          "text": "100/200 mm focal length (4x/8x)",
+          "source": "apple.com/iphone-18-pro，2026-10-08 查阅"
+        }
+      ]
+    },
+    {
+      "id": "sizes",
+      "kind": "flank",
+      "image": "../apple-reference/iphone-18-pro-crops/sizes-phones.png",
+      "left": "6.9″",
+      "right": "6.3″",
+      "tone": "silver",
+      "weight": 2,
+      "facts": [
+        {
+          "text": "6.9-inch iPhone 18 Pro Max and 6.3-inch iPhone 18 Pro",
+          "source": "apple.com/iphone-18-pro，2026-10-08 查阅"
+        }
+      ]
+    },
+    {
+      "id": "vapor",
+      "kind": "word",
+      "word": "Vapor chamber",
+      "label": "Next-generation",
+      "label_pos": "top",
+      "weight": 3
+    },
+    {
+      "id": "intelligence",
+      "kind": "word",
+      "word": "Apple Intelligence",
+      "weight": 2
+    },
+    {
+      "id": "dynamic-island",
+      "kind": "object",
+      "image": "../apple-reference/iphone-18-pro-crops/dynamic-island.png",
+      "background": [
+        "#643e44",
+        "#2b1719"
+      ],
+      "label": "Redesigned Dynamic Island",
+      "weight": 1
+    },
+    {
+      "id": "main-camera",
+      "kind": "photo",
+      "image": "../apple-reference/iphone-18-pro-crops/main-camera.png",
+      "label": "48MP Fusion Main camera\nwith variable aperture",
+      "weight": 2,
+      "facts": [
+        {
+          "text": "48MP Fusion Main camera with variable aperture",
+          "source": "apple.com/iphone-18-pro，2026-10-08 查阅"
+        }
+      ],
+      "label_pos": "bottom"
+    },
+    {
+      "id": "colors",
+      "kind": "object",
+      "image": "../apple-reference/iphone-18-pro-crops/colors-phones.png",
+      "label": "Beautiful new colors",
+      "label_pos": "top",
+      "weight": 2
+    },
+    {
+      "id": "reference-image",
+      "kind": "icon",
+      "image": "../apple-reference/iphone-18-pro-crops/reference-image-icon.png",
+      "icon_size": 4.2,
+      "label": "Apple Reference\nImage",
+      "weight": 1
+    },
+    {
+      "id": "charging",
+      "kind": "icon",
+      "image": "../apple-reference/iphone-18-pro-crops/charging-icon.png",
+      "icon_size": 5.0,
+      "label": "Faster wired\ncharging",
+      "weight": 1
+    },
+    {
+      "id": "cinematic",
+      "kind": "photo",
+      "image": "../apple-reference/iphone-18-pro-crops/cinematic.png",
+      "label": "Cinematic\nfrom regular video",
+      "weight": 1,
+      "label_pos": "bottom"
+    },
+    {
+      "id": "siri",
+      "kind": "icon",
+      "image": "../apple-reference/iphone-18-pro-crops/siri-orb.png",
+      "icon_size": 4.9,
+      "label": "Siri AI",
+      "weight": 1
+    },
+    {
+      "id": "a20",
+      "kind": "word",
+      "word": "Massive\nperformance\ngains",
+      "image": "../apple-reference/iphone-18-pro-crops/a20-chip.png",
+      "image_side": "left",
+      "tone": "silver",
+      "weight": 1
+    },
+    {
+      "id": "photographic-styles",
+      "kind": "photo",
+      "image": "../apple-reference/iphone-18-pro-crops/photographic-styles.png",
+      "label": "Photographic Styles\nwith texture control",
+      "weight": 1,
+      "label_pos": "bottom"
+    }
+  ],
+  "dropped": []
+}
