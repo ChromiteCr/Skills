@@ -77,3 +77,65 @@ QA 只数一幅 before 和一幅 after，未把并排图面积当成每幅照片
 本轮所有新夹具都是明确标注的合成测试输入，未得到真实摄影效果确认；没有读取个人照片或下载材料。
 
 真实 P3、人像、夜景、天空渐变仍需独立验收。当前 compare 尚未复现历史原型的装饰、中文排版或 8 分视觉评价。
+
+
+## 浮点色彩内核（0.4.0，重新实现）
+
+本轮推进只读计划 3.4 中浮点线性光、Oklab 亮度曲线与 OkLCh 运算的核心实现。
+当前 skill 文件与该路径本地 Git 历史只有现有整数实现，未找到历史 0.4.1 原型。
+`color_core.py` 从标准色彩数学重新实现，不声称移植原型、复现 55 项自检或原型照片评分。
+本模块尚未接入 CLI render，整数渲染器的配方、像素与安全读写契约保持不变。
+
+### 数值来源与精度
+
+- sRGB 传递函数使用标准阈值 0.04045、0.0031308，线性段 12.92，指数 2.4，以及 0.055/1.055。
+  负坐标采用保留符号的扩展，便于后续统计色域外值；不截成 0。
+  可核对来源为 CSS Color 4 的 Sample code for color conversions，
+  https://www.w3.org/TR/css-color-4/#color-conversion-code 。
+- 线性 sRGB 到 Oklab 使用 Björn Ottosson 于 2021-01-25 更新的两组矩阵，
+  https://bottosson.github.io/posts/oklab/ 。代码逐项列出发表的十位小数系数。
+  它们是标准颜色空间变换系数，不是拟造的创意配方。逆矩阵由同一组前向矩阵计算，
+  避免另外一组舍入后的逆矩阵引入不必要的往返偏差。LMS 用实数立方根，允许负值。
+- 这些是供核对的公开来源，本轮未联网重新读取页面。测试的 RGB 原色向量保留八位小数，
+  绝对容差 5e-8 用于覆盖参考向量末位舍入。网格往返容差验证的是数值实现，不是摄影色差护栏。
+- 所有公开函数返回 float64，不改写输入；输入须为非空、有限的实数。
+  色彩坐标最后一轴为 3，传递函数与亮度曲线也支持标量与任意形状。
+  RGB 必须先归一到 0..1，函数不会把 255 猜成一个 8-bit 码值。扩展坐标可超出此范围。
+  Oklab/OkLCh 转换不钳位 L，亮度曲线单独要求 L 在 0..1。
+- OkLCh 用 C=hypot(a,b)，h=atan2(b,a)，角度归一到 [0,360)。恰好 C=0 时记录 h=0；
+  近中性仍保留实际坐标，没有虚构肤色键或色度阈值。输入 C<0 拒绝。
+
+### 端点固定亮度曲线
+
+计划给出了部分风格的 contrast 参数，并未规定曲线公式。本轮选择以下可解析验证的工程实现：
+
+`S_c(L) = L^c / (L^c + (1-L)^c)`，c>0；强度混合为 `(1-s)L + s*S_c(L)`，s∈[0,1]。
+
+两端固定在 0 和 1，中点固定在 0.5，中点导数为 c；c=1 恒等，c>1 加反差，0<c<1 降反差。
+实现用 log-odds 与稳定 sigmoid，避免直接计算幂导致分子、分母同时下溢。
+contrast 与 strength 必须显式传入，没有新增默认配方系数；strength=0 或 contrast=1 返回精确副本。
+`contrast_oklab` 只改 L，a/b 不变，后续还须实现计划中的高光色度滚降、肤色保护与色域映射。
+不会暗中钳位或量化来伪造可显示结果。
+
+这是重新设计的公式，尚未经 Bill 对真实摄影效果确认，不作为已经批准的六风格配方。
+测试使用计划的 1.25、1.02、0.82 检查单调性、端点与方向；contrast=2 只用于手算
+S(0.25)=0.1、S(0.75)=0.9 的合成数学例子，不能把它当推荐调色参数。
+标准 D65、显示参照 SDR 的线性化也不等于场景辐射恢复、RAW 显影或 HDR 管线。
+
+### 最小 API 串接示例
+
+下面仅说明数据路径，不运行、保存或验收真实照片。`normalized_rgb8` 必须来自既有
+`load_image` 完成 EXIF 转正与 ICC 归一后的 RGB8，不能绕过颜色输入确认。
+`confirmed_contrast` 和 `confirmed_strength` 由调用者明确传入，不在示例里编造默认值。
+
+```python
+encoded = np.asarray(normalized_rgb8, dtype=np.float64) / 255
+linear = color_core.srgb_to_linear(encoded)
+lab = color_core.linear_srgb_to_oklab(linear)
+lab = color_core.contrast_oklab(lab, contrast=confirmed_contrast, strength=confirmed_strength)
+linear_after = color_core.oklab_to_linear_srgb(lab)
+# linear_after may be out of gamut. A later pipeline must map/report before encoding.
+```
+
+22 项新增自动测试只用合成数学数值，没有读取个人照片或下载材料。
+真实 P3、人像肤色、夜景、天空断层、六风格区分度、LUT 回读与输出文件字节重复性均未由本增量验收。

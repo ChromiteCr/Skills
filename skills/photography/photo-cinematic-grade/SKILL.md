@@ -2,7 +2,7 @@
 name: photo-cinematic-grade
 description: 照片电影感调色、低饱和冷暖分离、先保原片再调色。用确定性像素处理而不是生成式重绘；先确认用途与色彩输入，输出带 sRGB ICC 的新图和隐私优先的参数/QA 边车。支持 8-bit SDR JPEG/PNG 的 render、固定三选候选小样 candidates 与数值 QA，以及原尺寸前后对比 compare；card、LUT 尚未实现。不负责 RAW 显影、修图换景、冲印交付或精确复刻电影/胶片。
 category: photography
-version: 0.3.0
+version: 0.4.0
 status: draft
 priority: P2
 compatible_agents:
@@ -20,11 +20,27 @@ compatible_agents:
 
 ## 当前能力与未完成项
 
-当前累计完成 render 基础、候选小样和前后对比三个功能增量，不代表整个 skill 已验收完成。
+当前完成 render 基础、候选小样、前后对比，以及供后续管线使用的浮点色彩内核。新内核尚未接管 CLI render，不代表整个 skill 已验收完成。
 
 - **已实现**：`scripts/cinegrade.py render`、`looks`、`candidates`（中性基线 + 两个风格的固定三选小样）、`compare`（左原图、右调色的原尺寸并排）、确定性整数调色、三份基础配方、独立 `image_io.py`、数值 QA、隐私边车、原件与已有输出保护。
-- **尚未实现**：`card`、`lut` 命令，以及相应的集成测试；计划中的 analyze/sheet、浮点线性光与 OkLCh 管线、六个规定风格、完整 QA、JPEG/16 位输出仍待补齐。不得暗示它们已经可用，不能用生成图或口头描述冒充实际小样。候选固定列出而不自动排名或替摄影者选定。
+- **尚未实现**：`card`、`lut` 命令，以及相应的集成测试；计划中的 analyze/sheet、浮点线性光与 OkLCh 的端到端管线、六个规定风格、完整 QA、JPEG/16 位输出仍待补齐。不得暗示它们已经可用，不能用生成图或口头描述冒充实际小样。候选固定列出而不自动排名或替摄影者选定。
 - 不提供局部蒙版、人物/肤色识别、白平衡或曝光自动矫正、颗粒、暗角、锐化、降噪、裁剪。避免把调色变成无法追溯的整图修饰。
+
+## 新增浮点色彩内核（0.4.0）
+
+`scripts/color_core.py` 重建计划 3.4 的基础像素运算，供六风格管线后续接入。
+已实现扩展 sRGB 传递函数、线性 sRGB 与 Oklab 双向转换、OkLCh 极坐标转换，以及端点固定的 Oklab 亮度曲线。
+全程 float64，不做中间量化，不钳位色域外数值；纯数值 API 不读照片、不写文件、不改 ICC。
+需要 numpy，当前测试环境为 numpy 2.0.2；原有 CLI 读写仍按既有流程执行。
+
+曲线是本轮重新设计的工程实现，历史 0.4.1 原型未找回，也未移植。
+公式与标准矩阵来源见 `references/grading-research.md` 的浮点内核一节。
+contrast、strength 都要调用者显式传入；此 API 的 strength 为 0..1，与旧 CLI 的 0..100 分开。
+不增加默认配方。工程曲线尚未经摄影者视觉确认，不把数学测试当作六风格效果验收。
+
+目前 render/candidates/compare 仍用原有整数算法和三份配方，输出像素契约不变。
+亮部色度滚降、分色相/肤色保护、减法密度、色域映射、纹理、最终抖动量化和六风格集成仍待完成。
+此内核不恢复输入已丢失的高光，也不让当前 CLI 支持 RAW、HDR 或 16 位文件。
 
 ## 触发与分流
 
@@ -193,7 +209,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/image_io.py --selftest
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_cinegrade.py
 ```
 
-测试只合成小图，临时文件局限本 skill 的 `scripts/` 内，结束清理自己创建的夹具；不读取真实照片、系统字体或其他技能。
+测试只使用合成小图、合成数学网格与可核对的标准色彩向量，临时文件局限本 skill 的 `scripts/` 内，结束清理自己创建的夹具；不读取真实照片、系统字体或其他技能。
 交互验收场景位于仓库的 `tests/cases/photo-cinematic-grade.md`。
 实测范围是合成 RGB/L、sRGB ICC 与模拟 ICC 调用；**真实 Display P3/Adobe RGB 照片与跨平台视觉验收尚未完成**。
 
@@ -208,6 +224,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_cinegrade.py
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.4.0 | 2026-10-09 | 新增 float64 sRGB/Oklab/OkLCh 内核及端点固定亮度曲线，新增 22 项数学测试；未接管 CLI、未复现历史原型或完成六风格视觉验收 | minor |
 | 0.3.0 | 2026-10-08 | 新增 compare：显式配方/强度、原尺寸左右像素对账、单幅 QA 计数、隐私与失败保护；新增 13 项合成测试；核心六风格管线及真实效果仍未验收 | minor |
 | 0.2.0 | 2026-10-07 | 新增 candidates 固定三选小样：一次颜色归一、确定性限边缩放、逐图配方/散列/QA、整组新目录保护及隐私/失败测试；card/compare/lut 仍待实现 | minor |
 | 0.1.0 | 2026-10-07 | 首个独立增量：确定性 render、三份基础配方、安全 I/O、技术 EXIF 白名单边车与数值 QA；小样/card/compare/lut 待后续 | minor |

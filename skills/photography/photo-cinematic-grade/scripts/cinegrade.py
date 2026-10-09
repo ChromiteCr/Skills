@@ -18,7 +18,7 @@ from PIL import Image, ImageCms
 
 from image_io import InputError, encode_png, load_image, write_new_bundle, write_new_run
 
-VERSION = '0.3.0'
+VERSION = '0.4.0'
 ALGORITHM = 'encoded-srgb-integer-v1'
 CANDIDATE_LOOKS = ('neutral', 'warm-muted', 'cool-muted')
 MAX_PREVIEW_EDGE = 2048

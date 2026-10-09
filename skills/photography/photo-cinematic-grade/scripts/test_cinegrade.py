@@ -387,7 +387,7 @@ class CandidateTests(Fixtures):
         report = cinegrade.candidates(self.source, output, assume_srgb=True)
         self.assertEqual(self.source.read_bytes(), before)
         self.assertEqual(report['input']['source_sha256'], hashlib.sha256(before).hexdigest())
-        self.assertEqual(report['skill_version'], '0.3.0')
+        self.assertEqual(report['skill_version'], '0.4.0')
         self.assertEqual(report['command'], 'candidates')
         self.assertEqual(report['selection'], {'automatic_selection': False, 'selected_look': None})
         self.assertEqual(report['preview']['max_edge'], 1024)
@@ -975,6 +975,9 @@ def run_tests(group='all'):
     suite = unittest.TestSuite()
     for cls in ([IOTests] if group == 'io' else [GradeTests, CandidateTests, CompareTests] if group == 'grade' else [IOTests, GradeTests, CandidateTests, CompareTests]):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(cls))
+    if group != "io":
+        from test_color_core import ColorCoreTests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ColorCoreTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
