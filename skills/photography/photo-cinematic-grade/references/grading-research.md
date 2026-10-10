@@ -139,3 +139,65 @@ linear_after = color_core.oklab_to_linear_srgb(lab)
 
 22 项新增自动测试只用合成数学数值，没有读取个人照片或下载材料。
 真实 P3、人像肤色、夜景、天空断层、六风格区分度、LUT 回读与输出文件字节重复性均未由本增量验收。
+
+
+## 高光色度滚降（0.5.0，重新实现）
+
+本增量对应只读计划 3.4 的“亮部色度向白滚降”。前一版只调 L，a/b 恒定；
+本版新增 `highlight_rolloff_oklab`，在经过亮度曲线的 Oklab 上按位置缩小 a/b。
+保留现有 `contrast_oklab` 的纯亮度契约，调用者按先亮度、后滚降的顺序串接。
+未找到历史 0.4.1 原型，不声称其配方、像素、性能或视觉成绩已经复现。
+
+### 工程曲线的来源
+
+这是本轮新设计的 Hermite 三次插值，来自以下数学约束，没有实验拟合系数：
+在肩部起点保留全部色度，在白点满强度时色度为零，两端导数为零。
+设归一化肩部位置 t∈[0,1]，色度保留量 f 为三次多项式，则
+f(0)=1、f(1)=0、f′(0)=0、f′(1)=0 唯一确定
+`f(t)=1-3t²+2t³=(1-t)²(1+2t)`。
+系数 1、2、3 来自这四个边界条件，不是计划中未给出的调色配方。
+
+设显式输入起点 q=start，强度 s=strength，输入为 (L,a,b)：
+
+- L≤q 时，返回原坐标。
+- L>q 时，`t=(L-q)/(1-q)`，`k=(1-s)+s*f(t)`，返回 `(L,k*a,k*b)`。
+- q 必须在 [0,1)，s 必须在 [0,1]；所有输入必须是有限实数，L 在 [0,1]。
+- L 不变；非零色度的 hue 不变，色度乘以 k。k 在 [1-s,1] 之间且随 L 非增。
+  满强度白点 k=0，此时 hue 未定义，沿用内核 C=0 时记 h=0 的约定。
+- s=0 返回独立的精确副本，仍先验证所有输入。s<1 的白点仍可有色度，
+  函数不会为“看起来可显示”而偷偷改成全强度或钳位 RGB。
+
+实现采用因式形式，避免在接近白点时用 `1-smoothstep(t)` 相消成零。
+只计算 L>q 的像素，即使 q 是小于 1 的最大 float64，也不会对阴影作极小分母除法。
+浮点下溢允许趋于零，溢出或非有限值拒绝；没有中间量化、裁切、RGB 色域映射或肤色键。
+算法标识为 `oklab-highlight-chroma-hermite-v1`，原色彩转换标识保持不变。
+
+### 参数、确认与证据边界
+
+计划没有指定高光起点或这条三次公式。q、s 均无默认值，必须由调用者显式给出。
+公式属于待真实摄影验证的工程实现，不是 Bill 已确认的六风格配方。
+测试中 q=0.5、C、强度、采样网格与数值容差全部是合成数学测试选择，
+目的为验证端点、方向、连续性、浮点稳定性与输入契约，没有真实观察数据含义。
+q 的坐标是曲线后的 Oklab L，不是 sRGB 通道值、像素亮度统计或 EV。
+
+只展示串接方式，以下代码不在本说明中执行，不读写图片，不假定参数已获确认：
+
+```python
+lab_after_tone = color_core.contrast_oklab(
+    lab, contrast=confirmed_contrast, strength=confirmed_tone_strength)
+lab_after_rolloff = color_core.highlight_rolloff_oklab(
+    lab_after_tone, start=confirmed_highlight_start,
+    strength=confirmed_highlight_strength)
+linear_after = color_core.oklab_to_linear_srgb(lab_after_rolloff)
+# Still potentially out of gamut. Map and report before encoding in a later stage.
+```
+
+两阶段强度各有作用域；这里没有新增“整套 look 的总强度”契约。
+整个 skill 的 strength=0 验收仍须在未来完整管线和文件输出上再做。
+本轮的 16 项新增测试包含手算 t=1/4、1/2、3/4 的结果、色相/亮度保持、单调性、
+两端零斜率、只读与非连续输入、非法值、无默认参数、极窄肩部、接近白点残差，
+以及合成 RGB 网格与已有传递函数/亮度曲线串接。原有测试断言保持不变。
+
+CLI 仍为原有整数调色，真实 P3、人像、夜景与天空断层没有新增验收证据。
+高光去色也不保证 RGB 落回 sRGB 色域；分色相/肤色保护、减法密度、色域映射与占比 QA、
+纹理、最终抖动、六风格参数与端到端接入、LUT、16 位输出仍需后续完成。

@@ -193,3 +193,45 @@ def contrast_oklab(oklab, *, contrast, strength):
     target = lightness_curve(lightness, contrast=c)
     lab[..., 0] = (1 - s) * lightness + s * target
     return lab
+
+
+# Rebuilt plan 3.4 highlight stage. NEW engineering curve, not prototype code or a
+# user-confirmed preset. start and strength have NO creative defaults.
+# f(t)=(1-t)^2*(1+2t) is the unique cubic with f(0)=1, f(1)=0,
+# f_prime(0)=f_prime(1)=0. Its coefficients follow those constraints, not a fit.
+HIGHLIGHT_ROLLOFF_ALGORITHM = "oklab-highlight-chroma-hermite-v1"
+
+
+@_finite_math
+def highlight_rolloff_oklab(oklab, *, start, strength):
+    """Reduce highlight chroma at fixed Oklab L and hue; return a float64 copy.
+
+    Apply to tone-adjusted Oklab. start is the explicitly selected lightness
+    onset in [0, 1); strength is in [0, 1]. At/below start nothing changes.
+    Above it, t=(L-start)/(1-start), C_out/C_in=(1-strength)+strength*f(t).
+    At full strength L=1 is achromatic; partial strength retains chroma there.
+    There is no gamut mapping, skin detection, I/O or intermediate quantization.
+    A later stage must map/report out-of-gamut RGB. This is not a full look.
+    """
+    lab = _triples(oklab)
+    onset = _scalar(start, "start")
+    s = _scalar(strength, "strength")
+    if not 0 <= onset < 1:
+        raise ValueError("start must be in 0..1, excluding 1")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    lightness = lab[..., 0]
+    if np.any((lightness < 0) | (lightness > 1)):
+        raise ValueError("display-referred lightness must be in 0..1")
+    if s == 0:
+        return lab
+    highlights = lightness > onset
+    # Compute only selected pixels: even onset next to 1 cannot overflow from
+    # subtracting a shadow coordinate and dividing it by a tiny denominator.
+    t = (lightness[highlights] - onset) / (1 - onset)
+    # Factored complement avoids cancellation of 1 - smoothstep near white.
+    residual = (1 - t) ** 2 * (1 + 2 * t)
+    factor = (1 - s) + s * residual
+    chroma_axes = lab[..., 1:]
+    chroma_axes[highlights] *= factor[..., None]
+    return lab

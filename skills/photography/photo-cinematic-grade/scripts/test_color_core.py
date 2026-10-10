@@ -183,5 +183,149 @@ class ColorCoreTests(unittest.TestCase):
         np.testing.assert_array_equal(np.rint(result * 255).astype(np.uint8), rgb8)
 
 
+
+
+class HighlightRolloffTests(unittest.TestCase):
+    # SYNTHETIC mathematical fixtures, not photographs or approved look recipes.
+    # start=0.5, strengths, chroma values, ramps and tolerances are test choices.
+    # The polynomial is derived from endpoint/slope constraints, not prototype data.
+    # No default shoulder onset or visual acceptance has been confirmed by Bill.
+    def roll(self, lab, start=0.5, strength=1):
+        return core.highlight_rolloff_oklab(lab, start=start, strength=strength)
+
+    def test_hand_computed_shoulder(self):
+        lab = np.array([[x, 0.25, -0.5] for x in (0, 0.5, 0.625, 0.75, 0.875, 1)])
+        expected = lab.copy()
+        expected[:, 1:] *= np.array([1, 1, 27/32, 1/2, 5/32, 0])[:, None]
+        np.testing.assert_array_equal(self.roll(lab), expected)
+
+    def test_strength_interpolates_chroma_not_lightness(self):
+        lab = np.array([[0.75, 0.25, -0.5], [1, 0.25, -0.5]])
+        expected = [[0.75, 0.21875, -0.4375], [1, 0.1875, -0.375]]
+        np.testing.assert_array_equal(self.roll(lab, strength=0.25), expected)
+
+    def test_at_and_below_start_are_exact(self):
+        lab = np.array([[0, 1e308, -1e308], [0.25, 0.12, -0.34], [0.5, -0.1, 0.2]])
+        out = self.roll(lab)
+        np.testing.assert_array_equal(out, lab)
+        self.assertFalse(np.shares_memory(out, lab))
+
+    def test_zero_strength_exact_independent_copy(self):
+        lab = np.array([[0.75, 1, -1], [1, 0.25, -0.5]])
+        out = self.roll(lab, strength=0)
+        np.testing.assert_array_equal(out, lab)
+        self.assertFalse(np.shares_memory(out, lab))
+
+    def test_preserves_lightness_and_neutral_axis(self):
+        lab = np.zeros((1001, 3))
+        lab[:, 0] = np.linspace(0, 1, 1001)
+        np.testing.assert_array_equal(self.roll(lab), lab)
+        lab[:, 1:] = [0.25, -0.5]
+        np.testing.assert_array_equal(self.roll(lab)[:, 0], lab[:, 0])
+
+    def test_hue_preserved_until_zero_chroma(self):
+        lch = np.array([[0.75, 0.2, h] for h in range(0, 360, 15)])
+        after = core.oklab_to_oklch(self.roll(core.oklch_to_oklab(lch)))
+        np.testing.assert_allclose(after[:, 1], 0.1, rtol=0, atol=1e-15)
+        np.testing.assert_allclose(after[:, 2], lch[:, 2], rtol=0, atol=1e-12)
+        white = core.oklab_to_oklch(self.roll([1, 0.2, -0.1]))
+        np.testing.assert_array_equal(white, [1, 0, 0])
+
+    def test_monotone_bounded_chroma_for_ramps(self):
+        lab = np.array([[x, 1, 0] for x in np.linspace(0, 1, 1001)])
+        for start in (0, 0.5, 0.9):
+            for strength in (0, 0.25, 1):
+                out = self.roll(lab, start, strength)
+                self.assertTrue(np.all(np.diff(out[:, 1]) <= 0))
+                self.assertTrue(np.all((out[:, 1] >= 1-strength) & (out[:, 1] <= 1)))
+                self.assertEqual(out[0, 1], 1)
+                self.assertEqual(out[-1, 1], 1-strength)
+
+    def test_zero_endpoint_slopes_and_join_continuity(self):
+        # One-sided finite differences. 1e-5 and 2e-4 are test instrumentation.
+        h = 1e-5
+        out = self.roll([[0.5-h, 1, 0], [0.5, 1, 0], [0.5+h, 1, 0],
+                         [1-h, 1, 0], [1, 1, 0]])[:, 1]
+        self.assertEqual(out[0], out[1])
+        self.assertLess(abs((out[2]-out[1])/h), 2e-4)
+        self.assertLess(abs((out[4]-out[3])/h), 2e-4)
+
+    def test_triplet_image_and_readonly_noncontiguous_input(self):
+        for shape in ((3,), (4, 3), (2, 4, 3)):
+            lab = np.full(shape, 0.75, dtype=np.float32)
+            before = lab.copy()
+            lab.setflags(write=False)
+            out = self.roll(lab)
+            self.assertEqual(out.shape, shape)
+            self.assertEqual(out.dtype, np.float64)
+            np.testing.assert_array_equal(lab, before)
+            self.assertFalse(np.shares_memory(out, lab))
+        lab = np.full((4, 6, 3), 0.75)[:, ::2]
+        before = lab.copy()
+        self.roll(lab)
+        np.testing.assert_array_equal(lab, before)
+
+    def test_rejects_invalid_coordinates(self):
+        for bad in (0.5, [0, 1], [], np.empty((0, 3)), [True]*3, ["0.5"]*3,
+                    [None]*3, [0.5, 1j, 0], [np.nan, 0, 0], [0.5, np.inf, 0],
+                    [-0.01, 0, 0], [1.01, 0, 0]):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.roll(bad)
+
+    def test_rejects_invalid_start_and_strength_even_when_disabled(self):
+        for bad in (True, "0.5", [0.5], -0.01, 1, 1.01, np.nan, np.inf):
+            with self.subTest(start=repr(bad)), self.assertRaises(ValueError):
+                self.roll([0.75, 0.1, 0.2], start=bad, strength=0)
+        for bad in (True, "0.5", [0.5], -0.01, 1.01, np.nan, np.inf):
+            with self.subTest(strength=repr(bad)), self.assertRaises(ValueError):
+                self.roll([0.75, 0.1, 0.2], strength=bad)
+        with self.assertRaises(ValueError):
+            self.roll([1.01, 0, 0], strength=0)
+
+    def test_no_implicit_recipe_parameters(self):
+        with self.assertRaises(TypeError):
+            core.highlight_rolloff_oklab([0.75, 0.1, 0.2])
+        with self.assertRaises(TypeError):
+            core.highlight_rolloff_oklab([0.75, 0.1, 0.2], start=0.5)
+        with self.assertRaises(TypeError):
+            core.highlight_rolloff_oklab([0.75, 0.1, 0.2], strength=1)
+
+    def test_extreme_legal_start_and_large_chroma_stay_finite(self):
+        start = np.nextafter(1.0, 0.0)
+        lab = [[start, 1e308, -1e308], [1, 1e308, -1e308]]
+        out = self.roll(lab, start=start)
+        self.assertTrue(np.all(np.isfinite(out)))
+        np.testing.assert_array_equal(out, [[start, 1e308, -1e308], [1, 0, 0]])
+
+    def test_near_white_residual_does_not_cancel_to_zero(self):
+        # At start=0, epsilon=2^-53. f(1-epsilon)=3*epsilon^2-2*epsilon^3.
+        lightness = np.nextafter(1.0, 0.0)
+        out = self.roll([lightness, 1, 0], start=0)
+        self.assertGreater(out[1], 0)
+        self.assertAlmostEqual(out[1] / (3 * 2.0**-106), 1, places=14)
+
+    def test_no_hidden_gamut_clipping_or_quantization(self):
+        out = self.roll([0.75, 1, -1])
+        np.testing.assert_array_equal(out, [0.75, 0.5, -0.5])
+        rgb = core.oklab_to_linear_srgb(out)
+        self.assertTrue(np.any((rgb < 0) | (rgb > 1)))
+        subtle = self.roll([0.75, 1e-6, 0])
+        self.assertEqual(subtle[1], 0.5e-6)
+
+    def test_color_core_pipeline_repeated_and_disabled_identity(self):
+        # Synthetic RGB lattice. No CLI replacement, output file or photo acceptance.
+        axis = np.array([0, 1, 32, 128, 254, 255], dtype=np.float64) / 255
+        encoded = np.stack(np.meshgrid(axis, axis, axis, indexing="ij"), axis=-1)
+        lab = core.linear_srgb_to_oklab(core.srgb_to_linear(encoded))
+        toned = core.contrast_oklab(lab, contrast=1.25, strength=1)
+        rolled = self.roll(toned)
+        np.testing.assert_array_equal(self.roll(toned), rolled)
+        self.assertTrue(np.any(rolled[..., 1:] != toned[..., 1:]))
+        np.testing.assert_array_equal(rolled[..., 0], toned[..., 0])
+        disabled = self.roll(core.contrast_oklab(lab, contrast=1.25, strength=0), strength=0)
+        after = core.linear_to_srgb(core.oklab_to_linear_srgb(disabled))
+        np.testing.assert_allclose(after, encoded, rtol=0, atol=2e-13)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
