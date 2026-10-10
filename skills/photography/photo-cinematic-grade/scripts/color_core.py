@@ -16,6 +16,7 @@
 # The plan gives some contrast values but not this equation. Visual acceptance and
 # full six-look integration remain pending; current CLI render is unchanged.
 from functools import wraps
+from math import remainder
 from numbers import Real
 
 import numpy as np
@@ -235,3 +236,121 @@ def highlight_rolloff_oklab(oklab, *, start, strength):
     chroma_axes = lab[..., 1:]
     chroma_axes[highlights] *= factor[..., None]
     return lab
+
+
+# Rebuilt plan 3.4 per-hue adjustment. NEW engineering window, not prototype code
+# or a confirmed six-look recipe. ALL creative parameters are required inputs.
+# w(t)=(1-t)^2*(1+2t): cubic Hermite from w(0)=1, w(1)=0, w_prime(0)=w_prime(1)=0.
+# The coefficients are derived boundary constraints, not fitted photographic data.
+HUE_BAND_ALGORITHM = "oklch-circular-hue-band-hermite-v1"
+
+
+def _scaled_sum_products(*products):
+    """Sum nonnegative products (or one signed product), scaling only at the end.
+
+    frexp/ldexp are exact binary exponent operations. This prevents an early
+    t*t or strength*weight underflow from erasing a representable final color.
+    Callers pass at most six factors per product, so the mantissa products and
+    integer exponent sums themselves cannot overflow or underflow.
+    """
+    terms = []
+    absent = np.iinfo(np.int32).min
+    for factors in products:
+        mantissa, exponent = np.frexp(factors[0])
+        for factor in factors[1:]:
+            other_mantissa, other_exponent = np.frexp(factor)
+            mantissa = mantissa * other_mantissa
+            exponent = exponent + other_exponent
+        terms.append((mantissa, exponent))
+    common = np.where(terms[0][0] != 0, terms[0][1], absent)
+    for mantissa, exponent in terms[1:]:
+        common = np.maximum(common, np.where(mantissa != 0, exponent, absent))
+    common = np.where(common == absent, 0, common)
+    total = np.zeros_like(terms[0][0], dtype=np.float64)
+    for mantissa, exponent in terms:
+        total = total + np.ldexp(mantissa, exponent - common)
+    return np.ldexp(total, common)
+
+
+@_finite_math
+def hue_band_adjust_oklch(oklch, *, center, width, hue_shift, chroma_scale, strength):
+    """Adjust a circular hue band without changing L or tinting exact neutrals.
+
+    Input (..., 3) is (Oklab L, chroma, hue degrees), L in [0,1], C >= 0.
+    center is periodic degrees; width is the support HALF-width in (0,180].
+    hue_shift is in [-180,180], chroma_scale >= 0 and strength in [0,1].
+    Every parameter is explicit. No guessed color-family or skin thresholds.
+
+    For circular distance d < width, t=d/width and a=strength*w(t):
+      C_out = C * ((1-a) + a*chroma_scale)
+      h_out = (h + a*hue_shift) modulo 360
+    L is copied. Neutral C=0, outside/edge pixels, disabled strength and identity
+    adjustments are exact independent copies. Chroma-only adjustments retain
+    the input hue representation; rotated hues are normalized to [0,360).
+    A resulting C=0 has undefined hue; its numeric hue need not be zero.
+
+    No I/O, gamut mapping, quantization, automatic look or skin detection.
+    Sequential calls act on the preceding output hue (order can matter).
+    Returned colors can be out of sRGB gamut and need downstream mapping/QA.
+    """
+    lch = _triples(oklch)
+    midpoint = remainder(_scalar(center, "center"), 360)
+    half_width = _scalar(width, "width")
+    shift = _scalar(hue_shift, "hue_shift")
+    gain = _scalar(chroma_scale, "chroma_scale")
+    s = _scalar(strength, "strength")
+    if not 0 < half_width <= 180:
+        raise ValueError("width must be in (0,180] degrees (support half-width)")
+    if not -180 <= shift <= 180:
+        raise ValueError("hue_shift must be in [-180,180] degrees")
+    if gain < 0:
+        raise ValueError("chroma_scale must be nonnegative")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    if np.any((lch[..., 0] < 0) | (lch[..., 0] > 1)):
+        raise ValueError("display-referred lightness must be in 0..1")
+    if np.any(lch[..., 1] < 0):
+        raise ValueError("OkLCh chroma must be nonnegative")
+    if s == 0 or (shift == 0 and gain == 1):
+        return lch
+    # Signed reduction preserves tiny negative angles instead of rounding them
+    # to 360. Reduce both operands before subtraction to avoid huge-angle overflow.
+    hue = np.fmod(lch[..., 2], 360)
+    hue = np.where(hue > 180, hue - 360, hue)
+    hue = np.where(hue < -180, hue + 360, hue)
+    delta = np.abs(hue - midpoint)
+    # Across +/-180, add the two distances to that seam. Subtracting a rounded
+    # delta from 360 would erase a representable narrow-window separation.
+    across_seam = (180 - np.abs(hue)) + (180 - abs(midpoint))
+    distance = np.minimum(delta, across_seam)
+    active = (distance < half_width) & (lch[..., 1] > 0)
+    # Divide only inside the support, keeping subnormal legal widths safe.
+    t = distance[active] / half_width
+    near_center = t <= 0.5
+    complement = t * t * (3 - 2 * t)
+    weight = (1 - t) ** 2 * (1 + 2 * t)
+    # Evaluate the smaller weight directly at each endpoint. Both stay bounded,
+    # and 1-w retains its quadratic tail even when w rounds to exactly one.
+    complement = np.where(near_center, complement, 1 - weight)
+    weight = np.where(near_center, 1 - complement, weight)
+    # Keep the small endpoint factors separate until combined with C/gain/shift.
+    # Even t*t can underflow while C*t*t is a perfectly representable value.
+    weight_edge = np.where(near_center, 1, 1 - t)
+    weight_curve = np.where(near_center, weight, 1 + 2 * t)
+    if gain != 1:
+        complement_edge = np.where(near_center, t, 1)
+        complement_curve = np.where(near_center, 3 - 2 * t, complement)
+        chroma = lch[..., 1][active]
+        # C*((1-s)+s*(1-w)+s*w*gain), with no subtractive cancellation or
+        # premature exponent loss. A truly unrepresentable final result fails.
+        lch[..., 1][active] = _scaled_sum_products(
+            (chroma, 1 - s),
+            (chroma, s, complement_edge, complement_edge, complement_curve),
+            (chroma, s, gain, weight_edge, weight_edge, weight_curve))
+    if shift != 0:
+        rotation = _scaled_sum_products((s, shift, weight_edge, weight_edge, weight_curve))
+        rotated = np.mod(hue[active] + rotation, 360)
+        # Remainder of a negative subnormal can round to 360. Canonicalize
+        # that circular endpoint to 0; this is not RGB/gamut clipping.
+        lch[..., 2][active] = np.where(rotated == 360, 0, rotated)
+    return lch

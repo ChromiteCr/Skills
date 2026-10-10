@@ -327,5 +327,236 @@ class HighlightRolloffTests(unittest.TestCase):
         np.testing.assert_allclose(after, encoded, rtol=0, atol=2e-13)
 
 
+
+
+class HueBandTests(unittest.TestCase):
+    # SYNTHETIC mathematical fixtures only; no photographs or confirmed look recipes.
+    # Centers, widths, shifts, gains, ramps and tolerances below are chosen to
+    # exercise analytic invariants. No test parameter is a recommended preset.
+    def adjust(self, lch, **overrides):
+        params = dict(center=0, width=64, hue_shift=64, chroma_scale=2, strength=1)
+        params.update(overrides)
+        return core.hue_band_adjust_oklch(lch, **params)
+
+    def test_hand_computed_window(self):
+        lch = [[0.5, 0.25, h] for h in (0, 16, 32, 48, 64, 80)]
+        # Cubic window weights: 1, 27/32, 1/2, 5/32, 0, 0.
+        expected = [[0.5, 0.5, 64], [0.5, 59/128, 70], [0.5, 3/8, 64],
+                    [0.5, 37/128, 58], [0.5, 0.25, 64], [0.5, 0.25, 80]]
+        np.testing.assert_array_equal(self.adjust(lch), expected)
+
+    def test_circular_seam_and_wrapped_rotation(self):
+        lch = [[0.5, 0.25, h] for h in (359, 0, 1, 2, 358)]
+        result = self.adjust(lch, width=2, hue_shift=20, chroma_scale=1)
+        np.testing.assert_array_equal(result[:, 2], [9, 20, 11, 2, 358])
+        np.testing.assert_array_equal(result[:, :2], np.asarray(lch)[:, :2])
+
+    def test_periodic_hues_and_center(self):
+        lch = [[0.5, 0.25, h] for h in (-1, 359, 719)]
+        for center in (-720, 0, 720):
+            result = self.adjust(lch, center=center, width=2, hue_shift=20, chroma_scale=1)
+            np.testing.assert_array_equal(result, [[0.5, 0.25, 9]] * 3)
+
+    def test_outside_band_exact_including_warm_subjects(self):
+        # Plan 3.4 supplies teal hue 225; widths here are SYNTHETIC, not a recipe.
+        lch = np.array([[0.5, 1e308, 62], [0.7, 0.2, 82], [0.2, 0.1, -298]])
+        out = self.adjust(lch, center=225, width=40)
+        np.testing.assert_array_equal(out, lch)
+        self.assertFalse(np.shares_memory(out, lch))
+
+    def test_zero_strength_exact_copy(self):
+        lch = np.array([[0.5, 0.25, -1], [0.8, 0.3, 720]])
+        out = self.adjust(lch, strength=0)
+        np.testing.assert_array_equal(out, lch)
+        self.assertFalse(np.shares_memory(out, lch))
+
+    def test_identity_adjustment_exact_copy(self):
+        lch = np.array([[0.5, 0.25, -1], [0.8, 0.3, 720]])
+        out = self.adjust(lch, hue_shift=0, chroma_scale=1)
+        np.testing.assert_array_equal(out, lch)
+        self.assertFalse(np.shares_memory(out, lch))
+
+    def test_separate_channel_invariants(self):
+        lch = np.array([[0.2, 0.25, 0], [0.8, 0.5, 32], [1, 0.1, 359]])
+        hue_only = self.adjust(lch, chroma_scale=1)
+        np.testing.assert_array_equal(hue_only[:, :2], lch[:, :2])
+        chroma_only = self.adjust(lch, hue_shift=0)
+        np.testing.assert_array_equal(chroma_only[:, [0, 2]], lch[:, [0, 2]])
+
+    def test_neutral_axis_is_not_tinted(self):
+        lch = np.array([[x, 0, h] for x in (0, 0.5, 1) for h in (0, 359, -360)])
+        np.testing.assert_array_equal(self.adjust(lch), lch)
+        tiny = self.adjust([0.5, 1e-100, 0])
+        self.assertEqual(tiny[1], 2e-100)  # No guessed near-neutral threshold.
+
+    def test_strength_is_weighted_angular_and_chroma_mix(self):
+        lch = [[0.5, 0.25, 0], [0.5, 0.25, 32]]
+        out = self.adjust(lch, strength=0.25)
+        np.testing.assert_array_equal(out, [[0.5, 0.3125, 16], [0.5, 0.28125, 40]])
+
+    def test_desaturation_and_negative_rotation(self):
+        result = self.adjust([[0.5, 0.25, 0], [0.5, 0.25, 32]],
+                             hue_shift=-64, chroma_scale=0)
+        np.testing.assert_array_equal(result, [[0.5, 0, 296], [0.5, 0.125, 0]])
+        # Synthetic boundary regressions, not photos or confirmed look parameters.
+        # Independent high-precision evaluation of 1-w=t^2*(3-2*t) must retain
+        # small residual chroma even when float64 rounds w itself to one.
+        from decimal import Decimal, localcontext
+        with localcontext() as context:
+            context.prec = 80
+            for chroma in (0.25, 1e308):
+                for hue in (-1e-9, 1e-9, 1e-12, -1e-162, 1e-162, 1e-200):
+                    with self.subTest(chroma=chroma, hue=hue):
+                        t = Decimal.from_float(abs(hue))
+                        expected = float(Decimal.from_float(chroma) * t*t * (3-2*t))
+                        out = self.adjust([0.5, chroma, hue], width=1,
+                                          hue_shift=0, chroma_scale=0)
+                        if expected > 0:
+                            self.assertGreater(out[1], 0)
+                        np.testing.assert_allclose(out[1], expected, rtol=2e-15, atol=0)
+                        np.testing.assert_array_equal(out[[0, 2]], [0.5, hue])
+
+    def test_window_is_symmetric_monotone_and_bounded(self):
+        distance = np.linspace(0, 64, 1001)
+        left = np.column_stack([np.full(1001, 0.5), np.ones(1001), -distance])
+        right = left.copy()
+        right[:, 2] = distance
+        a = self.adjust(left, hue_shift=0)[:, 1]
+        b = self.adjust(right, hue_shift=0)[:, 1]
+        np.testing.assert_allclose(a, b, rtol=0, atol=2e-15)
+        self.assertTrue(np.all(np.diff(b) <= 0))
+        self.assertTrue(np.all((b >= 1) & (b <= 2)))
+        self.assertEqual(b[0], 2)
+        self.assertEqual(b[-1], 1)
+
+    def test_window_zero_slope_at_center_and_edges(self):
+        # Finite differences are numerical test instrumentation, not grading values.
+        step = 1e-3
+        hues = [-step, 0, step, 64-step, 64, 64+step]
+        c = self.adjust([[0.5, 1, h] for h in hues], hue_shift=0)[:, 1]
+        for i, j in ((0, 1), (1, 2), (3, 4), (4, 5)):
+            self.assertLess(abs((c[j]-c[i])/step), 1e-5)
+
+    def test_shape_dtype_readonly_and_noncontiguous_inputs(self):
+        for shape in ((3,), (4, 3), (2, 4, 3)):
+            lch = np.full(shape, 0.25, dtype=np.float32)
+            before = lch.copy()
+            lch.setflags(write=False)
+            result = self.adjust(lch)
+            self.assertEqual(result.shape, shape)
+            self.assertEqual(result.dtype, np.float64)
+            self.assertFalse(np.shares_memory(result, lch))
+            np.testing.assert_array_equal(lch, before)
+        lch = np.full((4, 6, 3), 0.25)[:, ::2]
+        before = lch.copy()
+        self.adjust(lch)
+        np.testing.assert_array_equal(lch, before)
+
+    def test_invalid_coordinates_rejected(self):
+        for bad in (0.5, [0, 1], [], np.empty((0, 3)), [True]*3, ["0.5"]*3,
+                    [None]*3, [0.5, 1j, 0], [np.nan, 0, 0], [0.5, np.inf, 0],
+                    [0.5, 0.25, np.inf], [-0.01, 0, 0], [1.01, 0, 0], [0.5, -0.1, 0]):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.adjust(bad, strength=0)
+
+    def test_invalid_parameters_even_when_disabled(self):
+        common = (True, "1", [1], np.nan, np.inf, -np.inf)
+        extras = dict(center=(), width=(0, -1, 181), hue_shift=(-181, 181),
+                      chroma_scale=(-0.1,), strength=(-0.1, 1.1))
+        for key, bad_values in extras.items():
+            for bad in common + bad_values:
+                kwargs = dict(strength=0)
+                kwargs[key] = bad
+                with self.subTest(key=key, bad=repr(bad)), self.assertRaises(ValueError):
+                    self.adjust([0.5, 0.25, 0], **kwargs)
+
+    def test_all_creative_parameters_required(self):
+        params = dict(center=0, width=64, hue_shift=64, chroma_scale=2, strength=1)
+        for key in params:
+            subset = {name: value for name, value in params.items() if name != key}
+            with self.subTest(missing=key), self.assertRaises(TypeError):
+                core.hue_band_adjust_oklch([0.5, 0.25, 0], **subset)
+
+    def test_extreme_legal_parameters_without_false_overflow(self):
+        tiny = np.nextafter(0.0, 1.0)
+        lch = [[0.5, 0.25, 0], [0.5, 1e308, 90]]
+        out = self.adjust(lch, width=tiny, hue_shift=180, chroma_scale=1)
+        np.testing.assert_array_equal(out, [[0.5, 0.25, 180], [0.5, 1e308, 90]])
+        out = self.adjust([0.5, 1, 0], chroma_scale=1e-300, hue_shift=0)
+        self.assertEqual(out[1], 1e-300)  # Convex mix must not cancel tiny gain to 0.
+        out = self.adjust([0.5, 1e-308, 1e308], center=1e308, chroma_scale=1e308)
+        self.assertTrue(np.all(np.isfinite(out)))
+        self.assertAlmostEqual(out[1], 1, places=14)
+        out = self.adjust([0.5, 0.25, 180], width=180)
+        np.testing.assert_array_equal(out, [0.5, 0.25, 180])
+        # Synthetic narrow-window regressions at both possible reduction seams.
+        # Signed tiny angles must not first round to 360 and become the center.
+        cases = [(0, -2e-15, 1e-15), (0, 2e-15, 1e-15),
+                 (-2e-15, 0, 1e-15), (2e-15, 0, 1e-15),
+                 (360, -2e-15, 1e-15), (-360, 2e-15, 1e-15),
+                 (180, np.nextafter(-180.0, 0), 2e-14),
+                 (-180, np.nextafter(180.0, 0), 2e-14)]
+        for center, hue, width in cases:
+            with self.subTest(center=center, hue=hue, width=width):
+                source = [0.5, 0.25, hue]
+                out = self.adjust(source, center=center, width=width,
+                                  hue_shift=60, chroma_scale=2)
+                np.testing.assert_array_equal(out, source)
+        for hue in (-0.5e-15, 0.5e-15):
+            out = self.adjust([0.5, 0.25, hue], width=1e-15,
+                              hue_shift=60, chroma_scale=2)
+            self.assertEqual(out[1], 0.375)  # Half-window weight remains one half.
+        # A tiny strength times a large gain is representable; never round the
+        # strength/window product to zero before applying gain or hue shift.
+        from decimal import Decimal, localcontext
+        with localcontext() as context:
+            context.prec = 80
+            s = Decimal.from_float(tiny)
+            g = Decimal.from_float(1e308)
+            expected = float((1-s) + s/2 + s*g/2)
+            out = self.adjust([0.5, 1, 32], strength=tiny,
+                              hue_shift=0, chroma_scale=1e308)
+            self.assertEqual(out[1], expected)
+        out = self.adjust([0.5, 0.25, 0], center=32, strength=tiny,
+                          hue_shift=180, chroma_scale=1)
+        self.assertEqual(out[2], tiny * 90)
+
+    def test_negative_subnormal_rotation_stays_in_canonical_range(self):
+        # Synthetic float64 boundary, not a photo or a look coefficient.
+        tiny = np.nextafter(0.0, 1.0)
+        for shift, strength in ((-1, tiny), (-tiny, 1)):
+            out = self.adjust([0.5, 0.25, 0], hue_shift=shift,
+                              chroma_scale=1, strength=strength)
+            self.assertGreaterEqual(out[2], 0)
+            self.assertLess(out[2], 360)
+            self.assertEqual(out[2], 0)  # 360 rounded at the seam is the same hue.
+            np.testing.assert_array_equal(out[:2], [0.5, 0.25])
+
+    def test_actual_overflow_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self.adjust([0.5, 2, 0], chroma_scale=1e308)
+
+    def test_no_hidden_gamut_clip_or_quantization(self):
+        out = self.adjust([0.5, 1, 0], hue_shift=0)
+        self.assertEqual(out[1], 2)
+        rgb = core.oklab_to_linear_srgb(core.oklch_to_oklab(out))
+        self.assertTrue(np.any((rgb < 0) | (rgb > 1)))
+        self.assertEqual(self.adjust([0.5, 1e-6, 0], hue_shift=0)[1], 2e-6)
+
+    def test_pipeline_changes_selected_pixels_and_zero_path_round_trip(self):
+        # Synthetic RGB lattice, no photos and no replacement of CLI render.
+        axis = np.array([0, 1, 32, 128, 254, 255], dtype=np.float64) / 255
+        encoded = np.stack(np.meshgrid(axis, axis, axis, indexing="ij"), axis=-1)
+        lab = core.linear_srgb_to_oklab(core.srgb_to_linear(encoded))
+        lch = core.oklab_to_oklch(lab)
+        adjusted = self.adjust(lch)
+        np.testing.assert_array_equal(self.adjust(lch), adjusted)
+        self.assertTrue(np.any(adjusted != lch))
+        np.testing.assert_array_equal(adjusted[..., 0], lch[..., 0])
+        unchanged = self.adjust(lch, strength=0)
+        after = core.linear_to_srgb(core.oklab_to_linear_srgb(core.oklch_to_oklab(unchanged)))
+        np.testing.assert_allclose(after, encoded, rtol=0, atol=2e-13)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
