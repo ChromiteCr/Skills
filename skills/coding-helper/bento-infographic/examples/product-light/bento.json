@@ -26,27 +26,27 @@
   {
    "id": "skills",
    "kind": "stat",
-   "value": "62",
+   "value": "63",
    "label": "个技能",
    "weight": 2,
    "accent": true,
    "facts": [
     {
-     "text": "62 个 SKILL.md",
-     "source": "find skills -name SKILL.md，2026-10-08"
+     "text": "63 个 SKILL.md（含已废弃的 launch-summary-panel）",
+     "source": "find skills -name SKILL.md，2026-10-10"
     }
    ]
   },
   {
    "id": "cases",
    "kind": "stat",
-   "value": "63",
-   "label": "份测试用例",
+   "value": "429",
+   "label": "条测试用例",
    "weight": 1,
    "facts": [
     {
-     "text": "tests/cases 下 63 个用例文件（不算 README）",
-     "source": "ls tests/cases，2026-10-08"
+     "text": "tests/cases 下 63 个文件里共 429 条 Case（数 \"## Case\" 标题）",
+     "source": "grep -c '^## Case' tests/cases/*.md，2026-10-10"
     }
    ],
    "accent": true
@@ -132,7 +132,7 @@
    "facts": [
     {
      "text": "physics 下 17 个 SKILL.md",
-     "source": "find skills/physics -name SKILL.md，2026-10-08"
+     "source": "find skills/physics -name SKILL.md，2026-10-10"
     }
    ]
   },
@@ -147,7 +147,7 @@
  ],
  "dropped": [
   {
-   "text": "库版本号 0.23.0",
+   "text": "库版本号 0.24.0",
    "reason": "每次发版都会变，放进总结图很快过期"
   },
   {

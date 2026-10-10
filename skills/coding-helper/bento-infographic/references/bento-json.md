@@ -121,7 +121,7 @@
 
 ## 示例一：产品，16:9 浅色
 
-内容是本库自己的数字和产物（2026-10-08 现数）。主图是品名压在一张脚本画的图上（本库 README 徽章的蓝 #2f81f7 画的几层弧面，每层带亮边和投在下一层上的软影），`box_aspect` 1.8 让它按产品主图的大小排；同一个蓝做重点色，给全部大数字和图标（同一类元素要么都上，要么都不上）。九格放本库产物的截图或照片，截图都先裁到有信息的那一块；浅色截图在白格里看不出边的，换成深色版；截图的标签都在下，只有从下边出血的整页版面写 `label_pos: "top"`。纯文字格三格，图标格两格；`pptx` 写 `weight` 3，排 2.6u；量词写进标签开头（"62" / "个技能"）。画布取默认 3840×2160 的一半。和 `examples/product-light/bento.json` 相同，只是图片路径写成 `images/…`（那里是 `../images/…`）。深色版（`examples/product-dark/`）用同一个排版，公式片和组图换成深色版，大字一律纯白。
+内容是本库自己的数字和产物（2026-10-10 发版后的现数）。主图是品名压在一张脚本画的图上（本库 README 徽章的蓝 #2f81f7 画的几层弧面，每层带亮边和投在下一层上的软影），`box_aspect` 1.8 让它按产品主图的大小排；同一个蓝做重点色，给全部大数字和图标（同一类元素要么都上，要么都不上）。九格放本库产物的截图或照片，截图都先裁到有信息的那一块；浅色截图在白格里看不出边的，换成深色版；截图的标签都在下，只有从下边出血的整页版面写 `label_pos: "top"`。纯文字格三格，图标格两格；`pptx` 写 `weight` 3，排 2.6u；量词写进标签开头（"63" / "个技能"）；测试用例数的是用例条数（每个 skill 必有一个用例文件，数文件就和技能数重复了）。画布取默认 3840×2160 的一半。和 `examples/product-light/bento.json` 相同，只是图片路径写成 `images/…`（那里是 `../images/…`）。深色版（`examples/product-dark/`）用同一个排版，公式片和组图换成深色版，大字一律纯白。
 
 ```json
 {
@@ -136,8 +136,8 @@
   "seed": 0,
   "tiles": [
     {"id": "hero", "kind": "hero", "word": "Skills", "image": "images/skills-wallpaper.jpg", "fit": "cover", "box_aspect": 1.8, "weight": 3},
-    {"id": "skills", "kind": "stat", "value": "62", "label": "个技能", "weight": 2, "accent": true, "facts": [{"text": "62 个 SKILL.md", "source": "find skills -name SKILL.md，2026-10-08"}]},
-    {"id": "cases", "kind": "stat", "value": "63", "label": "份测试用例", "weight": 1, "facts": [{"text": "tests/cases 下 63 个用例文件（不算 README）", "source": "ls tests/cases，2026-10-08"}], "accent": true},
+    {"id": "skills", "kind": "stat", "value": "63", "label": "个技能", "weight": 2, "accent": true, "facts": [{"text": "63 个 SKILL.md（含已废弃的 launch-summary-panel）", "source": "find skills -name SKILL.md，2026-10-10"}]},
+    {"id": "cases", "kind": "stat", "value": "429", "label": "条测试用例", "weight": 1, "facts": [{"text": "tests/cases 下 63 个文件里共 429 条 Case（数 \"## Case\" 标题）", "source": "grep -c '^## Case' tests/cases/*.md，2026-10-10"}], "accent": true},
     {"id": "pptx", "kind": "word", "word": "pptx", "label": "动画导出", "weight": 3},
     {"id": "mathml", "kind": "word", "word": "MathML", "label": "原生公式", "weight": 2, "image": "images/keynote-formula-crop-light.png", "image_side": "right"},
     {"id": "specs", "kind": "ui", "image": "images/keynote-specs-crop-dark.png", "label": "规格一览页", "weight": 2, "fit": "contain"},
@@ -147,11 +147,11 @@
     {"id": "grade", "kind": "ui", "image": "images/coffee-compare.jpg", "label": "调色前后对比", "weight": 2, "fit": "contain"},
     {"id": "night", "kind": "photo", "image": "images/rocket-graded.jpg", "label": "夜景调色", "weight": 1},
     {"id": "series", "kind": "ui", "image": "images/series-grid-light.jpg", "label": "组图排版", "weight": 2, "fit": "contain"},
-    {"id": "physics", "kind": "icon", "icon": "atom", "label": "物理\n17 个技能", "weight": 2, "accent": true, "facts": [{"text": "physics 下 17 个 SKILL.md", "source": "find skills/physics -name SKILL.md，2026-10-08"}]},
+    {"id": "physics", "kind": "icon", "icon": "atom", "label": "物理\n17 个技能", "weight": 2, "accent": true, "facts": [{"text": "physics 下 17 个 SKILL.md", "source": "find skills/physics -name SKILL.md，2026-10-10"}]},
     {"id": "lyrics", "kind": "icon", "icon": "music-notes", "label": "歌词诊断", "weight": 1, "accent": true}
   ],
   "dropped": [
-    {"text": "库版本号 0.23.0", "reason": "每次发版都会变，放进总结图很快过期"},
+    {"text": "库版本号 0.24.0", "reason": "每次发版都会变，放进总结图很快过期"},
     {"text": "各分类的技能数（数学建模 9、学习规划 8、AI 使用 7、摄影 6、作词 5、社群活动 1）", "reason": "几格都写\"N 个技能\"读起来像清单；只留最大的物理一类写数字，其余换成具体的功能"},
     {"text": "31 个带自检的脚本", "reason": "和测试用例挨着放显得重复，图上留一个数"},
     {"text": "截止日倒排计划、AI 输出事实核查（两格图标）", "reason": "纯图标格只留两个，苹果样图每张 0–3 个；换成有图的组图排版"},

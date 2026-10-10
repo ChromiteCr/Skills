@@ -287,7 +287,7 @@
 | A | SF Pro 已并入可变字体，带光学尺寸轴：20pt 以下走 Text（字距放宽、笔画加重），以上走 Display（字距收紧） | [Apple Fonts](https://developer.apple.com/fonts/) |
 | A | Liquid Glass 是 WWDC 2025 发布的**系统 UI 材质**，是苹果专有的，**不出现在发布会的片子里**，只在软件演示录像中 | [WWDC 2025 报道](https://www.engadget.com/big-tech/wwdc-2025-ios-26-new-liquid-glass-design-and-everything-else-apple-announced-171718769.html) |
 | A | 拟物化（真实材质、产品下方倒影、厚投影）在 iOS 7（2013）被整体废除，至今十三年。现在再用一眼就是旧年份的味道 | [iOS 7 与拟物化的终结](https://applescoop.org/story/the-end-of-skeuomorphism-how-ios-7-changed-ui-design) |
-| B | bento 网格的构图规矩：一张片 8–12 格，超过 12 格构图垮掉；锚点格面积约为支撑格的两倍；格子里放数字而不是标题 | [bento 版式拆解](https://www.deck.gallery/blog/apple-bento-grid-breakdown/) |
+| C | bento 网格的构图规矩：一张片 8–12 格，超过 12 格构图垮掉；锚点格面积约为支撑格的两倍；格子里放数字而不是标题。**0.8.1 由 B 降为 C**：这是一篇博客的经验之谈，没有量过；苹果 2022–26 年的收尾总结图实测格数中位数 16、九成以上不少于 14 格（`bento-infographic/references/apple-measurements.md`），「超过 12 格就垮」和实物对不上 | [bento 版式拆解](https://www.deck.gallery/blog/apple-bento-grid-breakdown/) |
 | B | **bento 已经用滥**：2024 年后"每个 SaaS 落地页都默认用它"，设计圈批评其同质化。较好的做法是混合媒介、有意打破对齐 | [bento 实践指南](https://www.saasframe.io/blog/designing-bento-grids-that-actually-work-a-2026-practical-guide/) |
 | B | "one more thing" 自 2014 年 Apple Watch 之后基本停用；独角戏式的空台揭示被多人分段与预录片段取代 | [one more thing 清单](https://www.macworld.com/article/674643/every-one-more-thing-apple-has-ever-announced.html) |
 | B | Liquid Glass 上线后被批评可读性下降：文字与壁纸混在一起、半透明图标与背景糊成一片，被拿来类比 Windows Vista Aero | [对 Liquid Glass 的批评](https://medium.com/macoclock/apple-has-dressed-its-operating-systems-in-liquid-glass-551d1ef991b4) |

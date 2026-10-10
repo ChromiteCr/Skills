@@ -435,8 +435,10 @@ class PlanTests(unittest.TestCase):
         out = Path(tempfile.mkdtemp(prefix="bento-plan-"))
         code, text = self.run_plan(SPECS / "product-16x9-light.json", out)
         self.assertEqual(code, 0, text)
-        self.assertIn("格数 %d" % len(bs.load_spec(SPECS / "product-16x9-light.json")["tiles"]), text)
-        self.assertIn("62 / 个技能", text)
+        spec = bs.load_spec(SPECS / "product-16x9-light.json")
+        self.assertIn("格数 %d" % len(spec["tiles"]), text)
+        skills = next(t for t in spec["tiles"] if t["id"] == "skills")   # the example's numbers change with the library
+        self.assertIn("%s / %s" % (skills["value"], skills["label"]), text)
         self.assertTrue((out / "wireframe.png").exists())
 
     def test_bad_spec_reports_problems(self):

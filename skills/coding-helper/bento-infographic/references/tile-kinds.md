@@ -50,8 +50,8 @@
 - **样图**：48MP / Pro Fusion camera system；36 HRS / Battery life；3000 nits；5G；-500 to 9000 meters。
 
 ```json
-{"id": "cases", "kind": "stat", "value": "63", "label": "份测试用例", "weight": 1,
- "facts": [{"text": "tests/cases 下 63 个文件", "source": "ls tests/cases，2026-10-08"}]}
+{"id": "cases", "kind": "stat", "value": "429", "label": "条测试用例", "weight": 1,
+ "facts": [{"text": "tests/cases 下 63 个文件里共 429 条 Case", "source": "grep -c '^## Case' tests/cases/*.md，2026-10-10"}]}
 ```
 
 ## word 功能名

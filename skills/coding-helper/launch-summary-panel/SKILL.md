@@ -1,9 +1,9 @@
 ---
 name: launch-summary-panel
-description: 当使用者贴出产品资料、发布稿、规格表、卖点清单或网页摘录，说"做一张产品总结面板"、"生成发布会那种 summary slide"、"把这些卖点做成一张图"、"bento 风格的产品总览"时使用。分两步：先产出 panel-brief.md（定位、核心卖点、支撑卖点、数字锚点、信息分组、每条的来源或未确认标记、版式建议、舍弃项与原因），等使用者确认后再产出单文件 panel.html（16:9 横版、内联 CSS、bento 卡片布局、light/dark 双主题、适合截图）。只借鉴信息层级与面板结构，不复制任何厂商的资产、商标、截图或图标。不编造参数，无出处的数字标注或省略。
+description: 已废弃，改用 bento-infographic（发布会 bento 信息图）。原用途：当使用者贴出产品资料、发布稿、规格表、卖点清单或网页摘录，说"做一张产品总结面板"、"生成发布会那种 summary slide"、"把这些卖点做成一张图"、"bento 风格的产品总览"时使用。分两步：先产出 panel-brief.md（定位、核心卖点、支撑卖点、数字锚点、信息分组、每条的来源或未确认标记、版式建议、舍弃项与原因），等使用者确认后再产出单文件 panel.html（16:9 横版、内联 CSS、bento 卡片布局、light/dark 双主题、适合截图）。只借鉴信息层级与面板结构，不复制任何厂商的资产、商标、截图或图标。不编造参数，无出处的数字标注或省略。
 category: coding-helper/ui-design
-version: 0.1.1
-status: draft
+version: 0.1.2
+status: deprecated
 priority: P1
 compatible_agents:
   - claude-code
@@ -14,10 +14,12 @@ display_name: 产品总结面板
 outputs:
   - chat
 max_rounds: 20
-suggest_hint: 有一堆产品卖点要收拢？用「产品总结面板」先出策划稿再出一张 16:9 的 bento 总览
+suggest_hint: 已废弃。要把卖点或研究结果收成一张图，用「发布会 bento 信息图」
 ---
 
 # 产品总结面板 / Launch Summary Panel
+
+> **已废弃（0.1.2）**：改用 [`bento-infographic`](../bento-infographic/SKILL.md)。使用者点名要本 skill 时，说明一句，改用它。
 
 把一堆散落的产品资料，收成一张能直接截图用的 16:9 总结面板。
 
@@ -180,5 +182,6 @@ suggest_hint: 有一堆产品卖点要收拢？用「产品总结面板」先出
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.2 | 2026-10-10 | 废弃，由 `bento-infographic` 取代：它按苹果总结片的实测比例排版、用 Chrome 渲染并自检，先出清单再出图的两步走和事实校验规则已搬过去。本文件保留到删除那一版，不再维护 | patch |
 | 0.1.1 | 2026-09-26 | 模板与示例的小规格卡圆角 14px 改为 16px，与正文「卡片圆角 16–24px」一致；「不适用于」里要整套演示片时点名 `keynote-deck-builder`，落地页注明不在本库范围 | patch |
 | 0.1.0 | 2026-08-12 | 初始草稿，最小可用版本 | minor |

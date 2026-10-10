@@ -6,13 +6,13 @@ Index of all skills. Every skill must be registered here; validation enforces it
 登记格式：一行一个 skill，`| skill | 优先级 | 状态 | 版本 | 一句话用途 |`。
 未建成的 skill 状态写 `planned`，版本留 `—`。
 
-Library Version: `0.23.0`
+Library Version: `0.24.0`
 
 ---
 
 ## coding-helper — P0
 
-已建成的六个是界面、演示与视觉产物；低 token、可控、多 Agent 协作的编程工作流还在规划中（下表 planned 各行）。
+已建成的七个是界面、演示与视觉产物（其中 launch-summary-panel 已废弃）；低 token、可控、多 Agent 协作的编程工作流还在规划中（下表 planned 各行）。
 Built: interface, presentation and visual outputs. Planned: the token-efficient, multi-agent coding workflow (the `planned` rows).
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
@@ -20,9 +20,10 @@ Built: interface, presentation and visual outputs. Planned: the token-efficient,
 | `ui-design-system-builder` | P0 | draft | 0.1.1 | 从项目意象推出一套 token 与排版尺度，让界面不像模板 |
 | `maestrwave-ui-system` | P0 | draft | 0.1.1 | 直接套用 MaestrWave 那套深色衬线视觉，附可粘贴的 global.css 与组件层 |
 | `radio-quote-card` | P2 | draft | 0.1.1 | 名字＋内容＋主色生成车队无线电风格语录卡，单文件 800×1000，不带任何厂商徽标 |
-| `launch-summary-panel` | P1 | draft | 0.1.1 | 产品资料收成 16:9 bento 总结面板：先出策划稿再出单文件 HTML，数字必须有出处 |
-| `keynote-deck-builder` | P1 | draft | 0.8.0 | 描述／演讲稿／现有 PPT 做成发布会风格演示，也用于课堂、讲座与学术报告：先定场合与拍点再出片，一片一个概念，讲到才出现，课堂另出讲义；可导 PDF 与可编辑 pptx，pptx 带逐步出现、调暗、点名与 Morph 平滑切换；片上、备注与讲义避开 AI 腔词，有词表与 grep 自查；视觉对照苹果中文官网：纯色底、中文字距 0、字重封顶 600、重点色一片一处 |
-| `photo-spread-composer` | P2 | draft | 0.1.1 | 一组照片排成带状构图的展示版面：位置由带高方程解出，主次与分带留给判断，分辨率不足直接拦下；自己拍的 3–9 张按原顺序拼一页或长图走 `photo-series-layout` |
+| `launch-summary-panel` | P1 | deprecated | 0.1.2 | 已废弃，改用 `bento-infographic`。原用途：产品资料收成 16:9 bento 总结面板 |
+| `bento-infographic` | P1 | draft | 0.1.0 | 卖点或研究成果排成苹果发布会收尾那种总结图：先出内容清单和线框，脚本按苹果样图实测比例排版、用本机 Chrome 渲染并跑 19 项自检；任意画幅，研究模式带不确定度与小图表，数字都要有出处 |
+| `keynote-deck-builder` | P1 | draft | 0.8.1 | 描述／演讲稿／现有 PPT 做成发布会风格演示，也用于课堂、讲座与学术报告：先定场合与拍点再出片，一片一个概念，讲到才出现，课堂另出讲义；可导 PDF 与可编辑 pptx，pptx 带逐步出现、调暗、点名与 Morph 平滑切换；片上、备注与讲义避开 AI 腔词，有词表与 grep 自查；视觉对照苹果中文官网：纯色底、中文字距 0、字重封顶 600、重点色一片一处 |
+| `photo-spread-composer` | P2 | draft | 0.1.2 | 一组照片排成带状构图的展示版面：位置由带高方程解出，主次与分带留给判断，分辨率不足直接拦下；自己拍的 3–9 张按原顺序拼一页或长图走 `photo-series-layout` |
 | `coding-project-brief-builder` | P0 | planned | — | 收敛需求，产出项目 brief |
 | `architecture-planner` | P0 | planned | — | 规划架构与模块边界 |
 | `repo-map-compressor` | P0 | planned | — | 生成 repo map，压缩上下文 |

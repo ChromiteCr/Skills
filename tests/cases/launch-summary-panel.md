@@ -1,5 +1,7 @@
 # launch-summary-panel
 
+> 已废弃（0.1.2，2026-10-10），改用 `bento-infographic`，它的用例在 `tests/cases/bento-infographic.md`。这里的用例保留到删除这个 skill 的那一版。
+
 ## Case 1: 正常两阶段
 
 **输入 / Input**

@@ -2,7 +2,7 @@
 name: photo-spread-composer
 description: 当使用者说"把这些照片排成一版"、"做一张照片展示海报"、"仿报纸摄影版那种排版"、"这组照片怎么摆"、"做个 photo essay 的版面"时使用。输入一组照片加署名，分两步：先产出 spread-plan.md（分带、定主次、排序、每带的图注与署名、被舍弃的照片及原因），等确认后再产出单文件 spread.html（照片按需缩放并内联，可打印成 PDF）。这个 skill 不提供固定版式——它给的是带状构图的语法与协议，具体谁大谁小、分几带、怎么排由模型和使用者判断。每张照片必须有署名，分辨率不足会被拦下。只想把自己拍的 3–9 张按原顺序拼成一张长图、网格或一页 PDF，不要分带主次和署名时，用 photo-series-layout。
 category: coding-helper/ui-design
-version: 0.1.1
+version: 0.1.2
 status: draft
 priority: P2
 compatible_agents:
@@ -48,7 +48,7 @@ suggest_hint: 有一组照片要排版？用「照片版面」先定主次分带
 - 单张照片：写图注或作品说明 → 用 `photo-caption-writer`；加拍摄参数边框 → 用 `photo-exif-frame`；做成极简几何海报 → 用 `photo-poster-stylist`
 - 自己拍的 3–9 张，只想按原顺序拼成一张长图、网格或一页 PDF，不要分带主次、不逐带署名 → 用 `photo-series-layout`。
   反过来，要刊物或展板那样分带、定主次、每带带署名的版面，或者照片超过 9 张，才用这个 skill
-- 产品卖点收成一张图 → 用 `launch-summary-panel`
+- 产品卖点或研究结果收成一张总结图 → 用 `bento-infographic`
 - 整套演示 → 用 `keynote-deck-builder`
 - 要修图、调色、批量处理 → 这个 skill 只排版，不改动照片内容
 
@@ -299,5 +299,6 @@ h · [ Σ aᵢ + Σ 1/Sⱼ ] = W − (n−1)·g − Σ wₖ + Σ (mⱼ−1)·g /
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
+| 0.1.2 | 2026-10-10 | 分流改指 `bento-infographic`（`launch-summary-panel` 已废弃） | patch |
 | 0.1.1 | 2026-09-26 | 脚本改走共用 image_io：按 EXIF 方向转正（竖拍不再横躺、带高不再按横图算），保留 ICC、透明铺纸色，HEIC 与缺图给出可读提示；修模板注释里的占位字面量导致整版照片注入两次；改用 argparse 并补 --selftest；单张照片改指 photo-caption-writer / photo-exif-frame / photo-poster-stylist，补与 photo-series-layout 的判别句；注明 Pillow 依赖 | patch |
 | 0.1.0 | 2026-08-21 | 初始草稿。协议与语法分离，位置全部由带高方程解出，主次与分带留给判断 | minor |

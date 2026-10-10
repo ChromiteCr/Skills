@@ -1,7 +1,7 @@
 ---
 name: bento-infographic
 description: 当使用者说"做一张苹果发布会那种总结图""bento 图""把卖点、功能或研究成果排成一张格子图""产品亮点一图看完""做成竖版发小红书"时使用。先出内容清单和线框预览，确认后由脚本排版，用本机 Chrome 渲染成 PNG：主图居中，四周十几个圆角格，字号、格缝、圆角按苹果样图的实测比例换算，横版、竖版、任意比例都能排，渲染后自动跑 19 项自检。研究成果走研究模式：测量值带不确定度、样本数与条件，可放一张小图表。图上的数字必须能指回材料，没有出处的不放，或在图上标明未确认。不用苹果的商标、产品图、SF Symbols 和字体文件；不生成图片，图片由使用者提供。
-category: coding-helper
+category: coding-helper/ui-design
 version: 0.1.0
 status: draft
 priority: P1
@@ -145,7 +145,7 @@ python3 scripts/bento.py check bento.json out/layout-1.json --dir out/render
 - 英文：句首大写，1–7 个词（多数 2–4 个），最多 3 行。
 - 中文：最多 12 字、每行最多 11 字、最多 2 行，行尾不留单字。换行写在 `label` 里（`\n`），不交给浏览器折行；名字里的空格用不换行空格（"iPhone 18 Pro Max"）；汉字和拉丁字母、数字之间加空格，全角标点两边不加。
 - 最高级（"最长""首款"）只给最重要的一两格。
-- 数字连单位一起当画面（"48MP""36 小时"）；拉丁单位和数字同字号，中文单位缩到 0.45 倍。只是量词（个、份）时放进标签开头，从数字接着读下去（"62" / "个技能"），比缩小挂在数字旁更像苹果的"数字 + 名字"。
+- 数字连单位一起当画面（"48MP""36 小时"）；拉丁单位和数字同字号，中文单位缩到 0.45 倍。只是量词（个、份）时放进标签开头，从数字接着读下去（"63" / "个技能"），比缩小挂在数字旁更像苹果的"数字 + 名字"。
 - 写完跑 AI 腔词表（在仓库根目录）：`grep -nFf skills/coding-helper/keynote-deck-builder/references/ai-tone-words.txt bento.json`。命中的词逐条判断：删掉意思不变就删。
 
 中英好坏例子见 `references/label-grammar.md`。
@@ -237,4 +237,4 @@ python3 scripts/bento.py check bento.json out/layout-1.json --dir out/render
 
 | 版本 | 日期 | 变更 | 类型 |
 |---|---|---|---|
-| 0.1.0 | 2026-10-08 | 初版：样图测量、尺寸规格与模板、Chrome 渲染器、排版器、19 项自检、九种画幅、研究模式与小图表、可选抠图；取代 launch-summary-panel | minor |
+| 0.1.0 | 2026-10-10 | 初版：样图测量、尺寸规格与模板、Chrome 渲染器、排版器、19 项自检、九种画幅、研究模式与小图表、可选抠图；三份样例经独立评审 8.1 分（门槛 8）；取代 launch-summary-panel | minor |

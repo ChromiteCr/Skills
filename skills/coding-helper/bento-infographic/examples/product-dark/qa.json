@@ -73,7 +73,7 @@
    "id": "fonts",
    "pass": true,
    "value": {
-    "system": 86,
+    "system": 87,
     "fallback": 0,
     "other": 0
    },
@@ -132,7 +132,7 @@
   }
  ],
  "fonts": {
-  "system": 86,
+  "system": 87,
   "fallback": 0,
   "other": 0
  },

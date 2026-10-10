@@ -46,7 +46,7 @@ research 的 `stat` 可写 `n` 和 `condition`，画在标签下面一行，字�
 | `物理\n17 个技能` | 手写断行；数字和汉字之间有空格 |
 | `带动画导出` | 配在 `word` 格 `pptx` 下面，只写特点，名词短语 |
 | `自检\n54/55 项通过` | 两行，数量带出处；"54/55"与"项"之间有空格 |
-| `"value": "63", "label": "份测试用例"` | 量词放进标签开头，读成"63 份测试用例"；数字单独当画面 |
+| `"value": "429", "label": "条测试用例"` | 量词放进标签开头，读成"429 条测试用例"；数字单独当画面 |
 
 | 坏 | 问题 | 改成 |
 |---|---|---|
@@ -73,7 +73,7 @@ research 的 `stat` 可写 `n` 和 `condition`，画在标签下面一行，字�
 | `Automatically runs nineteen checks after each render finishes` | 8 个词，动词开头；`validate_spec` 报"超过 7 个" | `Built-in self-check` |
 | `Nine Canvas Ratios` | 每个词都大写 | `Nine canvas ratios` |
 | `Best-ever cinematic color grade` | 普通格用了最高级 | `Cinematic color grade` |
-| `Over 60 skills` | 数字取了整，对不上材料里的 62 | `stat` 格：`"value": "62"`，标签 `Skills`，`facts` 写出处 |
+| `Over 60 skills` | 数字取了整，对不上材料里的 63 | `stat` 格：`"value": "63"`，标签 `Skills`，`facts` 写出处 |
 
 ## AI 腔检查
 

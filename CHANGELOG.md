@@ -5,6 +5,15 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.24.0 — 2026-10-10
+
+新增 `bento-infographic` 0.1.0（draft），废弃 `launch-summary-panel`。Library 按新增 skill 记 MINOR，技能数 62 → 63（废弃的那个保留到删除那一版，仍计数）。
+
+- `bento-infographic`：卖点或研究成果排成苹果发布会收尾那种总结图。先出内容清单和线框，确认后由脚本排版、用本机 Chrome 渲染，再跑 19 项自检。所有尺寸是标签字号 u 的倍数，比例从六张苹果总结片上量出来；九种画幅都能排，研究模式带不确定度、样本数与条件和一张小图表；数字必须能指回材料。三份样例（产品浅色、产品深色、研究 3:4）经独立评审 8.1 分。附 74 条测试与 iPhone 18 Pro 对齐的调试样例（只在 `tests/fixtures/`，不进样例和打包）。
+- `launch-summary-panel` 0.1.2：标为 `deprecated`，description 与正文开头写明改用 `bento-infographic`。
+- `keynote-deck-builder` 0.8.1：要一张总结图时改指 `bento-infographic`；研究文件里「bento 一张片 8–12 格」降为 C 档并写明出处的问题，正文那条格数规则改成按投影字号说理。
+- `photo-spread-composer` 0.1.2：分流改指 `bento-infographic`。
+
 ## 0.23.0 — 2026-10-07
 
 新增 `photo-cinematic-grade` 0.1.0（draft），Library 按新增 skill 记 MINOR，技能数 61 → 62。
