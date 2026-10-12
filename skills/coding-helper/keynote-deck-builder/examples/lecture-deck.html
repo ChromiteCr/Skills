@@ -4,6 +4,7 @@
   物理内容是教科书上的标准结论；第 10 张的柱高按公式计算，不是实测数据。
   第 3 张是图片占位，换成你有权使用的照片后跑 scripts/inline_images.py。
   按键：→ / 空格 下一步 · ← 上一步 · P 讲者视图 · B 黑屏 · F 全屏
+  0.9.0：一张片一层字。原来垫在大字下面的那行说明都在讲者备注里（按 P 看）。
 -->
 <html lang="zh-CN" data-theme="dark">
 <head>
@@ -64,7 +65,8 @@
     font-optical-sizing: auto;
     /* 避头尾禁则：句号逗号不落行首，开括号不落行尾 */
     line-break: strict;
-    /* 自动在中西文之间插约 1/4 em，「30 天」这类间距不用手工调。
+    /* 漏打空格时自动在中西文之间补约 1/4 em；片上仍照「片上用词」第 2 条手打空格（「30 天」），
+       pptx 没有这个属性。
        2025 年 11 月起成为 baseline，老浏览器忽略此属性，不影响其余渲染。 */
     text-autospace: normal;
   }
@@ -117,12 +119,15 @@
   :lang(en) { --latin: 1; }
   .num     { font-size: 280px; line-height: 1;    font-weight: 600; letter-spacing: calc(-0.02em * var(--latin));
              font-variant-numeric: proportional-nums; }
-  /* 单位与数字分开定字号：「3 倍」的「倍」和 3 一样大，整片就重了 */
+  /* 单位与数字分开定字号：「3 倍」的「倍」和 3 一样大，整片就重了。
+     限定条件跟着数字走，和数字同一行：数字前的限定词（「最长」「平均」，或量的名字）写进 .pre，
+     数字后的单位（「小时视频播放」）写进 .unit，前后合计 8 字内：拉丁字母与符号两个算一个，
+     空格不算；数字连正负号四位时 6 字内 */
   .num .unit { font-size: 0.4em; margin-left: 0.06em; }
+  .num .pre  { font-size: 0.4em; margin-right: 0.06em; }
   .phrase  { font-size: 144px; line-height: 1.1;  font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
   .feature { font-size: 112px; line-height: 1.1;  font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
   .title   { font-size: 80px;  line-height: 1.15; font-weight: 600; letter-spacing: calc(-0.01em * var(--latin)); }
-  .sub     { font-size: 44px;  line-height: 1.4;  font-weight: 400; color: var(--muted); }
   .label   { font-size: 40px;  line-height: 1.3;  font-weight: 500; color: var(--muted); }
 
   .center { text-align: center; justify-items: center; }
@@ -131,6 +136,12 @@
 
   /* 未确认标记：片上必须看得见，不能只写在大纲里自己知道 */
   .unverified { display: inline-block; font-size: 40px; font-weight: 500; color: var(--muted); }
+
+  /* 出处行：来源、样本量、测试条件，24 字内（「n = 30 · 中期问卷」）。它是证据，不是说明，留在片上。
+     放左下，和「主张与证据」片的 .cite 同一位置（舞台内边距的左下角）；
+     居中的片上也不跟在数字下面，否则就是大字下面又垫了一行 */
+  .stage .source { position: absolute; left: 200px; bottom: 120px; z-index: 1;
+                   font-size: 40px; line-height: 1.3; color: var(--muted); text-align: left; }
 
   /* ── bento 网格：分层靠格子大小，不靠列表缩进 ────────── */
   .bento {
@@ -211,20 +222,18 @@
   .step  { display: grid; gap: 16px; align-content: start; padding-top: 32px; border-top: 1px solid var(--line); }
   .step .i { font-size: 40px; color: var(--faint); font-weight: 600; }
   .step .n { font-size: 60px; font-weight: 600; line-height: 1.1; }
-  .step .d { font-size: 40px; color: var(--muted); line-height: 1.35; }
+  /* 每一步只放名字。那一步做什么，讲的人说 */
 
   /* ── 双栏人物：分工、团队、职责 ──────────────────────── */
   .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
-  .role  { display: grid; gap: 28px; align-content: start; }
-  .role .who  { font-size: 64px; font-weight: 600; }
-  .role .what { font-size: 44px; color: var(--muted); line-height: 1.5; }
+  /* 名字和职责在同一行、同一字号：职责写成名词短语（「硬件」「识别算法」），不写成一句话 */
+  .role  { display: flex; gap: 0.5em; align-items: baseline; font-size: 64px; font-weight: 600; }
+  .role .what { color: var(--muted); }
 
   /* ── 时刻：一个具体到能拍成视频的场景 ─────────────────
-     比单句大字长、比说明小字大。内容主导时展开的每一点配一张。
-     判据：拍不成十秒视频的，就是形容词，不该占这张片。 */
+     比单句大字长，字号小一档。内容主导时展开的每一点配一张。片上只有这个场景，
+     这一点的名字由讲的人说。判据：拍不成十秒视频的，就是形容词，不该占这张片。 */
   .moment { font-size: 96px; line-height: 1.25; font-weight: 600; letter-spacing: calc(-0.012em * var(--latin)); }
-  .moment .lead { display: block; font-size: 44px; font-weight: 500; color: var(--muted);
-                  letter-spacing: 0; margin-bottom: 28px; }
 
   /* ── 信号汇入：左边几路输入，汇到右边一个结果 ──────────
      回答"它凭什么知道"。不是技术栈清单。 */
@@ -235,15 +244,13 @@
   .converge .arrow { font-size: 72px; color: var(--faint); line-height: 1; }
   .converge .out { display: grid; gap: 20px; }
   .converge .out .v { font-size: 88px; font-weight: 600; line-height: 1.1; color: var(--ink); }
-  .converge .out .d { font-size: 44px; color: var(--muted); line-height: 1.35; }
 
   /* ── 取舍：它故意不做什么 ─────────────────────────────
-     两三条并列。每条一行短句 + 一行为什么。不要退化成项目符号。 */
+     两三条并列，每条一个短句。为什么不做由讲的人说。不要退化成项目符号。 */
   .tradeoffs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 72px; }
   .tradeoff { display: grid; gap: 20px; align-content: start;
               padding-top: 30px; border-top: 1px solid var(--line); }
   .tradeoff .no  { font-size: 64px; font-weight: 600; line-height: 1.15; }
-  .tradeoff .why { font-size: 44px; color: var(--muted); line-height: 1.38; }
 
   /* ── 全黑过场：现场切视频或实机演示时停在这一张 ────────
      不要在这张片上放「演示视频播放位」这类占位框。占位框是给做片子的人看的，
@@ -317,12 +324,11 @@
   .proof { display: grid; place-items: center; min-height: 0; }
   .cite  { font-size: 40px; color: var(--muted); }
 
-  /* ── 概念：学科通行的术语，加一句定义 ──────────────────
-     定义 52px，版心 1520 ÷ 52 = 每行 29 字，一行最好，两行封顶。 */
+  /* ── 概念：学科通行的术语和它的符号 ────────────────────
+     片上只有术语和符号；定义由讲的人说，课堂另写进讲义（冗余原则）。 */
   .term   { font-size: 112px; line-height: 1.1; font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
   .term .sym { font-family: var(--math-font); font-style: italic; font-weight: 400;
                color: var(--muted); margin-left: 0.3em; }
-  .define { font-size: 52px; line-height: 1.35; color: var(--muted); }
 
   /* ── 公式：原生 MathML，不引任何公式库 ────────────────
      Chrome 109 起原生渲染 MathML Core；字体走系统自带的数学字体。
@@ -332,9 +338,6 @@
      所以大公式最多用两级；推演行里分式内不要再套上下标或分式。 */
   math { font-family: var(--math-font); }
   .eq { font-size: 120px; }
-  .terms { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px 72px; }
-  .terms .t { display: flex; gap: 18px; align-items: baseline; font-size: 44px; color: var(--muted); }
-  .terms .t math { font-size: 60px; color: var(--ink); }
   .derive { display: grid; gap: 30px; }
   .derive .row { display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 48px; align-items: center; }
   .derive math { font-size: 72px; justify-self: start; }
@@ -355,7 +358,8 @@
   .code .ln { display: block; white-space: pre; }
 
   /* ── 提问：真要听众作答的题 ───────────────────────────
-     只有这一类片允许问号。选项 2 到 4 个，每个 72px、8 字以内。
+     可以用问号。课堂与讲堂里问号只有两个例外：这一类，和引导问句（下一张片立刻用一句结论回答它）。
+     选项 2 到 4 个，每个 72px、8 字以内。
      选项是几栏字，上面一条细线，不做成带底色的按钮：那是答题 App 的样子。
      揭晓时正确选项换重点色（data-mark），其余不动。 */
   .kicker  { font-size: 44px; font-weight: 600; color: var(--muted); }
@@ -368,6 +372,7 @@
   /* ── 误解：标签先亮，改正在同一张片上揭晓 ─────────────
      误解不能单独以大字占一张片：只看到那张的人会把它记成对的。 */
   .myth, .fact { display: grid; gap: 18px; }
+  /* 「常见误解」标签要留：没有它，只看一眼的人会把误解当结论记住。正确说法揭晓时不再加标签 */
   .tag { font-size: 44px; font-weight: 600; color: var(--muted); }
   .myth .said, .fact .body { font-size: 80px; font-weight: 600; line-height: 1.2; letter-spacing: calc(-0.01em * var(--latin)); }
   .myth .said { color: var(--muted); text-decoration-thickness: 6px; }
@@ -424,12 +429,11 @@
     content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
     background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.72) 32%, rgba(0,0,0,0) 64%);
   }
-  /* 离底 96px 起，可用高度约 249px：一行 80px 标题加一行 44px 小字，还留一行的余量 */
+  /* 离底 96px 起，可用高度约 249px：一行 80px 的字，不再垫小字 */
   .stage.bleed .overlay {
     position: absolute; left: 200px; right: 200px; bottom: 96px; z-index: 2;
     display: grid; gap: 18px; color: #fff;
   }
-  .stage.bleed .overlay .sub { color: rgba(255, 255, 255, 0.78); }
   .credit { position: absolute; z-index: 2; right: 48px; bottom: 28px;
             font-size: 40px; color: rgba(255, 255, 255, 0.78); }
 
@@ -488,6 +492,8 @@
     .chrome, .blank { display: none !important; }
     /* 无头打印时脚本不会跑到每一片，所以在这里强制显示所有步骤 */
     [data-build] { opacity: 1 !important; transform: none !important; }
+    /* 答案也印出来：正确选项印成重点色。课前要发的 PDF，先去掉正确选项上的 data-mark 再导 */
+    .choice[data-mark] { color: var(--accent) !important; }
     .deck { height: auto; overflow: visible; }
     .slide { height: 1080px; width: 1920px; break-after: page; }
     /* 打印时 1:1，回到普通流，不缩放不偏移 */
@@ -502,11 +508,10 @@
 <div class="deck" id="deck">
 
   <!-- 1 · 标题卡 -->
-  <section class="slide"><div class="stage center stack">
+  <section class="slide"><div class="stage center">
     <div class="phrase">单摆</div>
-    <div class="sub">决定周期的两个量</div>
   </div>
-  <aside class="notes">十五分钟。结束时，听众能说出单摆周期只跟摆长和重力有关，并会用公式估算。</aside></section>
+  <aside class="notes">十五分钟，讲决定周期的是哪两个量。结束时，听众能说出小角度下，单摆周期只跟摆长和重力加速度有关，并会用公式估算。</aside></section>
 
   <!-- 2 · 路线 -->
   <section class="slide"><div class="stage center stack">
@@ -525,16 +530,15 @@
     </div>
     <div class="overlay">
       <div class="title">摆钟靠一根摆计时</div>
-      <div class="sub">钟准不准，看它来回一次的时间稳不稳</div>
     </div>
     <div class="credit">示例占位 · 放图后写明来源</div>
   </div>
-  <aside class="notes">问一句：为什么一根摆能拿来计时？它来回一次的时间得足够稳定才行。</aside></section>
+  <aside class="notes">问一句：为什么一根摆能拿来计时？钟准不准，看它来回一次的时间稳不稳。</aside></section>
 
   <!-- 4 · 提问：预测。先不揭晓，第 13 张回来 -->
   <section class="slide"><div class="stage center stack">
-    <div class="kicker">先预测</div>
-    <div class="title">同一根绳，摆锤换成两倍重<br>周期会怎样？</div>
+    <div class="kicker">预测题</div>
+    <div class="title">同一根绳，摆锤换成 2 倍重<br>周期会怎样？</div>
     <div class="choices">
       <div class="choice">变短</div>
       <div class="choice">不变</div>
@@ -552,65 +556,60 @@
     </div>
   </div></section>
 
-  <!-- 6 · 四个量：名字先于机制 -->
+  <!-- 6 · 量：名字先于机制。写成「名称 符号（单位）」 -->
   <section class="slide"><div class="stage stack">
-    <div class="title">四个量</div>
+    <div class="title">可能影响周期的量</div>
     <div class="specs" style="grid-template-columns: repeat(2, 1fr)">
-      <div class="spec" data-build="1"><div class="k">摆锤质量</div><div class="v"><math><mi>m</mi></math></div></div>
-      <div class="spec" data-build="2"><div class="k">摆长，悬点到摆锤中心</div><div class="v"><math><mi>L</mi></math></div></div>
-      <div class="spec" data-build="3"><div class="k">重力加速度</div><div class="v"><math><mi>g</mi></math></div></div>
-      <div class="spec" data-build="4"><div class="k">摆角，偏离竖直的角度</div><div class="v"><math><mi>θ</mi></math></div></div>
+      <div class="spec" data-build="1"><div class="k">摆锤质量</div><div class="v"><math><mi>m</mi></math>（kg）</div></div>
+      <div class="spec" data-build="2"><div class="k">摆长</div><div class="v"><math><mi>L</mi></math>（m）</div></div>
+      <div class="spec" data-build="3"><div class="k">重力加速度</div><div class="v"><math><mi>g</mi></math>（m/s²）</div></div>
+      <div class="spec" data-build="4"><div class="k">摆角</div><div class="v"><math><mi>θ</mi></math>（rad）</div></div>
     </div>
   </div>
-  <aside class="notes">先把四个量的名字交代清楚，推导时听众就不用一边认符号一边跟思路。</aside></section>
+  <aside class="notes">先把四个量的名字交代清楚，推导时听众就不用一边认符号一边跟思路。摆长量到摆锤中心；摆角是偏离竖直的角度，用弧度。</aside></section>
 
-  <!-- 7 · 推演：质量约掉 -->
+  <!-- 7 · 推演：质量约去 -->
   <section class="slide"><div class="stage stack">
-    <div class="claim">质量在方程里约掉了</div>
+    <div class="claim">质量在运动方程中约去</div>
     <div class="derive">
       <div class="row" data-build="1" data-dim="2">
         <math><mrow><mi>m</mi><mo>&#x2062;</mo><mi>L</mi><mo>&#x2062;</mo><mover accent="true"><mi>θ</mi><mo>¨</mo></mover><mo>=</mo><mo form="prefix">−</mo><mi>m</mi><mo>&#x2062;</mo><mi>g</mi><mspace width="0.17em"/><mi>sin</mi><mo>&#x2061;</mo><mspace width="0.12em"/><mi>θ</mi></mrow></math>
-        <div class="why">切向的牛顿第二定律<br>拉力沿半径，不参与</div>
+        <div class="why">牛顿第二定律</div>
       </div>
       <div class="row" data-build="2" data-dim="3">
         <math><mrow><mi>L</mi><mo>&#x2062;</mo><mover accent="true"><mi>θ</mi><mo>¨</mo></mover><mo>=</mo><mo form="prefix">−</mo><mi>g</mi><mspace width="0.17em"/><mi>sin</mi><mo>&#x2061;</mo><mspace width="0.12em"/><mi>θ</mi></mrow></math>
-        <div class="why">惯性质量等于引力质量</div>
+        <div class="why">惯性质量 = 引力质量</div>
       </div>
       <div class="row" data-build="3">
         <math><mrow><mover accent="true"><mi>θ</mi><mo>¨</mo></mover><mo>=</mo><mo form="prefix">−</mo><mfrac><mi>g</mi><mi>L</mi></mfrac><mo>&#x2062;</mo><mi>θ</mi></mrow></math>
-        <div class="why">小角度下 sin θ ≈ θ</div>
+        <div class="why">小角度：sin θ ≈ θ</div>
       </div>
     </div>
     <div class="cite" data-build="2">两种质量相等：Touboul 等 2022</div>
   </div>
-  <aside class="notes">第二步是整节课的关键：约掉的两个 m 来历不同，一个来自 F = ma，一个来自重力。它们相等是实验结论，不是定义。</aside></section>
+  <aside class="notes">第一步只列切向：拉力沿半径，不参与。第二步是整节课的关键：约去的两个 m 来历不同，一个来自 F = ma，一个来自重力。它们相等是实验结论，不是定义。</aside></section>
 
   <!-- 8 · 概念：周期。符号 T 与下一张公式里的 T 配对 -->
-  <section class="slide"><div class="stage center stack">
+  <section class="slide"><div class="stage center">
     <div class="term">周期<span class="sym" data-morph="sym-T">T</span></div>
-    <div class="define">来回摆动一次所用的时间</div>
   </div>
-  <aside class="notes">上一张的方程是简谐振动的形式，它来回一次的时间就是周期。</aside></section>
+  <aside class="notes">周期：来回摆动一次所用的时间，单位是秒。上一张的方程是简谐振动的形式，它来回一次的时间就是周期。</aside></section>
 
-  <!-- 9 · 公式 -->
-  <section class="slide"><div class="stage center stack">
+  <!-- 9 · 公式：近似式用 ≈，适用条件写在式子同一行 -->
+  <section class="slide"><div class="stage center">
     <math display="block" class="eq">
       <mrow>
-        <mi data-morph="sym-T">T</mi><mo>=</mo><mn>2</mn><mi>π</mi>
+        <mi data-morph="sym-T">T</mi><mo>≈</mo><mn>2</mn><mi>π</mi>
         <msqrt><mfrac><mi data-mark="1-1">L</mi><mi data-mark="2-2">g</mi></mfrac></msqrt>
+        <mspace width="0.8em"/><mo stretchy="false">(</mo><mi>θ</mi><mo>≪</mo><mn>1</mn><mo stretchy="false">)</mo>
       </mrow>
     </math>
-    <div class="terms">
-      <div class="t" data-build="1"><math><mi>L</mi></math>摆长</div>
-      <div class="t" data-build="2"><math><mi>g</mi></math>重力加速度</div>
-    </div>
-    <div class="sub">小角度下成立，式子里没有质量</div>
   </div>
-  <aside class="notes">单位核对：根号里是米除以米每二次方秒，开方后是秒。</aside></section>
+  <aside class="notes">讲到摆长、重力加速度时，L 与 g 依次换色。式子里没有质量。单位核对：根号里是米除以米每二次方秒，开方后是秒。</aside></section>
 
   <!-- 10 · 主张与证据：按公式算出来的，不是实测 -->
   <section class="slide"><div class="stage evidence">
-    <div class="claim">摆长变成四倍，周期只变成两倍</div>
+    <div class="claim">摆长变成 4 倍，周期只变成 2 倍</div>
     <div class="proof">
       <div style="width: 1100px; display: grid; gap: 8px">
         <div class="chart" style="--n: 3; height: 500px">
@@ -621,7 +620,7 @@
         <div class="zero">周期（秒）· 基线为 0 · 横轴为摆长</div>
       </div>
     </div>
-    <div class="cite">按 T = 2π√(L/g) 计算，g 取 9.8 m/s²，非实测</div>
+    <div class="cite">按 T ≈ 2π√(L/g) 计算，g 取 9.8 m/s²，非实测</div>
   </div>
   <aside class="notes">柱高与周期成正比，从零起。摆长每乘四，周期乘二。</aside></section>
 
@@ -636,36 +635,35 @@
 
   <!-- 12 · 推演：例题 -->
   <section class="slide"><div class="stage stack">
-    <div class="claim">一米长的摆，周期约两秒</div>
+    <div class="claim">例：L = 1.0 m，T ≈ 2.0 s</div>
     <div class="derive">
       <div class="row" data-build="1" data-dim="2">
-        <math><mrow><mi>T</mi><mo>=</mo><mn>2</mn><mi>π</mi><msqrt><mfrac><mi>L</mi><mi>g</mi></mfrac></msqrt></mrow></math>
-        <div class="why">小角度下的周期公式</div>
+        <math><mrow><mi>T</mi><mo>≈</mo><mn>2</mn><mi>π</mi><msqrt><mfrac><mi>L</mi><mi>g</mi></mfrac></msqrt></mrow></math>
+        <div class="why">周期公式（小角度）</div>
       </div>
       <div class="row" data-build="2" data-dim="3">
         <math><mrow><mo>=</mo><mn>2</mn><mi>π</mi><msqrt><mfrac><mrow><mn>1.0</mn><mtext>&#x2009;m</mtext></mrow><mrow><mn>9.8</mn><mtext>&#x2009;m/s²</mtext></mrow></mfrac></msqrt></mrow></math>
-        <div class="why">代入 L = 1.0 m<br>g = 9.8 m/s²</div>
+        <div class="why">代入 L 与 g</div>
       </div>
       <div class="row" data-build="3">
         <math><mrow><mo>≈</mo><mn>2.0</mn><mtext>&#x2009;s</mtext></mrow></math>
-        <div class="why">两位有效数字<br>与输入一致</div>
+        <div class="why">两位有效数字</div>
       </div>
     </div>
   </div>
-  <aside class="notes">算得 2.007 秒，报 2.0 秒：输入只有两位有效数字。</aside></section>
+  <aside class="notes">代入 L = 1.0 m、g = 9.8 m/s²，算得 2.007 秒，报 2.0 秒：输入只有两位有效数字。</aside></section>
 
   <!-- 13 · 提问：回到第 4 张的预测，揭晓 -->
   <section class="slide"><div class="stage center stack">
-    <div class="kicker">回到开头那道题</div>
-    <div class="title">同一根绳，摆锤换成两倍重<br>周期会怎样？</div>
+    <div class="kicker">回到预测题</div>
+    <div class="title">同一根绳，摆锤换成 2 倍重<br>周期会怎样？</div>
     <div class="choices">
       <div class="choice" data-dim="1">变短</div>
       <div class="choice" data-mark="1">不变</div>
       <div class="choice" data-dim="1">变长</div>
     </div>
-    <div class="sub" data-build="1">质量在方程里约掉了</div>
   </div>
-  <aside class="notes">先问刚才押“变短”的同学现在怎么想，再揭晓。</aside></section>
+  <aside class="notes">先问刚才押「变短」的同学现在怎么想，再揭晓；为什么不变，讲义「两道题的答案」里有。</aside></section>
 
   <!-- 14 · 误解 -->
   <section class="slide"><div class="stage stack">
@@ -674,33 +672,31 @@
       <div class="said" data-mark="1">摆锤越重，摆得越快</div>
     </div>
     <div class="fact" data-build="1">
-      <div class="tag">实际上</div>
       <div class="body">小角度下，周期与质量无关</div>
     </div>
   </div>
   <aside class="notes">这个直觉来自“重的东西掉得快”。先承认它符合日常经验（空气阻力对轻的物体影响更大），再讲理想单摆里它为什么不成立。</aside></section>
 
-  <!-- 15 · 提问：检查 -->
+  <!-- 15 · 提问：概念题 -->
   <section class="slide"><div class="stage center stack">
-    <div class="kicker">检查一下</div>
+    <div class="kicker">概念题</div>
     <div class="title">摆长变成 4 倍，周期变成几倍？</div>
     <div class="choices">
       <div class="choice" data-mark="1">2 倍</div>
       <div class="choice" data-dim="1">4 倍</div>
       <div class="choice" data-dim="1">16 倍</div>
     </div>
-    <div class="sub" data-build="1">周期与摆长的平方根成正比</div>
   </div>
-  <aside class="notes">选 16 倍的同学把平方根当成了平方，这是最常见的错法。</aside></section>
+  <aside class="notes">揭晓后讲依据，讲义「两道题的答案」里有；先问选 16 倍的同学是怎么算的。</aside></section>
 
   <!-- 16 · 回顾：先给提示，再揭晓 -->
   <section class="slide"><div class="stage stack">
     <div class="title">回顾</div>
     <div class="recap">
       <div class="item"><div class="q">周期</div><div class="a" data-build="1">来回摆动一次的时间</div></div>
-      <div class="item"><div class="q">质量</div><div class="a" data-build="2">在方程里约掉，不影响周期</div></div>
-      <div class="item"><div class="q">摆长</div><div class="a" data-build="3">周期随它的平方根变化</div></div>
-      <div class="item"><div class="q">条件</div><div class="a" data-build="4">以上都在小角度下成立</div></div>
+      <div class="item"><div class="q">质量</div><div class="a" data-build="2">不影响周期</div></div>
+      <div class="item"><div class="q">摆长</div><div class="a" data-build="3"><math><mi>T</mi><mo>∝</mo><msqrt><mi>L</mi></msqrt></math></div></div>
+      <div class="item"><div class="q">条件</div><div class="a" data-build="4">小角度，<math><mi>θ</mi><mo>≪</mo><mn>1</mn></math></div></div>
     </div>
   </div>
   <aside class="notes">每一条先请听众说，再按键揭晓。</aside></section>

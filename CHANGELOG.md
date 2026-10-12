@@ -5,6 +5,13 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.24.1 — 2026-10-11
+
+`keynote-deck-builder` 升到 0.9.0。Library 层只动了索引与 README 的描述，按规则记 PATCH；skill 本身的改动记在它自己的 `CHANGELOG.md`。要点：
+
+- 一张片一层字：大字下面不再垫一行说明小字，说明写进讲者备注；数字的限定词与单位和数字同一行，来源与样本量写进左下的出处行；导 pptx 时旧片单里的说明自动挪进备注并提示
+- 用词对照苹果发布会的官方简中字幕与 apple.com.cn，课堂片对照斯坦福、MIT 九套课件：功能名是名字、比较写对象、课堂活动标签与「名称 符号（单位）」
+
 ## 0.24.0 — 2026-10-10
 
 新增 `bento-infographic` 0.1.0（draft），废弃 `launch-summary-panel`。Library 按新增 skill 记 MINOR，技能数 62 → 63（废弃的那个保留到删除那一版，仍计数）。

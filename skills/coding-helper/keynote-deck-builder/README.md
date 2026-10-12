@@ -84,12 +84,12 @@ keynote-deck-builder/
 |---|---|---|
 | HTML | 技能直接生成 | 默认。逐步出现、跨片连续过渡、讲者视图都在这里 |
 | 内联版 HTML | `python3 scripts/inline_images.py deck.html` | 放了真图以后，发给别人之前 |
-| PDF | `./scripts/export_pdf.sh deck.html` | 要发给别人，或者现场怕浏览器出岔子。**所有步骤都会印出来，包括提问片的答案** |
+| PDF | `./scripts/export_pdf.sh deck.html` | 要发给别人，或者现场怕浏览器出岔子。**所有步骤都会印出来，包括提问片的答案**（正确选项印成重点色） |
 | pptx | `python3 scripts/outline_to_pptx.py deck.json` | 要在 Keynote 或 PowerPoint 里继续改 |
 
 pptx **带动画**：讲到才出现、讲过的调暗、讲到的换重点色、相邻两片的同一个东西用 Morph 平移过去，
 时长和 HTML 一样。这些是直接写 PresentationML 做的，写法照 PowerPoint 自己存出来的文件抄。
-加 `--static` 关掉全部动画（检查题会拆成题目与揭晓两张），要把文件发出去让人自己翻时用。
+加 `--static` 关掉全部动画（给了答案的提问片会拆成题目与揭晓两张），要把文件发出去让人自己翻时用。
 
 它仍然**会丢东西**：底色只能纯色，公式与推演的式子退成纯文本要重排，图表不做，
 误解片的划线改成调暗。**Keynote 导入后动画剩多少没有验证过。**
@@ -109,7 +109,7 @@ open examples/lecture-deck.html
 第二份是课堂，第 7 张推演逐行出现，第 8 张到第 9 张的符号 T 会移过去。
 
 同一堂课的 pptx：`python3 scripts/outline_to_pptx.py examples/lecture-deck.json`，
-17 张片里 8 张分步、共 19 次点击，第 9 张进入时是 Morph。
+17 张片里 7 张分步、共 17 次点击，第 9 张进入时是 Morph。
 
 ## 几条硬规则
 
