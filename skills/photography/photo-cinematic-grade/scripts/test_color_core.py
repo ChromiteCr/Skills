@@ -558,5 +558,212 @@ class HueBandTests(unittest.TestCase):
         np.testing.assert_allclose(after, encoded, rtol=0, atol=2e-13)
 
 
+
+
+class SplitToneTests(unittest.TestCase):
+    # SYNTHETIC mathematical fixtures, not photographs or confirmed recipes.
+    # Origin: analytic quartic lobe and polar-vector identities. All sample
+    # balance/chroma/strength values and tolerances are test instrumentation.
+    # Bill has not confirmed these as photographic look parameters.
+    def tone(self, lab, **overrides):
+        params = dict(shadow_hue=0, shadow_chroma=0.25,
+                      highlight_hue=90, highlight_chroma=0.5,
+                      balance=0.5, strength=1)
+        params.update(overrides)
+        return core.split_tone_oklab(lab, **params)
+
+    def test_hand_computed_tone_lobes(self):
+        lab = np.zeros((9, 3))
+        lab[:, 0] = np.arange(9) / 8
+        expected = lab.copy()
+        # w(t)=16*t*t*(1-t)*(1-t): 0,9/16,1,9/16,0.
+        expected[1:4, 1] = [9/64, 1/4, 9/64]
+        expected[5:8, 2] = [9/32, 1/2, 9/32]
+        np.testing.assert_allclose(self.tone(lab), expected, rtol=0, atol=4e-17)
+
+    def test_strength_scales_added_tint_only(self):
+        lab = np.array([[0.25, -0.125, 0.0625], [0.75, 0.125, -0.25]])
+        expected = [[0.25, -0.0625, 0.0625], [0.75, 0.125, -0.125]]
+        np.testing.assert_array_equal(self.tone(lab, strength=0.25), expected)
+
+    def test_black_balance_white_are_exact_independent_copies(self):
+        lab = np.array([[0, 0, 0], [0.5, 0.2, -0.1], [1, 0, 0]])
+        out = self.tone(lab, shadow_chroma=1e308, highlight_chroma=1e308)
+        np.testing.assert_array_equal(out, lab)
+        self.assertFalse(np.shares_memory(out, lab))
+
+    def test_zero_strength_and_zero_chroma_are_exact(self):
+        lab = np.array([[0.25, 1e308, -1e308], [0.75, 0.2, -0.1]])
+        for overrides in (dict(strength=0), dict(shadow_chroma=0, highlight_chroma=0)):
+            out = self.tone(lab, **overrides)
+            np.testing.assert_array_equal(out, lab)
+            self.assertFalse(np.shares_memory(out, lab))
+
+    def test_shadow_and_highlight_controls_are_independent(self):
+        lab = np.array([[0.25, 0.2, -0.1], [0.75, -0.3, 0.1]])
+        shadow = self.tone(lab, highlight_chroma=0)
+        highlight = self.tone(lab, shadow_chroma=0)
+        np.testing.assert_array_equal(shadow[1], lab[1])
+        np.testing.assert_array_equal(highlight[0], lab[0])
+        self.assertGreater(shadow[0, 1], lab[0, 1])
+        self.assertGreater(highlight[1, 2], lab[1, 2])
+
+    def test_balance_moves_peaks_without_changing_lightness(self):
+        lab = np.zeros((3, 3))
+        lab[:, 0] = [0.125, 0.25, 0.625]
+        expected = [[0.125, 0.25, 0], [0.25, 0, 0], [0.625, 0, 0.5]]
+        out = self.tone(lab, balance=0.25)
+        np.testing.assert_allclose(out, expected, rtol=0, atol=4e-17)
+        np.testing.assert_array_equal(out[:, 0], lab[:, 0])
+
+    def test_plan_hues_tint_neutrals_in_opposite_tone_regions(self):
+        # 225/62 degrees are plan hues; chroma/balance here remain SYNTHETIC.
+        lab = [[0.25, 0, 0], [0.75, 0, 0]]
+        out = core.oklab_to_oklch(self.tone(lab, shadow_hue=225, highlight_hue=62))
+        np.testing.assert_allclose(out, [[0.25, 0.25, 225], [0.75, 0.5, 62]],
+                                   rtol=0, atol=3e-14)
+
+    def test_periodic_hues_and_large_finite_hues(self):
+        lab = [[0.25, 0, 0], [0.75, 0, 0]]
+        for offset in (-720, 0, 720):
+            np.testing.assert_array_equal(self.tone(lab, shadow_hue=offset,
+                                                  highlight_hue=90+offset), self.tone(lab))
+        from math import remainder
+        np.testing.assert_array_equal(
+            self.tone(lab, shadow_hue=1e308, highlight_hue=-1e308),
+            self.tone(lab, shadow_hue=remainder(1e308, 360),
+                      highlight_hue=remainder(-1e308, 360)))
+
+    def test_smooth_zero_slopes_at_black_balance_and_white(self):
+        # Test step/tolerance do not define a photographic parameter.
+        h = 1e-7
+        points = [0, h, 0.5-h, 0.5, 0.5+h, 1-h, 1]
+        out = self.tone([[x, 0, 0] for x in points])[:, 1:]
+        for left, right in ((0, 1), (2, 3), (3, 4), (5, 6)):
+            self.assertLess(np.linalg.norm(out[right]-out[left])/h, 4e-6)
+
+    def test_lobe_is_bounded_symmetric_and_monotone_on_each_half(self):
+        lab = np.zeros((1001, 3))
+        lab[:, 0] = np.linspace(0, 1, 1001)
+        out = self.tone(lab, shadow_chroma=1, highlight_chroma=1,
+                        shadow_hue=0, highlight_hue=0)[:, 1]
+        np.testing.assert_allclose(out, out[::-1], rtol=0, atol=2e-15)
+        self.assertTrue(np.all((out >= 0) & (out <= 1)))
+        for left, right, sign in ((0, 250, 1), (250, 500, -1),
+                                   (500, 750, 1), (750, 1000, -1)):
+            self.assertTrue(np.all(sign*np.diff(out[left:right+1]) >= 0))
+        np.testing.assert_array_equal(out[[0, 250, 500, 750, 1000]], [0, 1, 0, 1, 0])
+
+    def test_shape_dtype_readonly_and_noncontiguous_inputs(self):
+        for shape in ((3,), (4, 3), (2, 4, 3)):
+            lab = np.full(shape, 0.25, dtype=np.float32)
+            before = lab.copy()
+            lab.setflags(write=False)
+            out = self.tone(lab)
+            self.assertEqual(out.shape, shape)
+            self.assertEqual(out.dtype, np.float64)
+            self.assertFalse(np.shares_memory(out, lab))
+            np.testing.assert_array_equal(lab, before)
+        lab = np.full((4, 6, 3), 0.25)[:, ::2]
+        before = lab.copy()
+        self.tone(lab)
+        np.testing.assert_array_equal(lab, before)
+
+    def test_invalid_coordinates_even_when_disabled(self):
+        for bad in (0.5, [0, 1], [], np.empty((0, 3)), [True]*3, ["0.5"]*3,
+                    [None]*3, [0.5, 1j, 0], [np.nan, 0, 0], [0.5, np.inf, 0],
+                    [-0.01, 0, 0], [1.01, 0, 0]):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.tone(bad, strength=0)
+
+    def test_invalid_parameters_even_when_disabled(self):
+        common = (True, "1", [1], np.nan, np.inf, -np.inf)
+        extras = dict(shadow_hue=(), highlight_hue=(), shadow_chroma=(-0.1,),
+                      highlight_chroma=(-0.1,), balance=(0, 1, -0.1, 1.1),
+                      strength=(-0.1, 1.1))
+        for key, values in extras.items():
+            for bad in common+values:
+                overrides = dict(strength=0)
+                overrides[key] = bad
+                with self.subTest(key=key, bad=repr(bad)), self.assertRaises(ValueError):
+                    self.tone([0.25, 0, 0], **overrides)
+
+    def test_all_creative_parameters_are_required(self):
+        params = dict(shadow_hue=0, shadow_chroma=0.25, highlight_hue=90,
+                      highlight_chroma=0.5, balance=0.5, strength=1)
+        for missing in params:
+            subset = {k: v for k, v in params.items() if k != missing}
+            with self.subTest(missing=missing), self.assertRaises(TypeError):
+                core.split_tone_oklab([0.25, 0, 0], **subset)
+
+    def test_extreme_legal_balance_never_divides_unselected_pixels(self):
+        tiny = np.nextafter(0.0, 1.0)
+        near_one = np.nextafter(1.0, 0.0)
+        for balance in (tiny, near_one):
+            lab = [[0, 0, 0], [balance, 0.2, -0.1], [1, 0, 0]]
+            np.testing.assert_array_equal(self.tone(lab, balance=balance), lab)
+        # Smallest zone with an interior float: its midpoint still has full tint.
+        self.assertEqual(self.tone([tiny, 0, 0], balance=2*tiny)[1], 0.25)
+
+    def test_tiny_factors_large_chroma_preserve_representable_results(self):
+        from decimal import Decimal, localcontext
+        with localcontext() as context:
+            context.prec = 100
+            for lightness, balance, strength, chroma in (
+                    (1e-200, 0.5, 1, 1e308),
+                    (0.25, 0.5, np.nextafter(0.0, 1.0), 1e308),
+                    (np.nextafter(1.0, 0.0), 1e-200, 1, 1e308)):
+                x, p, s, c = map(Decimal.from_float, (lightness, balance, strength, chroma))
+                if x < p:
+                    t, u = x/p, (p-x)/p
+                else:
+                    t, u = (x-p)/(1-p), (1-x)/(1-p)
+                expected = float(s*c*16*t*t*u*u)
+                out = self.tone([lightness, 0, 0], balance=balance, strength=strength,
+                                shadow_hue=0, highlight_hue=0,
+                                shadow_chroma=chroma, highlight_chroma=chroma)
+                self.assertGreater(out[1], 0)
+                np.testing.assert_allclose(out[1], expected, rtol=3e-15, atol=0)
+
+    def test_actual_output_overflow_is_rejected_without_mutation(self):
+        lab = np.array([0.25, 1e308, 0])
+        before = lab.copy()
+        with self.assertRaises(ValueError):
+            self.tone(lab, shadow_chroma=1e308)
+        np.testing.assert_array_equal(lab, before)
+
+    def test_no_quantization_gamut_clip_or_skin_protection_claim(self):
+        # Synthetic warm pixel: split toning may alter any hue. It is NOT a skin key.
+        source = core.oklch_to_oklab([0.25, 0.2, 62])
+        out = self.tone(source, shadow_hue=225, shadow_chroma=1)
+        self.assertFalse(np.array_equal(source[1:], out[1:]))
+        self.assertEqual(source[0], out[0])
+        rgb = core.oklab_to_linear_srgb(out)
+        self.assertTrue(np.any((rgb < 0) | (rgb > 1)))
+        self.assertEqual(self.tone([0.25, 0, 0], shadow_chroma=1e-6)[1], 1e-6)
+
+    def test_tint_direction_wrap_does_not_interpolate_hue_through_green(self):
+        # Each region receives its own vector, no arithmetic mean of 350 and 10.
+        out = core.oklab_to_oklch(self.tone([[0.25, 0, 0], [0.75, 0, 0]],
+                                           shadow_hue=350, highlight_hue=10))
+        np.testing.assert_allclose(out[:, 2], [350, 10], rtol=0, atol=3e-14)
+
+    def test_pipeline_repeatability_and_disabled_round_trip(self):
+        # Synthetic lattice. No image I/O, no visual acceptance or CLI replacement.
+        axis = np.array([0, 1, 32, 128, 254, 255], dtype=np.float64) / 255
+        encoded = np.stack(np.meshgrid(axis, axis, axis, indexing="ij"), axis=-1)
+        lab = core.linear_srgb_to_oklab(core.srgb_to_linear(encoded))
+        toned = core.contrast_oklab(lab, contrast=1.25, strength=1)
+        split = self.tone(toned, shadow_hue=225, highlight_hue=62)
+        np.testing.assert_array_equal(split, self.tone(toned, shadow_hue=225, highlight_hue=62))
+        np.testing.assert_array_equal(split[..., 0], toned[..., 0])
+        self.assertTrue(np.any(split[..., 1:] != toned[..., 1:]))
+        rolled = core.highlight_rolloff_oklab(split, start=0.5, strength=1)
+        self.assertTrue(np.all(np.isfinite(rolled)))
+        identity = self.tone(lab, strength=0)
+        after = core.linear_to_srgb(core.oklab_to_linear_srgb(identity))
+        np.testing.assert_allclose(after, encoded, rtol=0, atol=2e-13)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

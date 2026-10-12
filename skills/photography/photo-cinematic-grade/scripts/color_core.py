@@ -354,3 +354,70 @@ def hue_band_adjust_oklch(oklch, *, center, width, hue_shift, chroma_scale, stre
         # that circular endpoint to 0; this is not RGB/gamut clipping.
         lch[..., 2][active] = np.where(rotated == 360, 0, rotated)
     return lch
+
+
+# Rebuilt plan 3.4 split toning. NEW engineering envelope, not the historical
+# prototype or a user-confirmed six-look recipe. All creative inputs are required.
+# The least-degree nonzero polynomial with zero value AND slope at both ends is
+# k*t^2*(1-t)^2. Normalizing its midpoint to 1 fixes k=16, not a fitted coefficient.
+SPLIT_TONE_ALGORITHM = "oklab-split-tone-quartic-v1"
+
+
+@_finite_math
+def split_tone_oklab(oklab, *, shadow_hue, shadow_chroma, highlight_hue,
+                     highlight_chroma, balance, strength):
+    """Add separate shadow/highlight chroma vectors while preserving Oklab L.
+
+    Input (...,3) is (L,a,b), L in [0,1]. Hue inputs are periodic degrees;
+    chroma inputs are nonnegative PEAK ADDED Oklab chroma, not target saturation.
+    balance is the explicitly selected un-tinted L in (0,1), not an EV or a
+    percentage of image pixels. strength is in [0,1]. There are no defaults.
+
+    Each region (0,balance) / (balance,1) uses normalized position t in (0,1)
+    and w=16*t^2*(1-t)^2. Add strength*chroma*w*(cos(hue),sin(hue)) to (a,b).
+    The tint peaks halfway across each region and tapers smoothly to zero at
+    black, balance and white. Those three L values stay EXACTLY unchanged.
+    Neutral pixels inside a region can be tinted. This does NOT protect skin
+    or saturated warm subjects; subsequent protection and gamut QA are needed.
+
+    Returns an independent float64 array; no I/O, quantization, RGB clipping,
+    automatic exposure, guessed recipe, or changes to the legacy CLI renderer.
+    """
+    lab = _triples(oklab)
+    sh = remainder(_scalar(shadow_hue, "shadow_hue"), 360)
+    hh = remainder(_scalar(highlight_hue, "highlight_hue"), 360)
+    sc = _scalar(shadow_chroma, "shadow_chroma")
+    hc = _scalar(highlight_chroma, "highlight_chroma")
+    pivot = _scalar(balance, "balance")
+    s = _scalar(strength, "strength")
+    if sc < 0 or hc < 0:
+        raise ValueError("shadow_chroma and highlight_chroma must be nonnegative")
+    if not 0 < pivot < 1:
+        raise ValueError("balance must be in (0,1) Oklab lightness")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    lightness = lab[..., 0]
+    if np.any((lightness < 0) | (lightness > 1)):
+        raise ValueError("display-referred lightness must be in 0..1")
+    if s == 0 or (sc == 0 and hc == 0):
+        return lab
+    for lower, upper, hue, chroma in ((0, pivot, sh, sc), (pivot, 1, hh, hc)):
+        if chroma == 0:
+            continue
+        active = (lightness > lower) & (lightness < upper)
+        if not np.any(active):
+            continue
+        selected = lightness[active]
+        # Divide only selected pixels, so even a subnormal legal region is safe.
+        # Evaluate both distances directly: 1-t can cancel a near-white tail.
+        t = (selected - lower) / (upper - lower)
+        u = (upper - selected) / (upper - lower)
+        envelope_root = 4 * t * u
+        angle = np.radians(hue)
+        for axis, direction in ((1, np.cos(angle)), (2, np.sin(angle))):
+            # Keep the squared envelope and strength/chroma factors separate.
+            # Tiny factors with huge chroma can still yield a finite visible tint.
+            delta = _scaled_sum_products((s, chroma, envelope_root,
+                                          envelope_root, direction))
+            lab[..., axis][active] += delta
+    return lab
