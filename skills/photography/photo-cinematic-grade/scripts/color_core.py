@@ -527,3 +527,75 @@ def quantize_srgb8(encoded, *, amplitude_lsb, seed):
     # integer. Compare the fractional remainder instead, preserving that boundary.
     lower = np.floor(code)
     return (lower + (code - lower >= 0.5)).astype(np.uint8)
+
+
+# Rebuilt plan 3.5 gamut mapping AND mapped-pixel accounting. This is a new
+# engineering method, not the recovered 0.4.1 prototype or an approved look.
+# Linear sRGB D65 luminance fractions are STANDARD colorimetry from W3C CSS Color 4:
+# https://www.w3.org/TR/css-color-4/#color-conversion-code (lin_sRGB_to_XYZ, Y row).
+# They sum exactly to 1 as rational numbers; no fitted photographic coefficients.
+# Mapping travels toward a neutral of equal relative luminance until the first
+# sRGB cube intersection. It preserves linear RGB opponent direction, NOT exact
+# Oklab hue/L. This tradeoff must be evaluated on real photos before CLI adoption.
+GAMUT_MAP_ALGORITHM = "linear-srgb-luminance-ray-cube-v1"
+_SRGB_Y = np.array([87098/409605, 175762/245763, 12673/175545], dtype=np.float64)
+_SRGB_Y.setflags(write=False)
+
+
+@_finite_math
+def _luminance_ray_intersection(rgb):
+    # Called ONLY for out-of-gamut pixels. The in-gamut path is an exact copy.
+    # Explicit component order makes full-array and partitioned calls agree.
+    y = rgb[:,0]*_SRGB_Y[0] + rgb[:,1]*_SRGB_Y[1] + rgb[:,2]*_SRGB_Y[2]
+    if np.any((y < 0) | (y > 1)):
+        raise ValueError("relative luminance outside 0..1; explicit tone mapping required")
+    low, high = rgb.min(axis=1), rgb.max(axis=1)
+    scale = np.ones_like(y)
+    below = low < 0
+    scale[below] = y[below] / (y[below]-low[below])
+    above = high > 1
+    scale[above] = np.minimum(scale[above], (1-y[above])/(high[above]-y[above]))
+    # Convex combination; products stay bounded even for large finite RGB.
+    # In exact arithmetic this is inside the cube. Any float64 endpoint
+    # excursions are finalized AND separately counted by the public API.
+    return (1-scale[:,None])*y[:,None] + scale[:,None]*rgb
+
+
+def gamut_map_linear_srgb(linear):
+    # Pure numeric API -> (independent float64 RGB array, JSON-serializable QA).
+    # Input (...,3): nonempty finite display-referred LINEAR sRGB D65, not code
+    # values, Oklab or an ICC-tagged image. No implicit decode/encode or I/O.
+    # Every source pixel with ANY channel outside [0,1] is counted once, including
+    # one-ULP excursions; this reports this stage, not prior ICC gamut losses.
+    # For out-of-gamut RGB, Y must be in [0,1]; otherwise fail the whole call
+    # rather than silently change brightness. No strength or aesthetic defaults.
+    # This method does not identify skin, guarantee six-look distinctness, or
+    # prove banding/skin/LUT acceptance. Legacy CLI rendering stays unchanged.
+    # A C-contiguous independent array keeps flattening a view, even for
+    # Fortran/axis-transposed images; updates must reach the returned RGB.
+    rgb = np.ascontiguousarray(_triples(linear))
+    flat = rgb.reshape(-1,3)
+    active = np.any((flat < 0) | (flat > 1), axis=1)
+    count = int(np.count_nonzero(active))
+    corrected, correction = 0, 0.0
+    if count:
+        target = _luminance_ray_intersection(flat[active])
+        bounded = np.clip(target, 0, 1)
+        # This saturation is only after analytic chroma compression, never a
+        # direct clip of the source. Report float endpoint corrections explicitly.
+        corrected = int(np.count_nonzero(target != bounded))
+        correction = float(np.max(np.abs(target-bounded)))
+        flat[active] = bounded
+    total = int(len(flat))
+    qa = {
+        "algorithm": GAMUT_MAP_ALGORITHM,
+        "input_space": "linear-srgb-d65", "output_space": "linear-srgb-d65",
+        "pixels_total": total, "pixels_mapped": count,
+        "mapped_fraction": count/total, "warning_fraction": 0.1,
+        # Plan 3.5: warn ABOVE 10%, not at 10%. Integer comparison avoids
+        # fraction-rounding ambiguity. No global success/pass claim is produced.
+        "warnings": ["gamut_mapped_fraction_above_10_percent"] if 10*count > total else [],
+        "roundoff_samples_corrected": corrected,
+        "max_roundoff_correction": correction,
+    }
+    return rgb, qa
