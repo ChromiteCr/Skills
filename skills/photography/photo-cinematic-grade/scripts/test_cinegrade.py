@@ -976,11 +976,12 @@ def run_tests(group='all'):
     for cls in ([IOTests] if group == 'io' else [GradeTests, CandidateTests, CompareTests] if group == 'grade' else [IOTests, GradeTests, CandidateTests, CompareTests]):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(cls))
     if group != "io":
-        from test_color_core import ColorCoreTests, HighlightRolloffTests, HueBandTests, SplitToneTests
+        from test_color_core import ColorCoreTests, HighlightRolloffTests, HueBandTests, SplitToneTests, DensityTests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ColorCoreTests))
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(HighlightRolloffTests))
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(HueBandTests))
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(SplitToneTests))
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(DensityTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 

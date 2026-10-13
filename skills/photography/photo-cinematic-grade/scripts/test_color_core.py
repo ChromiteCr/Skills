@@ -765,5 +765,208 @@ class SplitToneTests(unittest.TestCase):
         np.testing.assert_allclose(after, encoded, rtol=0, atol=2e-13)
 
 
+class DensityTests(unittest.TestCase):
+    # SYNTHETIC mathematical fixtures only, not observed photos or look recipes.
+    # Origin: log-odds algebra, independent Decimal evaluation and invariants.
+    # Chroma, density, strength, grids and tolerances are test instrumentation;
+    # Bill has NOT confirmed these as photographic parameters. Plan density 0.6
+    # is used only to check direction, not to claim print_film_rich acceptance.
+    def density(self, lch, **overrides):
+        params = dict(density=1, strength=1)
+        params.update(overrides)
+        return core.subtractive_density_oklch(lch, **params)
+
+    def test_hand_computed_positive_density(self):
+        # d*C=ln(2): odds are divided by 2, so 1/4 -> 1/7, 1/2 -> 1/3.
+        source = [[0.25, np.log(2), 62], [0.5, np.log(2), 225], [0.75, np.log(2), -90]]
+        out = self.density(source)
+        np.testing.assert_allclose(out[:, 0], [1/7, 1/3, 3/5], rtol=2e-15, atol=0)
+        np.testing.assert_array_equal(out[:, 1:], np.asarray(source)[:, 1:])
+
+    def test_hand_computed_negative_density(self):
+        out = self.density([[0.25, np.log(2), 62], [0.5, np.log(2), 225],
+                            [0.75, np.log(2), 0]], density=-1)
+        np.testing.assert_allclose(out[:, 0], [2/5, 2/3, 6/7], rtol=2e-15, atol=0)
+
+    def test_strength_scales_log_odds_not_output_lightness(self):
+        source = [0.5, np.log(4), 62]
+        self.assertAlmostEqual(self.density(source, strength=0.5)[0], 1/3, places=15)
+        midpoint = (source[0] + self.density(source)[0]) / 2
+        self.assertNotAlmostEqual(midpoint, 1/3, places=3)
+        np.testing.assert_array_equal(self.density(source, strength=0.25),
+                                      self.density(source, density=0.25))
+
+    def test_zero_strength_and_zero_density_are_exact_copies(self):
+        source = np.array([[0.25, 1e308, -720], [0.9, 0.2, 360]])
+        for params in (dict(strength=0), dict(density=0)):
+            out = self.density(source, **params)
+            np.testing.assert_array_equal(out, source)
+            self.assertFalse(np.shares_memory(out, source))
+
+    def test_endpoints_and_exact_neutrals_unchanged(self):
+        source = np.array([[0, 1e308, 1e308], [1, 1e308, -90],
+                           [0.25, 0, 62], [0.75, 0, -720]])
+        for d in (-1e308, 1e308):
+            np.testing.assert_array_equal(self.density(source, density=d), source)
+
+    def test_hue_and_chroma_exact_including_wrapped_hues(self):
+        source = np.array([[0.5, 0.2, -720], [0.6, 0.3, 1e308], [0.7, 0.1, -0.0]])
+        for d in (-0.6, 0.6):
+            out = self.density(source, density=d)
+            np.testing.assert_array_equal(out[:, 1:], source[:, 1:])
+            self.assertEqual(out[:, 1:].tobytes(), source[:, 1:].tobytes())
+
+    def test_plan_positive_density_darkens_chromatic_pixels(self):
+        source = np.array([[0.5, 0, 0], [0.5, 0.1, 62], [0.5, 0.3, 225]])
+        out = self.density(source, density=0.6)
+        self.assertEqual(out[0, 0], 0.5)
+        self.assertTrue(0 < out[2, 0] < out[1, 0] < 0.5)
+
+    def test_signed_density_direction_strength_and_chroma_monotonicity(self):
+        source = np.zeros((101, 3))
+        source[:, 0] = 0.5
+        source[:, 1] = np.linspace(0, 1, 101)
+        for d in (-1, 1):
+            out = self.density(source, density=d)
+            self.assertTrue(np.all(d * np.diff(out[:, 0]) < 0))
+            values = [self.density([0.5, 0.2, 62], density=d, strength=s)[0]
+                      for s in np.linspace(0, 1, 101)]
+            self.assertTrue(np.all(d * np.diff(values) < 0))
+
+    def test_lightness_ramp_is_ordered_bounded_and_endpoint_fixed(self):
+        source = np.zeros((1001, 3))
+        source[:, 0] = np.linspace(0, 1, 1001)
+        source[:, 1] = 0.25
+        for d in (-8, -0.6, 0.6, 8):
+            out = self.density(source, density=d)[:, 0]
+            self.assertTrue(np.all(np.diff(out) > 0))
+            self.assertTrue(np.all((out >= 0) & (out <= 1)))
+            np.testing.assert_array_equal(out[[0, -1]], [0, 1])
+
+    def test_complement_symmetry_and_signed_inverse(self):
+        source = np.array([[0.1, 0.2, 62], [0.5, 0.3, -90], [0.9, 0.1, 225]])
+        inverse = self.density(self.density(source, density=0.6), density=-0.6)
+        np.testing.assert_allclose(inverse, source, rtol=0, atol=2e-16)
+        mirrored = source.copy()
+        mirrored[:, 0] = 1 - mirrored[:, 0]
+        np.testing.assert_allclose(self.density(mirrored, density=-0.6)[:, 0],
+                                   1-self.density(source, density=0.6)[:, 0], rtol=0, atol=2e-16)
+
+    def test_independent_decimal_reference(self):
+        from decimal import Decimal, localcontext
+        with localcontext() as context:
+            context.prec = 100
+            for lightness, chroma, density, strength in (
+                    (0.125, 0.25, 0.6, 1), (0.875, 0.3, -0.6, 0.5),
+                    (1e-200, 0.2, -100, 1), (np.nextafter(1.0, 0.0), 0.5, 60, 1),
+                    (0.5, 1e308, 1e308, 1e-308)):
+                x, c, d, s = map(Decimal.from_float, (lightness, chroma, density, float(strength)))
+                shift = d*s*c
+                if shift > 1000:
+                    expected = 0.0  # Analytic float64 underflow, not a fitted value.
+                else:
+                    expected = float(x / (x + (1-x)*shift.exp()))
+                actual = self.density([lightness, chroma, 62], density=density, strength=strength)[0]
+                np.testing.assert_allclose(actual, expected, rtol=5e-14, atol=0)
+
+    def test_tiny_strength_times_large_density_retains_finite_shift(self):
+        from decimal import Decimal, localcontext
+        tiny = np.nextafter(0.0, 1.0)
+        # Multiplying tiny strength by tiny C first would erase a valid shift.
+        with localcontext() as context:
+            context.prec = 100
+            for d, s, c in ((1e308, tiny, 1e16), (1e308, 1e-308, 0.5),
+                             (1e-308, 1e-16, 1e308)):
+                shift = Decimal.from_float(d)*Decimal.from_float(s)*Decimal.from_float(c)
+                expected = float(1/(1+shift.exp()))
+                actual = self.density([0.5, c, 0], density=d, strength=s)[0]
+                np.testing.assert_allclose(actual, expected, rtol=3e-15, atol=0)
+
+    def test_huge_shift_rounds_to_finite_endpoints_without_overflow(self):
+        source = [[0.25, 1e308, 62], [0.75, 1e308, 225]]
+        for d, expected in ((1e308, [0, 0]), (-1e308, [1, 1])):
+            out = self.density(source, density=d)
+            np.testing.assert_array_equal(out[:, 0], expected)
+            self.assertTrue(np.all(np.isfinite(out)))
+
+    def test_subnormal_lightness_and_zero_shift_are_not_lost(self):
+        tiny = np.nextafter(0.0, 1.0)
+        source = np.array([[tiny, 0.5, 0], [np.nextafter(1.0, 0.0), 0.5, 62]])
+        out = self.density(source, density=0.01)
+        self.assertEqual(out[0, 0], tiny)
+        # An underflowed creative shift has no representable effect, exact copy.
+        np.testing.assert_array_equal(self.density(source, density=tiny, strength=tiny), source)
+
+    def test_shape_dtype_readonly_noncontiguous_and_input_preservation(self):
+        for shape in ((3,), (4, 3), (2, 4, 3)):
+            source = np.full(shape, 0.25, dtype=np.float32)
+            original = source.copy()
+            source.setflags(write=False)
+            out = self.density(source)
+            self.assertEqual(out.shape, shape)
+            self.assertEqual(out.dtype, np.float64)
+            self.assertFalse(np.shares_memory(out, source))
+            np.testing.assert_array_equal(source, original)
+        source = np.full((4, 6, 3), 0.25)[:, ::2]
+        before = source.copy()
+        self.density(source)
+        np.testing.assert_array_equal(source, before)
+
+    def test_invalid_coordinates_even_when_disabled(self):
+        for bad in (0.5, [0, 1], [], np.empty((0, 3)), [True]*3, ["0.5"]*3,
+                    [None]*3, [0.5, 1j, 0], [np.nan, 0, 0], [0.5, np.inf, 0],
+                    [0.5, 0.1, np.inf], [-0.01, 0, 0], [1.01, 0, 0], [0.5, -0.1, 0]):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.density(bad, strength=0)
+
+    def test_invalid_parameters_and_required_creative_inputs(self):
+        for key in ("density", "strength"):
+            for bad in (True, "1", [1], np.nan, np.inf, -np.inf):
+                with self.subTest(key=key, bad=repr(bad)), self.assertRaises(ValueError):
+                    self.density([0.5, 0.2, 62], **{key: bad})
+        for bad in (-0.01, 1.01):
+            with self.assertRaises(ValueError):
+                self.density([0.5, 0.2, 62], strength=bad)
+        for params in ({}, dict(density=0.6), dict(strength=1)):
+            with self.assertRaises(TypeError):
+                core.subtractive_density_oklch([0.5, 0.2, 62], **params)
+
+    def test_no_quantization_gamut_mapping_or_skin_claim(self):
+        source = [0.5, 1, 62]
+        out = self.density(source, density=0.6)
+        np.testing.assert_array_equal(out[1:], source[1:])
+        rgb = core.oklab_to_linear_srgb(core.oklch_to_oklab(out))
+        self.assertTrue(np.any((rgb < 0) | (rgb > 1)))
+        self.assertNotEqual(float(out[0]*255), float(round(out[0]*255)))
+
+    def test_existing_color_path_repeatability_and_disabled_identity(self):
+        # Synthetic RGB lattice, no photograph, ICC bypass or CLI replacement.
+        axis = np.array([0, 1, 32, 128, 254, 255], dtype=np.float64)/255
+        encoded = np.stack(np.meshgrid(axis, axis, axis, indexing="ij"), axis=-1)
+        lab = core.linear_srgb_to_oklab(core.srgb_to_linear(encoded))
+        toned = core.contrast_oklab(lab, contrast=1.25, strength=1)
+        lch = core.oklab_to_oklch(toned)
+        out = self.density(lch, density=0.6)
+        np.testing.assert_array_equal(out, self.density(lch, density=0.6))
+        self.assertTrue(np.any(out[..., 0] < lch[..., 0]))
+        identity = core.oklch_to_oklab(self.density(core.oklab_to_oklch(lab), strength=0))
+        restored = core.linear_to_srgb(core.oklab_to_linear_srgb(identity))
+        np.testing.assert_allclose(restored, encoded, rtol=0, atol=2e-13)
+
+    def test_tiny_signed_shift_cannot_reverse_the_requested_direction(self):
+        # SYNTHETIC near-endpoint and tiny-shift rounding regression.
+        # Values are numerical probes, not user-confirmed photographic settings.
+        x = np.concatenate(([np.nextafter(0.0, 1.0)], np.linspace(0.001, 0.999, 1001),
+                            [np.nextafter(1.0, 0.0)]))
+        source = np.zeros((len(x), 3))
+        source[:, 0] = x
+        source[:, 1] = 0.5
+        for d in (1e-16, -1e-16, 1e-10, -1e-10):
+            out = self.density(source, density=d)[:, 0]
+            self.assertTrue(np.all(d * (out-x) <= 0))
+        near_white = np.nextafter(1.0, 0.0)
+        self.assertEqual(self.density([near_white, 0.5, 62], density=-1e-16)[0], near_white)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

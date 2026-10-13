@@ -421,3 +421,64 @@ def split_tone_oklab(oklab, *, shadow_hue, shadow_chroma, highlight_hue,
                                           envelope_root, direction))
             lab[..., axis][active] += delta
     return lab
+
+
+# Rebuilt plan 3.4 subtractive density. NEW ENGINEERING transform, not recovered
+# prototype code, measured optical density or a user-confirmed six-look recipe.
+# Define d as the decrease in lightness log-odds per unit OkLCh chroma at strength 1:
+# logit(L_out) = logit(L) - d * strength * C. This definition fixes the formula,
+# with NO fitted numerical coefficients. d and strength have NO creative defaults.
+SUBTRACTIVE_DENSITY_ALGORITHM = "oklch-chroma-log-odds-density-v1"
+
+
+@_finite_math
+def subtractive_density_oklch(oklch, *, density, strength):
+    # Input (...,3) is (L,C,h); L in [0,1], C >= 0, h in periodic degrees.
+    # density is a signed finite real: positive darkens chromatic pixels,
+    # negative brightens them. C and the exact input hue representation stay
+    # unchanged. This is a creative lightness operation, not film physics,
+    # exposure EV, skin detection or gamut mapping. Return a float64 copy.
+    #
+    # Black, white, exact neutrals, density=0 and strength=0 are exact identities.
+    # Interior pixels use L/(L+(1-L)*exp(d*s*C)), evaluated in log-odds space to
+    # retain near-black values and avoid unstable exp of a large positive shift.
+    # No I/O, intermediate quantization, RGB clipping or implicit CLI switch.
+    lch = _triples(oklch)
+    d = _scalar(density, "density")
+    s = _scalar(strength, "strength")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    lightness = lch[..., 0]
+    chroma = lch[..., 1]
+    if np.any((lightness < 0) | (lightness > 1)):
+        raise ValueError("display-referred lightness must be in 0..1")
+    if np.any(chroma < 0):
+        raise ValueError("OkLCh chroma must be nonnegative")
+    if d == 0 or s == 0:
+        return lch
+    active = (lightness > 0) & (lightness < 1) & (chroma > 0)
+    x = lightness[active]
+    # Scale the product only after combining binary mantissas/exponents, so
+    # tiny s with huge d/C does not lose a representable final shift.
+    # Overflow is allowed ONLY for this log-odds shift: |d*s*C| > float64 max
+    # necessarily rounds the final sigmoid to 0 or 1. Inf never leaves the API.
+    # This analytic endpoint limit is not RGB clipping or a creative threshold.
+    with np.errstate(over="ignore"):
+        shift = _scaled_sum_products((chroma[active], d, s))
+    adjusted = x.copy()
+    # For |shift| <= ln(2), exp(-shift) lies in [1/2,2], keeping this
+    # denominator >= 1/2. Evaluate the CHANGE with expm1: log/exp round-trip
+    # noise must not darken a pixel for an infinitesimal negative density.
+    # ln(2) is a numerical conditioning boundary, not a grading parameter.
+    small = np.abs(shift) <= np.log(2.0)
+    u = np.expm1(-shift[small])
+    xs = x[small]
+    adjusted[small] = xs + xs * (1 - xs) * u / (1 + xs * u)
+    # Large shifts use stable log-odds; infinite shift means an endpoint limit.
+    large = ~small
+    z = np.log(x[large]) - np.log1p(-x[large]) - shift[large]
+    tail = np.exp(-np.abs(z))
+    fraction = tail / (1 + tail)
+    adjusted[large] = np.where(z >= 0, 1 - fraction, fraction)
+    lightness[active] = adjusted
+    return lch
