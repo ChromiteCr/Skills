@@ -968,5 +968,172 @@ class DensityTests(unittest.TestCase):
         self.assertEqual(self.density([near_white, 0.5, 62], density=-1e-16)[0], near_white)
 
 
+
+class QuantizeTests(unittest.TestCase):
+    # SYNTHETIC RGB ramps, code grids, seeds and amplitudes for mathematical tests.
+    # No photographs or user-confirmed grading/texture recipes. Probabilities
+    # below are analytic TPDF integrals; tolerances are test instrumentation.
+    def q(self, values, amplitude=1, seed=73):
+        return core.quantize_srgb8(values, amplitude_lsb=amplitude, seed=seed)
+
+    def test_hand_computed_nearest_half_up_without_dither(self):
+        codes = np.array([[0, 0.49, 0.5], [1.5, 127.5, 255]])
+        np.testing.assert_array_equal(self.q(codes/255, 0), [[0, 0, 1], [2, 128, 255]])
+
+    def test_just_below_and_above_half_step_do_not_collapse(self):
+        half = 0.5/255
+        source = [np.nextafter(half, 0), half, np.nextafter(half, 1)]
+        np.testing.assert_array_equal(self.q(source, 0), [0, 1, 1])
+
+    def test_all_rgb8_codes_identity_without_noise(self):
+        rgb = np.repeat(np.arange(256, dtype=np.uint8)[:, None], 3, axis=1)
+        out = self.q(rgb.astype(np.float64)/255, 0)
+        np.testing.assert_array_equal(out, rgb)
+        self.assertEqual(out.dtype, np.uint8)
+
+    def test_required_parameters_no_implicit_recipe_or_random_seed(self):
+        for kwargs in ({}, {"seed": 1}, {"amplitude_lsb": 0}):
+            with self.assertRaises(TypeError):
+                core.quantize_srgb8([0, 0.5, 1], **kwargs)
+
+    def test_invalid_amplitudes_even_when_source_is_black(self):
+        for bad in (True, "1", [1], -0.1, 1.01, np.nan, np.inf, None):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.q([0, 0, 0], bad)
+
+    def test_invalid_seeds_even_when_dither_is_disabled(self):
+        for bad in (True, np.bool_(False), "1", [1], -1, 1.0, np.nan, np.inf, None):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.q([0, 0.5, 1], 0, bad)
+        for seed in (0, np.int64(73), 2**128):
+            self.assertEqual(self.q([0, 0.5, 1], 0, seed).dtype, np.uint8)
+
+    def test_invalid_coordinates_and_shapes(self):
+        for bad in (0.5, [], [0, 1], np.empty((0, 3)), [True]*3, ["0"]*3,
+                    [None]*3, [0, 1j, 0], [0, np.nan, 0], [0, np.inf, 0]):
+            with self.subTest(bad=repr(bad)), self.assertRaises(ValueError):
+                self.q(bad)
+
+    def test_out_of_gamut_rejected_instead_of_silently_clipped(self):
+        for bad in ([-0.01, 0.5, 1], [0, 0.5, 1.01],
+                    [np.nextafter(0.0, -1), 0, 0], [0, 0, np.nextafter(1.0, 2)]):
+            for amplitude in (0, 1):
+                with self.assertRaises(ValueError):
+                    self.q(bad, amplitude)
+
+    def test_shape_dtype_readonly_noncontiguous_and_no_mutation(self):
+        for shape in ((3,), (4, 3), (2, 4, 3)):
+            source = np.full(shape, 0.5, dtype=np.float32)
+            source.setflags(write=False)
+            out = self.q(source)
+            self.assertEqual(out.shape, shape)
+            self.assertEqual(out.dtype, np.uint8)
+            self.assertFalse(np.shares_memory(out, source))
+            np.testing.assert_array_equal(source, np.full(shape, 0.5))
+        source = np.linspace(0, 1, 4*6*3).reshape(4, 6, 3)[:, ::2]
+        before = source.copy()
+        np.testing.assert_array_equal(self.q(source), self.q(source.copy()))
+        np.testing.assert_array_equal(source, before)
+
+    def test_same_seed_returns_identical_pixel_bytes(self):
+        source = np.linspace(0, 1, 99*3).reshape(3, 33, 3)
+        first = self.q(source)
+        self.assertEqual(first.tobytes(), self.q(source).tobytes())
+        self.assertEqual(core.SRGB8_QUANTIZE_ALGORITHM, "encoded-srgb8-tpdf-pcg64-half-up-v1")
+
+    def test_different_seeds_and_channels_are_not_same_noise(self):
+        source = np.full((1000, 3), 128/255)
+        first = self.q(source, seed=1)
+        self.assertFalse(np.array_equal(first, self.q(source, seed=2)))
+        self.assertFalse(np.array_equal(first[:, 0], first[:, 1]))
+        self.assertFalse(np.array_equal(first[:, 1], first[:, 2]))
+
+    def test_global_random_state_is_untouched(self):
+        before = np.random.get_state()
+        self.q(np.full((30, 3), 0.5))
+        after = np.random.get_state()
+        self.assertEqual(before[0], after[0])
+        np.testing.assert_array_equal(before[1], after[1])
+        self.assertEqual(before[2:], after[2:])
+
+    def test_zero_amplitude_does_not_construct_rng(self):
+        from unittest.mock import patch
+        with patch.object(core.np.random, "PCG64", side_effect=AssertionError("unexpected RNG")):
+            a = self.q([0, 0.5, 1], 0, 0)
+            b = self.q([0, 0.5, 1], 0, 99)
+        np.testing.assert_array_equal(a, b)
+
+    def test_hand_supplied_uniforms_noise_scaling_and_edge_saturation(self):
+        from unittest.mock import Mock, patch
+        first = np.array([[0, 0.75, 0.75], [0.75, 0.75, 0.25]])
+        second = np.array([[0.75, 0, 0.5], [0.25, 0.5, 0.75]])
+        rng = Mock()
+        rng.random.side_effect = [first, second]
+        source = np.array([[0, 255, 10.25], [10, 10.25, 10]])/255
+        with patch.object(core.np.random, "Generator", return_value=rng):
+            out = self.q(source)
+        np.testing.assert_array_equal(out, [[0, 255, 11], [11, 11, 10]])
+        self.assertEqual(rng.random.call_count, 2)
+        self.assertEqual(rng.random.call_args.args, (source.shape,))
+        rng.random.side_effect = [first, second]
+        with patch.object(core.np.random, "Generator", return_value=rng):
+            out = self.q(source, 0.5)
+        np.testing.assert_array_equal(out, [[0, 255, 10], [10, 10, 10]])
+
+    def test_pcg64_draw_order_matches_independent_scalar_reference(self):
+        # NumPy named generator, two full C-order uniform arrays; scalar rounding
+        # reference is independent of the implementation vectorized quantizer.
+        import math
+        source = np.linspace(0.01, 0.99, 24).reshape(2, 4, 3)
+        rng = np.random.Generator(np.random.PCG64(73))
+        uniforms = [rng.random() for _ in range(48)]
+        expected = []
+        for i, value in enumerate(source.flat):
+            code = min(255, max(0, value*255 + uniforms[i]-uniforms[i+24]))
+            base = math.floor(code)
+            expected.append(base + int(code-base >= 0.5))
+        np.testing.assert_array_equal(self.q(source), np.array(expected).reshape(source.shape))
+
+    def test_tpdf_integer_code_probabilities_and_mean(self):
+        # At integer 128, analytic P(-1,0,+1)=(1/8,3/4,1/8).
+        out = self.q(np.full((100000, 3), 128/255)).astype(int).ravel()
+        counts = np.array([(out == n).mean() for n in (127, 128, 129)])
+        np.testing.assert_allclose(counts, [1/8, 3/4, 1/8], rtol=0, atol=0.004)
+        self.assertLess(abs(out.mean()-128), 0.005)
+        self.assertTrue(np.all((out >= 127) & (out <= 129)))
+
+    def test_tpdf_fractional_code_probabilities(self):
+        # At 128.25, tail integrals give P(127)=1/32, P(129)=9/32.
+        out = self.q(np.full((100000, 3), 128.25/255)).astype(int).ravel()
+        counts = np.array([(out == n).mean() for n in (127, 128, 129)])
+        np.testing.assert_allclose(counts, [1/32, 22/32, 9/32], rtol=0, atol=0.004)
+        self.assertLess(abs(out.mean()-128.25), 0.005)
+
+    def test_noise_support_and_black_white_are_bounded_not_endpoint_identity(self):
+        source = np.repeat(np.linspace(0, 1, 10001)[:, None], 3, axis=1)
+        out = self.q(source).astype(float)
+        self.assertTrue(np.all(np.abs(out-source*255) <= 1.5))
+        edges = self.q(np.array([[0, 1, 0]]*10000))
+        self.assertEqual(set(edges[:, 0]), {0, 1})
+        self.assertEqual(set(edges[:, 1]), {254, 255})
+
+    def test_explicitly_encoded_domain_not_linear_light(self):
+        encoded = core.linear_to_srgb([0.21404114048223255]*3)
+        np.testing.assert_array_equal(self.q(encoded, 0), [128]*3)
+        np.testing.assert_array_equal(self.q([0.21404114048223255]*3, 0), [55]*3)
+
+    def test_existing_float_path_zero_strength_rgb8_identity(self):
+        # Interior synthetic RGB8 lattice avoids conversion-roundoff edge values;
+        # out-of-gamut mapping is intentionally outside this terminal-stage test.
+        axis = np.array([1, 16, 64, 128, 192, 254], dtype=np.uint8)
+        rgb8 = np.stack(np.meshgrid(axis, axis, axis, indexing="ij"), axis=-1)
+        lab = core.linear_srgb_to_oklab(core.srgb_to_linear(rgb8.astype(float)/255))
+        lab = core.contrast_oklab(lab, contrast=1.25, strength=0)
+        lch = core.subtractive_density_oklch(core.oklab_to_oklch(lab), density=0.6, strength=0)
+        encoded = core.linear_to_srgb(core.oklab_to_linear_srgb(core.oklch_to_oklab(lch)))
+        np.testing.assert_array_equal(self.q(encoded, 0), rgb8)
+        self.assertEqual(self.q(encoded).tobytes(), self.q(encoded).tobytes())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

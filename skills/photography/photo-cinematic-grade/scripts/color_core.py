@@ -1,6 +1,8 @@
 # Rebuilt floating-point color core for the plan, not the historical 0.4.1 prototype.
-# Pure numeric API. No I/O, ICC guessing, presets, automatic correction or quantization.
-# All channels use normalized float64 coordinates, NOT integer code values 0..255.
+# Pure numeric API. No I/O, ICC guessing, presets or automatic correction.
+# Quantization occurs ONLY in the explicit final quantize_srgb8 API.
+# Color transforms use normalized float64 coordinates, NOT code values 0..255.
+# The terminal quantizer explicitly returns uint8 code values.
 # sRGB and Oklab use D65. Linear-light here means display-referred SDR, not scene radiance.
 #
 # Sources for STANDARD color-science constants (not fitted creative coefficients):
@@ -17,7 +19,7 @@
 # full six-look integration remain pending; current CLI render is unchanged.
 from functools import wraps
 from math import remainder
-from numbers import Real
+from numbers import Integral, Real
 
 import numpy as np
 
@@ -482,3 +484,46 @@ def subtractive_density_oklch(oklch, *, density, strength):
     adjusted[large] = np.where(z >= 0, 1 - fraction, fraction)
     lightness[active] = adjusted
     return lch
+
+
+# Rebuilt plan 3.4 FINAL output stage, not the historical 0.4.1 prototype.
+# TPDF is the difference of two independent U[0,1) draws: zero mean,
+# variance amplitude_lsb**2/6, support within +/-amplitude_lsb code steps.
+# These follow the distribution, not fitted photographic coefficients.
+# amplitude_lsb and seed are REQUIRED, with no unconfirmed look defaults.
+SRGB8_QUANTIZE_ALGORITHM = "encoded-srgb8-tpdf-pcg64-half-up-v1"
+
+
+def quantize_srgb8(encoded, *, amplitude_lsb, seed):
+    # Input (...,3) must ALREADY be encoded sRGB in [0,1]. Reject any out-of-gamut
+    # input, even one ULP outside: this is not a hidden gamut mapper or an ICC API.
+    # amplitude_lsb in [0,1] is peak noise in 8-bit code steps, not normalized
+    # RGB, variance or film grain. 0 disables noise. All parameters are explicit.
+    # seed is a nonnegative integer. Use a private, explicitly named PCG64;
+    # never seed/advance numpy global RNG state or use ambient entropy.
+    # C-order draws: all first uniforms, then all second uniforms, per channel.
+    # Repeatability is for equal input values/shape, parameters and NumPy version.
+    # Split/tiled calls restart the stream and are NOT equivalent to one full call.
+    # Noise may push valid edge values out of range; saturate ONLY those excursions,
+    # then round to nearest code, ties upward. No uint8 wrap or banker rounding.
+    # Nonzero noise can move exact black/white one step inward. Identity paths
+    # MUST explicitly use amplitude_lsb=0; no promise of endpoint or mean
+    # preservation at the bounds, nor of photographic banding/QA acceptance.
+    values = _triples(encoded)
+    amplitude = _scalar(amplitude_lsb, "amplitude_lsb")
+    if not 0 <= amplitude <= 1:
+        raise ValueError("amplitude_lsb must be in 0..1 code steps")
+    if isinstance(seed, (bool, np.bool_)) or not isinstance(seed, Integral) or seed < 0:
+        raise ValueError("seed must be a nonnegative integer")
+    if np.any((values < 0) | (values > 1)):
+        raise ValueError("encoded sRGB must be in 0..1; map and report gamut first")
+    code = values * 255
+    if amplitude != 0:
+        rng = np.random.Generator(np.random.PCG64(int(seed)))
+        noise = rng.random(values.shape) - rng.random(values.shape)
+        code += amplitude * noise
+        np.clip(code, 0, 255, out=code)
+    # Adding 0.5 before floor can round a value just BELOW a half-step up to an
+    # integer. Compare the fractional remainder instead, preserving that boundary.
+    lower = np.floor(code)
+    return (lower + (code - lower >= 0.5)).astype(np.uint8)
