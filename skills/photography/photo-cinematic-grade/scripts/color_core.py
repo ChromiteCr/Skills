@@ -681,3 +681,109 @@ def protect_skin_oklch(original, graded, skin_mask):
         "warnings": [] if count else ["no_skin_pixels_selected"],
     }
     return result, qa
+
+
+# Rebuilt plan 3.4 LINEAR-LIGHT spatial bloom, not historical prototype 0.4.1.
+# ENGINEERING method: luminance bright-pass, normalized sampled Gaussian,
+# reflected borders, additive source-colored light. NOT a film/optics simulation
+# or an approved six-look recipe. ALL creative parameters are REQUIRED.
+# Gaussian exponent 1/2 and normalization follow its mathematical definition;
+# luminance uses the already-sourced standard sRGB D65 coefficients above.
+BLOOM_ALGORITHM = "linear-srgb-brightpass-gaussian-reflect101-add-v1"
+
+
+def bloom_linear_srgb(linear, *, threshold, sigma_fraction, truncate, strength):
+    # Input: nonempty HxWx3 finite LINEAR sRGB in [0,1], NOT encoded RGB values.
+    # No automatic decode, exposure, ICC guesses, image resize or LUT application.
+    # threshold in [0,1] is linear relative luminance Y, not Oklab L or a percentile.
+    # sigma_fraction in (0,1] scales Gaussian sigma by the current short side.
+    # truncate > 0 selects integer support r=max(1,ceil(truncate*sigma_pixels)).
+    # Require r <= short side, an ENGINEERING resource bound, not a quality rule.
+    # Oversized support is rejected, never silently shortened. All inputs are
+    # validated even on identity paths. strength in [0,1] scales ADDED light.
+    #
+    # Bright-pass E=RGB*(Y-threshold)/Y when Y>threshold, else zero. At threshold
+    # zero use E=RGB exactly, retaining even subnormal nonzero RGB contributions.
+    # Blur E, never the source itself; add strength*blur(E) to the source.
+    # RGB order and source light color are retained; no invented warm tint.
+    # Bounded source does NOT imply bounded output. Return >1 values unchanged,
+    # count/warn, and require explicit tone handling before mapping/quantization.
+    # This stage can invalidate skin QA. It cannot recover clipped source detail.
+    #
+    # Returns (independent float64 image, stage-only JSON metadata). No file I/O,
+    # intermediate quantization, RNG, dependency installation, global OpenCV
+    # settings or implicit CLI adoption. Equal environment/input -> same pixels;
+    # tiled/resized execution and other OpenCV versions are NOT promised identical.
+    rgb = np.ascontiguousarray(_triples(linear))
+    if rgb.ndim != 3:
+        raise ValueError("bloom requires a nonempty HxWx3 image")
+    if np.any((rgb < 0) | (rgb > 1)):
+        raise ValueError("bloom input must be linear sRGB in 0..1; handle gamut first")
+    threshold = _scalar(threshold, "threshold")
+    fraction = _scalar(sigma_fraction, "sigma_fraction")
+    support = _scalar(truncate, "truncate")
+    s = _scalar(strength, "strength")
+    if not 0 <= threshold <= 1:
+        raise ValueError("threshold must be in 0..1 linear relative luminance")
+    if not 0 < fraction <= 1:
+        raise ValueError("sigma_fraction must be in (0,1] of the short side")
+    if support <= 0:
+        raise ValueError("truncate must be positive")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    short = min(rgb.shape[:2])
+    sigma = fraction * short
+    # Multiplication overflow is confined to support validation, never an
+    # allocation or a pixel operation. Infinite support fails before ceil/int.
+    extent = support * sigma
+    if not np.isfinite(extent) or extent > short:
+        raise ValueError("Gaussian support radius exceeds the image short-side budget")
+    radius = max(1, int(np.ceil(extent)))
+    with np.errstate(under="ignore"):
+        y = rgb[...,0]*_SRGB_Y[0] + rgb[...,1]*_SRGB_Y[1] + rgb[...,2]*_SRGB_Y[2]
+    active = (np.any(rgb > 0, axis=-1) if threshold == 0 else y > threshold)
+    count = int(np.count_nonzero(active))
+    result = rgb.copy()
+    performed = bool(s != 0 and count)
+    backend = None
+    if performed:
+        try:
+            import cv2
+        except ImportError:
+            raise ValueError("OpenCV is required for bloom; no dependency was installed") from None
+        backend = cv2.__version__
+        extracted = np.zeros_like(rgb)
+        if threshold == 0:
+            extracted[:] = rgb
+        else:
+            with np.errstate(under="ignore"):
+                extracted[active] = rgb[active]*((y[active]-threshold)/y[active])[:,None]
+        offsets = np.arange(-radius, radius+1, dtype=np.float64)
+        # Tiny legal sigma may overflow squared distance. Its analytic Gaussian
+        # tail is then zero; exp(-inf)=0. Center remains exactly 1 before normalization.
+        with np.errstate(over="ignore", under="ignore"):
+            distance = offsets/sigma
+            kernel = np.exp(-0.5*distance*distance)
+        kernel /= np.sum(kernel)
+        blurred = cv2.sepFilter2D(extracted, cv2.CV_64F, kernel, kernel,
+                                  borderType=cv2.BORDER_REFLECT_101)
+        with np.errstate(under="ignore"):
+            result += s*blurred
+        if not np.all(np.isfinite(result)) or np.any(result < rgb):
+            raise ValueError("bloom arithmetic produced invalid additive light")
+    over = int(np.count_nonzero(np.any(result > 1, axis=-1)))
+    warnings = [] if count else ["no_highlights_above_threshold"]
+    if over:
+        warnings.append("linear_output_above_one_requires_explicit_tone_handling")
+    qa = {
+        "algorithm": BLOOM_ALGORITHM, "scope": "linear_bloom_before_final_output_qa",
+        "input_space": "linear-srgb-d65", "output_space": "linear-srgb-d65",
+        "threshold": threshold, "sigma_fraction": fraction, "truncate": support,
+        "strength": s, "sigma_pixels": sigma, "kernel_radius_pixels": radius,
+        "border": "reflect101", "blend": "additive_source_color",
+        "pixels_total": int(rgb.shape[0]*rgb.shape[1]), "highlight_pixels": count,
+        "changed_pixels": int(np.count_nonzero(np.any(result != rgb, axis=-1))),
+        "pixels_above_one": over, "blur_performed": performed,
+        "opencv_version": backend, "warnings": warnings,
+    }
+    return result, qa

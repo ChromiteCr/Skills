@@ -988,6 +988,8 @@ def run_tests(group='all'):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(GamutTests))
         from test_skin import SkinProtectionTests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(SkinProtectionTests))
+        from test_bloom import BloomTests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(BloomTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
