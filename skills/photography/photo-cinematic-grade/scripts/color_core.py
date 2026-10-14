@@ -599,3 +599,85 @@ def gamut_map_linear_srgb(linear):
         "max_roundoff_correction": correction,
     }
     return rgb, qa
+
+
+# Rebuilt skin-protection pixel stage for plan 3.3/3.5/3.9, not prototype 0.4.1.
+# Limits come directly from plan 3.5, NOT fitted or invented look coefficients.
+# Applying the mean hue / chroma-ratio limits per selected pixel is a conservative
+# ENGINEERING choice. Visual confirmation, detection and final-output QA are pending.
+SKIN_PROTECT_ALGORITHM = "oklch-explicit-skin-limits-v1"
+_SKIN_HUE_LIMIT = 6.0
+_SKIN_CHROMA_RATIO_LIMIT = 1.15
+
+
+def protect_skin_oklch(original, graded, skin_mask):
+    # Inputs (...,3): aligned, finite (L,C,h), L in [0,1], C>=0, hue degrees.
+    # skin_mask is a REQUIRED boolean array of EXACT shape (...), with no
+    # broadcasting, probability threshold, generic skin key or face inference.
+    # A lone triple requires a scalar boolean. Caller owns mask provenance.
+    # Return (independent float64 array, stage-scoped JSON accounting).
+    # Preserve graded L everywhere and every unselected pixel exactly.
+    # Selected C is min(C_graded, 1.15*C_original); desaturation is not reversed.
+    # Selected hue moves at most 6 degrees along the shortest circular arc from
+    # original hue. Exactly opposite hues choose the positive arc deterministically.
+    # At C_original=0, remove new tint, leave undefined hue representation alone.
+    # At C_graded=0, preserve zero chroma and undefined hue; never invent color.
+    # No near-neutral cutoff. No I/O, randomness, intermediate quantization,
+    # automatic selection, image reshaping or adoption by the legacy CLI.
+    # Apply before gamut mapping/encoding; those stages can change hue/chroma,
+    # so these counts CANNOT replace final-image skin QA or prove plan acceptance.
+    source = np.ascontiguousarray(_triples(original))
+    result = np.ascontiguousarray(_triples(graded))
+    if source.shape != result.shape:
+        raise ValueError("original and graded must have identical coordinate shapes")
+    for value in (source, result):
+        if np.any((value[..., 0] < 0) | (value[..., 0] > 1)):
+            raise ValueError("display-referred lightness must be in 0..1")
+        if np.any(value[..., 1] < 0):
+            raise ValueError("OkLCh chroma must be nonnegative")
+    try:
+        selected = np.asarray(skin_mask)
+    except (TypeError, ValueError):
+        raise ValueError("skin_mask must be boolean with the exact pixel shape") from None
+    if selected.dtype.kind != "b" or selected.shape != source.shape[:-1]:
+        raise ValueError("skin_mask must be boolean with the exact pixel shape")
+    selected = selected.reshape(-1)
+    before = source.reshape(-1, 3)
+    after = result.reshape(-1, 3)
+    c0 = before[:, 1]
+    cg = after[:, 1]
+    # Overflow of the cap means every finite target C already satisfies it.
+    # Inf is confined to this comparison bound, never written into the result.
+    # Subnormal caps round normally; no inferred neutral threshold is introduced.
+    with np.errstate(over="ignore", under="ignore"):
+        cap = c0 * _SKIN_CHROMA_RATIO_LIMIT
+    chroma_limited = selected & (cg > cap)
+    comparable = selected & (c0 > 0) & (cg > 0)
+    # Reduce BEFORE subtracting to prevent overflow for huge finite hue inputs.
+    # Signed reductions also retain tiny angles near zero without cancellation.
+    h0 = np.fmod(before[:, 2], 360)
+    hg = np.fmod(after[:, 2], 360)
+    h0 = np.where(h0 > 180, h0-360, np.where(h0 < -180, h0+360, h0))
+    hg = np.where(hg > 180, hg-360, np.where(hg < -180, hg+360, hg))
+    delta = hg-h0
+    delta = np.where(delta > 180, delta-360, np.where(delta <= -180, delta+360, delta))
+    hue_limited = comparable & (np.abs(delta) > _SKIN_HUE_LIMIT)
+    bounded_hue = np.mod(h0[hue_limited] + np.copysign(_SKIN_HUE_LIMIT, delta[hue_limited]), 360)
+    after[hue_limited, 2] = np.where(bounded_hue == 360, 0, bounded_hue)
+    after[chroma_limited, 1] = cap[chroma_limited]
+    count = int(np.count_nonzero(selected))
+    qa = {
+        "algorithm": SKIN_PROTECT_ALGORITHM,
+        "scope": "explicit_mask_before_gamut_and_quantization",
+        "skin_detection_performed": False,
+        "hue_limit_degrees": _SKIN_HUE_LIMIT,
+        "chroma_ratio_limit": _SKIN_CHROMA_RATIO_LIMIT,
+        "pixels_total": int(len(after)), "selected_pixels": count,
+        "source_achromatic_pixels": int(np.count_nonzero(selected & (c0 == 0))),
+        "hue_comparable_pixels": int(np.count_nonzero(comparable)),
+        "hue_limited_pixels": int(np.count_nonzero(hue_limited)),
+        "chroma_limited_pixels": int(np.count_nonzero(chroma_limited)),
+        "changed_pixels": int(np.count_nonzero(hue_limited | chroma_limited)),
+        "warnings": [] if count else ["no_skin_pixels_selected"],
+    }
+    return result, qa
