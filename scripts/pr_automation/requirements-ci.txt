@@ -1,0 +1,24 @@
+# Python 3.12.10, hosted macOS 15. Runner/unit tests use the standard library.
+# Pin direct AND transitive imports; update deliberately with regression evidence.
+# PIL: photo I/O, image generation and full test_cinegrade.py.
+Pillow==11.3.0
+# numpy: color_core, photography, uncertainty propagation and bento.
+numpy==2.2.6
+# cv2: color_core halation/bloom/grain; headless avoids unnecessary GUI libraries.
+opencv-python-headless==4.12.0.88
+# scipy.ndimage/optimize: bento measurement/layout (complete suite needs macOS).
+scipy==1.15.3
+# sympy: symbolic physics tests; mpmath is its runtime dependency.
+sympy==1.14.0
+mpmath==1.3.0
+# pptx/lxml: keynote-deck-builder selftests. XlsxWriter/typing_extensions are
+# python-pptx runtime dependencies (Pillow is already pinned above).
+python-pptx==1.0.2
+lxml==6.0.2
+XlsxWriter==3.2.9
+typing_extensions==4.15.0
+# fontTools.ttLib: photo font coverage and bento font selection.
+fonttools==4.60.2
+# Do not add pillow-heif: these selftests deliberately exercise unsupported HEIC
+# diagnostics when the optional plugin is absent; no HEIC decoder is imported
+# on that path. No pytest, PyYAML, network/model/browser packages are required.

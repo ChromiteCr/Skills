@@ -23,6 +23,22 @@ ICONS = SKILL / "assets" / "icons"
 MAC_CHROME = Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 
 
+def platform_font_family(font: dict) -> str | None:
+    """Canonicalize one observed macOS alias only when PostScript identity agrees.
+
+    Hosted macOS Chrome reports the localized name 蘋方-簡 for PingFang SC.
+    A display alias alone is insufficient: unrelated, unknown or contradictory
+    PostScript names remain unchanged and must still fail the font allowlist.
+    """
+    family = font.get("familyName")
+    postscript = font.get("postScriptName")
+    approved_faces = {"PingFangSC-" + weight for weight in
+                      ("Ultralight", "Thin", "Light", "Regular", "Medium", "Semibold")}
+    if family == "蘋方-簡" and postscript in approved_faces:
+        return "PingFang SC"
+    return family
+
+
 def find_chrome() -> Path:
     """Google Chrome: $BENTO_CHROME first, then the macOS app, then google-chrome / chromium on PATH."""
     if os.environ.get("BENTO_CHROME"):
@@ -926,7 +942,8 @@ class Chrome:
             for nid, (tile, text) in zip(ids, texts):
                 fonts = self.call("CSS.getPlatformFontsForNode", {"nodeId": nid}).get("fonts", [])
                 out.append({"tile": tile, "role": role, "text": text,
-                            "fonts": [{"family": f.get("familyName"), "postscript": f.get("postScriptName"),
+                            "fonts": [{"family": platform_font_family(f), "reported_family": f.get("familyName"),
+                                       "postscript": f.get("postScriptName"),
                                        "glyphs": f.get("glyphCount")} for f in fonts]})
         return out
 
