@@ -893,3 +893,102 @@ def halation_linear_srgb(linear, *, threshold, sigma_fraction, truncate,
         "opencv_version": backend, "warnings": warnings,
     }
     return result, qa
+
+
+# Rebuilt plan 3.4 linear-light GRAIN, not historical prototype 0.4.1.
+# ENGINEERING texture: seeded uniform monochrome noise, normalized Gaussian
+# correlation, multiplicative linear RGB gain. NOT a physical emulsion model or
+# a confirmed photographic recipe. Every creative parameter and seed is REQUIRED.
+# 2*U-1 maps U[0,1) to [-1,1); Gaussian 1/2 is mathematical, not fitted data.
+GRAIN_ALGORITHM = "linear-srgb-pcg64-uniform-gaussian-multiply-v1"
+
+
+def grain_linear_srgb(linear, *, amount, sigma_fraction, truncate, strength, seed):
+    # Nonempty finite HxWx3 LINEAR sRGB in [0,1], with no implicit gamma/ICC step.
+    # amount in [0,1] is the relative gain excursion bound BEFORE smoothing, NOT
+    # final RMS, code steps or EV. strength in [0,1] scales that same excursion.
+    # sigma_fraction in (0,1] sets sigma=current short side*fraction; truncate>0
+    # sets r=max(1,ceil(truncate*sigma)). Require r<=short side before allocation.
+    # This support bound controls resources; it is not a photographic criterion.
+    # Generate ONE HxW PCG64 uniform field in C order; Gaussian blur only NOISE,
+    # not source pixels. Use reflect101 and an L1-normalized separable kernel.
+    # result=RGB*(1+strength*amount*blur(2*U-1)), same gain for all channels.
+    # Larger sigma lowers realized variance; no sample-mean subtraction, RMS
+    # normalization, amplitude fitting, source blur, channel tint or image resize.
+    # Black and zero channels remain zero. Linear RGB ratios are preserved up to
+    # rounding, NOT absolute Oklab chroma or final skin QA. Finite sample mean is
+    # not forced to zero, and reflect borders alter covariance/variance locally.
+    # Source in range does NOT imply result<=1. Preserve/report overshoot and
+    # require explicit downstream tone handling; never clip away the evidence.
+    # Same values/shape/parameters/NumPy/OpenCV environment => same pixel bytes.
+    # Tiled or resized calls restart the stream/change sampling; no equivalence.
+    # No file I/O, global RNG/backend settings, dependency install or CLI adoption.
+    rgb = np.ascontiguousarray(_triples(linear))
+    if rgb.ndim != 3:
+        raise ValueError("grain requires a nonempty HxWx3 image")
+    if np.any((rgb < 0) | (rgb > 1)):
+        raise ValueError("grain input must be linear sRGB in 0..1; handle gamut first")
+    amount = _scalar(amount, "amount")
+    fraction = _scalar(sigma_fraction, "sigma_fraction")
+    support = _scalar(truncate, "truncate")
+    s = _scalar(strength, "strength")
+    if not 0 <= amount <= 1:
+        raise ValueError("amount must be in 0..1 relative gain")
+    if not 0 < fraction <= 1:
+        raise ValueError("sigma_fraction must be in (0,1] of the short side")
+    if support <= 0:
+        raise ValueError("truncate must be positive")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    if isinstance(seed, (bool, np.bool_)) or not isinstance(seed, Integral) or seed < 0:
+        raise ValueError("seed must be a nonnegative integer")
+    short = min(rgb.shape[:2])
+    sigma = fraction*short
+    extent = support*sigma
+    if not np.isfinite(extent) or extent > short:
+        raise ValueError("Gaussian support radius exceeds the image short-side budget")
+    radius = max(1, int(np.ceil(extent)))
+    result = rgb.copy()
+    performed = bool(s != 0 and amount != 0 and np.any(rgb > 0))
+    backend = None
+    gain_min = gain_max = 1.0
+    if performed:
+        try:
+            import cv2
+        except ImportError:
+            raise ValueError("OpenCV is required for grain; no dependency was installed") from None
+        backend = cv2.__version__
+        rng = np.random.Generator(np.random.PCG64(int(seed)))
+        noise = 2*rng.random(rgb.shape[:2])-1
+        offsets = np.arange(-radius, radius+1, dtype=np.float64)
+        # Tiny valid sigma makes analytic Gaussian tails zero; center stays one.
+        with np.errstate(over="ignore", under="ignore"):
+            distance = offsets/sigma
+            kernel = np.exp(-0.5*distance*distance)
+        kernel /= np.sum(kernel)
+        correlated = cv2.sepFilter2D(noise, cv2.CV_64F, kernel, kernel,
+                                     borderType=cv2.BORDER_REFLECT_101)
+        with np.errstate(under="ignore"):
+            gain = 1+(s*amount)*correlated
+            result *= gain[...,None]
+        if not np.all(np.isfinite(result)) or np.any(result < 0):
+            raise ValueError("grain arithmetic produced invalid linear RGB")
+        gain_min, gain_max = float(np.min(gain)), float(np.max(gain))
+    over = int(np.count_nonzero(np.any(result > 1, axis=-1)))
+    qa = {
+        "algorithm": GRAIN_ALGORITHM, "scope": "linear_grain_before_final_output_qa",
+        "input_space": "linear-srgb-d65", "output_space": "linear-srgb-d65",
+        "amount": amount, "sigma_fraction": fraction, "truncate": support,
+        "strength": s, "seed": int(seed), "rng": "PCG64-uniform",
+        "sigma_pixels": sigma, "kernel_radius_pixels": radius,
+        "border": "reflect101", "blend": "multiplicative_monochrome_gain",
+        "gain_min": gain_min, "gain_max": gain_max,
+        "pixels_total": int(rgb.shape[0]*rgb.shape[1]),
+        "changed_pixels": int(np.count_nonzero(np.any(result != rgb,axis=-1))),
+        "brightened_pixels": int(np.count_nonzero(np.any(result > rgb,axis=-1))),
+        "darkened_pixels": int(np.count_nonzero(np.any(result < rgb,axis=-1))),
+        "pixels_above_one": over, "noise_performed": performed,
+        "numpy_version": np.__version__, "opencv_version": backend,
+        "warnings": ["linear_output_above_one_requires_explicit_tone_handling"] if over else [],
+    }
+    return result, qa
