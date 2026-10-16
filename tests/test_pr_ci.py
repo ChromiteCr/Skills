@@ -311,6 +311,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('python-version: "3.12.10"', text)
         self.assertIn('runs-on: macos-15', text)
         self.assertIn('Display P3.icc', text)
+        self.assertIn('defaults write -g AppleLanguages -array en-US', text)
+        self.assertIn('defaults write com.google.Chrome AppleLanguages -array en-US', text)
         self.assertIn('hashlib.sha256(data).hexdigest() != expected', text)
         self.assertIn('0b58fb370093f9a9f4ff785d94405710b79de67c', text)
         actions = re.findall(r"uses: (\S+)", text)

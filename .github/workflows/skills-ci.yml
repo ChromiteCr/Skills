@@ -39,6 +39,11 @@ jobs:
           python -m pip install --only-binary=:all: -r scripts/pr_automation/requirements-ci.txt
       - name: Verify Apple test prerequisites and install pinned open test font
         run: |
+          # Only the disposable runner is configured. Keep test font identifiers
+          # deterministic across runner locale changes; do not alter assertions.
+          defaults write -g AppleLanguages -array en-US
+          defaults write -g AppleLocale -string en_US
+          defaults write com.google.Chrome AppleLanguages -array en-US
           # Changes remain inside this disposable hosted runner, never the user's Mac.
           python - <<'PY'
           from pathlib import Path
