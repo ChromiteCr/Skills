@@ -91,6 +91,74 @@ class LocalStorageBoundaryTests(unittest.TestCase):
                 p.runtime_root()
 
 
+class TestRegistrationPolicyTests(unittest.TestCase):
+    BASE = ('import unittest\n'
+            'class Existing(unittest.TestCase):\n'
+            '    def test_assertion(self):\n'
+            '        self.assertEqual(2 + 2, 4)\n'
+            'def run_tests(group="all"):\n'
+            '    suite = unittest.TestSuite()\n'
+            '    if group != "io":\n'
+            '        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(Existing))\n'
+            '    result = unittest.TextTestRunner().run(suite)\n'
+            '    return 0 if result.wasSuccessful() else 1\n')
+    PAIR = ('        from test_extra import ExtraTests\n'
+            '        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ExtraTests))\n')
+
+    def added(self, addition=None):
+        return self.BASE.replace('    result =', (self.PAIR if addition is None else addition) + '    result =')
+
+    def test_current_cinegrade_style_two_line_registration(self):
+        self.assertTrue(p.additive_test_registration(self.BASE, self.added()))
+        # The top-level import variant also preserves all original AST nodes.
+        new = 'from test_extra import ExtraTests\n' + self.added(self.PAIR.split('\n', 1)[1])
+        self.assertTrue(p.additive_test_registration(self.BASE, new))
+
+    def test_assertion_modification_deletion_and_fixture_body_edits_rejected(self):
+        for old, new in [('2 + 2, 4', '2 + 2, 5'),
+                         ('        self.assertEqual(2 + 2, 4)\n', ''),
+                         ('        self.assertEqual', '        self.skipTest("skip")\n        self.assertEqual')]:
+            with self.subTest(old=old):
+                self.assertFalse(p.additive_test_registration(self.BASE, self.added().replace(old, new)))
+        # Even a purely additive weakening of an old body is not a registration.
+        changed = self.added().replace('        self.assertEqual', '        return\n        self.assertEqual')
+        self.assertFalse(p.additive_test_registration(self.BASE, changed))
+
+    def test_unsafe_imports_skips_runner_patching_and_shadowing_rejected(self):
+        additions = [
+            self.PAIR.replace('test_extra', 'os'),
+            self.PAIR.replace('ExtraTests', 'Existing'),
+            self.PAIR.replace('ExtraTests', 'unittest'),
+            self.PAIR.replace('ExtraTests', 'ExtraTests as Existing'),
+            self.PAIR.replace('test_extra', 'test_skip'),
+            self.PAIR + '        unittest.TextTestRunner.run = lambda self, suite: None\n',
+            self.PAIR + '        Existing = ExtraTests\n',
+            self.PAIR + '        Existing.__unittest_skip__ = True\n',
+            self.PAIR + '        Existing = unittest.expectedFailure(Existing)\n',
+            self.PAIR + '        pytest.mark.xfail(Existing)\n',
+        ]
+        for addition in additions:
+            with self.subTest(addition=addition):
+                self.assertFalse(p.additive_test_registration(self.BASE, self.added(addition)))
+
+    def test_redefinitions_arbitrary_append_and_duplicate_names_rejected(self):
+        for addition in ['\ndef run_tests():\n    pass\n',
+                         '\nclass Existing:\n    pass\n',
+                         '\ndef test_new():\n    assert True\n']:
+            self.assertFalse(p.additive_test_registration(self.BASE, self.added() + addition))
+        duplicate = self.BASE.replace('    def test_assertion(self):',
+                                     '    def test_assertion(self): pass\n    def test_assertion(self):')
+        self.assertFalse(p.additive_test_registration(duplicate, duplicate.replace('    result =', self.PAIR + '    result =')))
+
+    def test_fixture_registration_deletion_and_type_changes_always_require_review(self):
+        c = p.Controller.__new__(p.Controller)
+        for status, path in [('M', 'tests/fixtures/example/test_fixture.py'),
+                             ('D', 'tests/test_example.py'), ('T', 'tests/test_example.py')]:
+            with self.subTest(status=status, path=path), patch.object(c, 'paths', return_value=[status, path]), patch.object(c, 'git') as git:
+                self.assertIsNotNone(c.review_required({'integration_base': 'SYNTHETIC'}, Path('/SYNTHETIC')))
+                git.assert_not_called()
+
+
 class FakeGitHub:
     def __init__(self):
         self.pr = None
@@ -376,6 +444,110 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, code)
             self.assertIsNone(self.api.pr)
             self.assertEqual(self.git(repo, 'rev-list', '--count', 'HEAD'), '1')
+
+    def test_persistent_failure_budget_caps_initial_plus_two_repairs(self):
+        repo = self.create()
+        self.edit(repo)
+        self.c.finish()  # Existing PR and clone must survive budget exhaustion.
+        pr = self.api.pr['number']
+        head = self.git(repo, 'rev-parse', 'HEAD')
+        self.put(repo, 'skills/demo/example/SKILL.md', 'SYNTHETIC repair work KEEP\n')
+        self.ci.write_text('import sys; sys.exit(19)\n')
+        for count in range(1, 4):
+            self.c = self.new_controller()  # New process/run cannot reset the streak.
+            with self.assertRaisesRegex(p.Refused, 'local_checks_failed') as caught:
+                self.c.finish()
+            self.assertEqual(self.c.item()[0]['validation_failure_streak'], count)
+            self.assertEqual(self.c.item()[0]['validation_failures'], {'local_checks': count})
+        self.assertIn('repair_budget_exhausted', caught.exception.reason)
+        self.c = self.new_controller()
+        count = self.c.item()[0]['counters']['validations']
+        with self.assertRaisesRegex(p.Refused, 'repair_budget_exhausted'):
+            self.c.finish()
+        with self.assertRaisesRegex(p.Refused, 'repair_budget_exhausted'):
+            self.c.run(argparse.Namespace(foreground=True, command=[sys.executable, '-c', 'pass']))
+        self.assertEqual(self.c.item()[0]['counters']['validations'], count)
+        self.assertEqual(self.api.pr['number'], pr)
+        self.assertEqual(self.git(repo, 'rev-parse', 'HEAD'), head)
+        self.assertEqual((repo / 'skills/demo/example/SKILL.md').read_text(), 'SYNTHETIC repair work KEEP\n')
+
+    def test_full_snapshot_recovery_clears_only_current_validation_streak(self):
+        repo = self.create()
+        self.edit(repo)
+        good_ci = self.ci.read_text()
+        self.ci.write_text('import sys; sys.exit(1)\n')
+        with self.assertRaisesRegex(p.Refused, 'local_checks_failed'):
+            self.c.finish()
+        self.ci.write_text(good_ci)
+        self.put(repo, 'tests/test_example.py',
+                 'import unittest\nclass Synthetic(unittest.TestCase):\n def test_real(self): self.fail("failure")\n')
+        self.c = self.new_controller()
+        with self.assertRaisesRegex(p.Refused, 'targeted_tests_failed'):
+            self.c.finish()
+        item = self.c.item()[0]
+        self.assertEqual(item['validation_failure_streak'], 2)
+        self.assertEqual(item['validation_failures'], {'local_checks': 1, 'targeted_tests': 1})
+        self.edit(repo)
+        self.c = self.new_controller()
+        self.c.finish()
+        item = self.new_controller().item()[0]
+        self.assertEqual(item['validation_failure_streak'], 0)
+        self.assertEqual(item['validation_failures'], {})
+        self.assertEqual(item['counters']['local_checks_failures'], 1)
+        self.assertEqual(item['counters']['targeted_tests_failures'], 1)
+
+    def test_transport_and_launch_interruptions_do_not_consume_repair_budget(self):
+        repo = self.create()
+        self.edit(repo)
+        self.api.fail_query = True
+        with self.assertRaisesRegex(p.Refused, 'query unavailable'):
+            self.c.finish()
+        self.api.fail_query = False
+        invoke = self.c.invoke
+        for code in (124, 127):
+            def interrupted(*args, **kwargs):
+                if kwargs.get('kind') == 'validation':
+                    return dict(exit_code=code, returncode=code, stdout='', stderr='',
+                                timed_out=code == 124, launch_failed=code == 127,
+                                stdout_truncated=False, stderr_truncated=False, receipt='SYNTHETIC-interruption')
+                return invoke(*args, **kwargs)
+            with patch.object(self.c, 'invoke', interrupted), self.assertRaisesRegex(p.Refused, 'validation_interrupted'):
+                self.c.finish()
+        self.assertEqual(self.new_controller().item()[0].get('validation_failure_streak', 0), 0)
+        # An actual validator choosing 127 is a failure, not inability to launch.
+        self.ci.write_text('import sys; sys.exit(127)\n')
+        with self.assertRaisesRegex(p.Refused, 'local_checks_failed'):
+            self.c.finish()
+        self.assertEqual(self.new_controller().item()[0]['validation_failure_streak'], 1)
+
+    def test_zero_exit_truncated_local_validation_fails_closed(self):
+        repo = self.create()
+        self.edit(repo)
+        for stream in ('stdout', 'stderr'):
+            self.c = self.new_controller()
+            invoke = self.c.invoke
+            def truncated(*args, **kwargs):
+                result = invoke(*args, **kwargs)
+                if kwargs.get('kind') == 'validation':
+                    result[stream + '_truncated'] = True
+                return result
+            with patch.object(self.c, 'invoke', truncated), self.assertRaisesRegex(p.Refused, 'local_checks_failed_or_truncated'):
+                self.c.finish()
+        self.assertEqual(self.new_controller().item()[0]['validation_failure_streak'], 2)
+        self.assertIsNone(self.api.pr)
+
+    def test_existing_registration_pair_can_use_gates_but_fixtures_stay_draft(self):
+        path = 'skills/demo/example/scripts/test_cinegrade.py'
+        self.advance_main(path, TestRegistrationPolicyTests.BASE)
+        repo = self.create()
+        self.edit(repo)
+        baseline = TestRegistrationPolicyTests()
+        self.put(repo, path, baseline.added())
+        self.put(repo, 'skills/demo/example/scripts/test_extra.py',
+                 'import unittest\nclass ExtraTests(unittest.TestCase):\n def test_extra(self): self.assertTrue(True)\n')
+        self.assertEqual(self.c.finish()['status'], 'auto_merge_enabled')
+        self.put(repo, 'tests/cases/example.md', 'SYNTHETIC baseline test case\nSYNTHETIC appended evidence\n')
+        self.assertEqual(self.c.finish()['status'], 'review_required')
 
     def test_unsafe_paths_and_symlinks_are_rejected_before_staging(self):
         repo = self.create()

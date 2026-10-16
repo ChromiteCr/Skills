@@ -326,7 +326,7 @@ def families_for(chrome, selector):
     chrome.call("CSS.enable")
     root = chrome.call("DOM.getDocument", {"depth": -1})["root"]["nodeId"]
     node = chrome.call("DOM.querySelector", {"nodeId": root, "selector": selector})["nodeId"]
-    return [f.get("familyName") for f in chrome.call("CSS.getPlatformFontsForNode", {"nodeId": node}).get("fonts", [])]
+    return [br.platform_font_family(f) for f in chrome.call("CSS.getPlatformFontsForNode", {"nodeId": node}).get("fonts", [])]
 
 
 @unittest.skipUnless(CHROME_OK, "Chrome missing")

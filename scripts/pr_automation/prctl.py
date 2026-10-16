@@ -11,6 +11,8 @@ Receipts retain guard outcomes/truncation and real exit codes, with credential
 redaction. Arbitrary programs must cooperate: never detach or access another tree.
 """
 import argparse
+import ast
+import difflib
 import fcntl
 import hashlib
 import json
@@ -41,6 +43,103 @@ FORBIDDEN = {'sh', 'bash', 'zsh', 'dash', 'fish', 'csh', 'tcsh', 'ksh', 'nohup',
 OPERATORS = {'&', '&&', '||', ';', '|', '>', '>>', '<', '2>', '2>&1'}
 LIMITED = ['SKILL_INDEX.md', 'CHANGELOG.md', '.claude-plugin/plugin.json',
            '.claude-plugin/marketplace.json']
+MAX_VALIDATION_FAILURES = 3  # Initial failure plus at most two repair attempts.
+
+
+def additive_test_registration(before, after):
+    """Narrow syntax proof, NOT semantic safety or a substitute for review.
+
+    Imports can have side effects. Only fresh, unaliased test-module imports and
+    matching suite registrations are eligible; server checks still apply. Plain
+    text/fixtures and arbitrary new test bodies in existing files stay Draft.
+    """
+    old_lines, new_lines = before.splitlines(), after.splitlines()
+    inserted = set()
+    for op, i, j, k, l in difflib.SequenceMatcher(None, old_lines, new_lines, autojunk=False).get_opcodes():
+        if op in ('delete', 'replace') and any(line.strip() for line in old_lines[i:j]):
+            return False
+        if op in ('insert', 'replace'):
+            inserted.update(range(k + 1, l + 1))
+    if not inserted or any(re.search(r'(?i)skip|xfail|expectedfailure|monkeypatch', new_lines[n - 1])
+                           for n in inserted):
+        return False
+    try:
+        old, new = ast.parse(before), ast.parse(after)
+    except (SyntaxError, ValueError):
+        return False
+
+    def duplicate_defs(scope):
+        names = set()
+        def visit(node):
+            for child in ast.iter_child_nodes(node):
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    if child.name in names or duplicate_defs(child):
+                        return True
+                    names.add(child.name)
+                elif visit(child):
+                    return True
+            return False
+        return visit(scope)
+
+    if duplicate_defs(new):
+        return False
+    occupied = set()
+    for node in ast.walk(old):
+        if isinstance(node, ast.Name):
+            occupied.add(node.id)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            occupied.add(node.name)
+        elif isinstance(node, ast.arg):
+            occupied.add(node.arg)
+        elif isinstance(node, ast.alias):
+            occupied.add(node.asname or node.name.split('.')[0])
+    imports, registrations = {}, {}
+    invalid = False
+
+    def prune(node, scope=None):
+        nonlocal invalid
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            # The existing cinegrade runner uses local imports in existing if blocks.
+            scope = node.name if scope == 'module' and isinstance(node, ast.FunctionDef) and node.name in ('run_tests', 'load_tests') else None
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                kept = []
+                for child in value:
+                    added = (isinstance(child, ast.stmt) and scope is not None and
+                             all(n in inserted for n in range(child.lineno, child.end_lineno + 1)))
+                    if added and isinstance(child, ast.ImportFrom):
+                        if (child.level or not re.fullmatch(r'test_[A-Za-z0-9_]+', child.module or '') or
+                                len(child.names) != 1 or child.names[0].asname):
+                            invalid = True
+                        else:
+                            name = child.names[0].name
+                            if not name.isidentifier() or name in occupied or name in imports:
+                                invalid = True
+                            imports[name] = (scope, id(value), child.lineno)
+                        continue
+                    if added and isinstance(child, ast.Expr):
+                        call = child.value
+                        inner = call.args[0] if isinstance(call, ast.Call) and len(call.args) == 1 else None
+                        arg = inner.args[0] if isinstance(inner, ast.Call) and len(inner.args) == 1 else None
+                        name = arg.id if isinstance(arg, ast.Name) else ''
+                        template = 'suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(' + name + '))'
+                        if name.isidentifier() and ast.dump(child) == ast.dump(ast.parse(template).body[0]):
+                            if name in registrations:
+                                invalid = True
+                            registrations[name] = (scope, id(value), child.lineno)
+                            continue
+                    if isinstance(child, ast.AST):
+                        prune(child, scope)
+                    kept.append(child)
+                setattr(node, field, kept)
+            elif isinstance(value, ast.AST):
+                prune(value, scope)
+    prune(new, 'module')
+    if invalid or not imports or imports.keys() != registrations.keys() or ast.dump(old) != ast.dump(new):
+        return False
+    return all(imports[name][2] < registrations[name][2] and
+               (imports[name][0] == 'module' or imports[name][:2] == registrations[name][:2])
+               for name in imports)
 
 
 class Refused(Exception):
@@ -204,14 +303,17 @@ class Controller:
         limit = 20 * 1024 * 1024 if kind == 'devctl-transport' else 1024 * 1024
         result = {}
         with tempfile.TemporaryFile(dir=self.receipts) as stdout, tempfile.TemporaryFile(dir=self.receipts) as stderr:
+            timed_out, launch_failed = False, False
             try:
                 proc = subprocess.run(argv, cwd=cwd or self.data, env=environment(), input=input,
                                       stdout=stdout, stderr=stderr, timeout=timeout, pass_fds=inherited_fd())
                 code = proc.returncode
             except subprocess.TimeoutExpired:
                 code = 124
+                timed_out = True
             except OSError:
                 code = 127
+                launch_failed = True
                 stderr.write(b'cannot execute foreground command')
                 stderr.flush()
             for name, stream in (('stdout', stdout), ('stderr', stderr)):
@@ -220,7 +322,8 @@ class Controller:
                 raw = stream.read(limit)
                 result.update({name: raw.decode('utf-8', 'replace'), name + '_bytes': size,
                                name + '_truncated': size > len(raw)})
-        result.update(returncode=code, exit_code=code if code >= 0 else 128 - code, timed_out=code == 124)
+        result.update(returncode=code, exit_code=code if code >= 0 else 128 - code,
+                      timed_out=timed_out, launch_failed=launch_failed)
         result['receipt'] = self.receipt(kind, result)
         if check and code:
             raise Refused('command_failed; receipt=' + result['receipt'], result['exit_code'])
@@ -360,10 +463,38 @@ class Controller:
         return {'status': status, 'id': item['id'], 'clone': str(repo), 'branch': item['branch'],
                 'base': item['base'], 'plan_hash': item['plan_hash'], 'allowed_paths': item['allowed_paths'],
                 'dirty': bool(self.text(repo, 'status', '--porcelain=v1', '--untracked-files=all')),
-                'counters': item['counters'], 'pr': item.get('pr')}
+                'counters': item['counters'], 'pr': item.get('pr'),
+                'validation_failure_streak': item.get('validation_failure_streak', 0),
+                'validation_failures': item.get('validation_failures', {})}
+
+    @staticmethod
+    def repair_budget(item):
+        require(item.get('validation_failure_streak', 0) < MAX_VALIDATION_FAILURES,
+                'repair_budget_exhausted; clone_and_pr_preserved; human_review_required')
+
+    def validation_failed(self, item, phase, reason, result=None):
+        # Only completed local validation outcomes consume repair budget. Lease,
+        # transport, fetch/API failures and inability to launch are not repairs.
+        if result and (result.get('timed_out') or result.get('launch_failed') or result.get('returncode', 0) < 0):
+            raise Refused('validation_interrupted; receipt=' + result['receipt'], result['exit_code'])
+        item['validation_failure_streak'] = item.get('validation_failure_streak', 0) + 1
+        failures = item.setdefault('validation_failures', {})
+        failures[phase] = failures.get(phase, 0) + 1
+        key = phase + '_failures'
+        item['counters'][key] = item['counters'].get(key, 0) + 1
+        exhausted = item['validation_failure_streak'] >= MAX_VALIDATION_FAILURES
+        item['phase'] = 'repair_budget_exhausted' if exhausted else phase + '_failed'
+        # An earlier successful tree must not bypass a later failed validation.
+        item['validated_tree'] = None
+        self.save()
+        detail = ('repair_budget_exhausted; clone_and_pr_preserved; ' if exhausted else '') + reason
+        if result:
+            detail += '; receipt=' + result['receipt']
+        raise Refused(detail, (result or {}).get('exit_code') or 73)
 
     def run(self, args):
         item, repo = self.item()
+        self.repair_budget(item)
         self.inspect(repo, item['branch'])
         command = args.command[1:] if args.command[:1] == ['--'] else args.command
         require(args.foreground, 'foreground_attestation_required')
@@ -501,6 +632,7 @@ class Controller:
             require(digest.hexdigest() == oid, 'export_content_changed')
 
     def snapshot_check(self, item, repo, tree):
+        self.repair_budget(item)
         self.bump(item, 'validations')
         folder = Path(tempfile.mkdtemp(prefix=item['id'] + '-', dir=self.data / 'snapshots'))
         # Kept on failure/success for diagnosis, never delete user work or unknown paths.
@@ -518,8 +650,8 @@ class Controller:
         result = self.invoke([sys.executable, str(ci), '--root', str(snapshot), '--files-json', str(manifest),
                               '--mode', 'local', '--branch', item['branch']],
                              snapshot, check=False, timeout=None, kind='validation')
-        if result['exit_code']:
-            raise Refused('local_checks_failed; receipt=' + result['receipt'], result['exit_code'])
+        if result['exit_code'] or result['stdout_truncated'] or result['stderr_truncated']:
+            self.validation_failed(item, 'local_checks', 'local_checks_failed_or_truncated', result)
         # CI always runs automation tests, but selected new business unittest
         # files must also actually run, rather than merely appear in the commit.
         additional = []
@@ -535,11 +667,15 @@ class Controller:
             incomplete = re.search(r'Ran 0 tests|skipped=[1-9]|expected failures=[1-9]',
                                    tested['stdout'] + tested['stderr'])
             if tested['exit_code'] or incomplete or tested['stdout_truncated'] or tested['stderr_truncated']:
-                raise Refused('targeted_tests_failed_or_incomplete; receipt=' + tested['receipt'], tested['exit_code'] or 73)
-        self.verify_export(snapshot, entries)
+                self.validation_failed(item, 'targeted_tests', 'targeted_tests_failed_or_incomplete', tested)
+        try:
+            self.verify_export(snapshot, entries)
+        except Refused as exc:
+            self.validation_failed(item, 'snapshot_integrity', exc.reason)
         item.update(validated_tree=tree, validated_ci=hashlib.sha256(ci.read_bytes()).hexdigest(),
                     validated_integration_base=item['integration_base'],
-                    validation_receipt=result['receipt'], additional_test_receipts=additional)
+                    validation_receipt=result['receipt'], additional_test_receipts=additional,
+                    validation_failure_streak=0, validation_failures={})
         self.save()
 
     def reconcile(self):
@@ -604,13 +740,22 @@ class Controller:
                 'server_gate_not_enforced; require exact Skills gate/GitHub Actions, strict PR policy, no bypass')
 
     def review_required(self, item, repo):
-        # Mechanical scope is not semantic review. Changes to existing test evidence
-        # remain Draft; ordinary new tests and skill changes may use server gates.
+        # Additions-only does NOT establish semantic safety or replace review.
+        # Only the narrow AST-preserving registration pattern is exempted here.
         rows = self.paths(repo, 'diff', '--name-status', '-z', '--no-renames', item['integration_base'], 'HEAD')
         for status_code, path in zip(rows[::2], rows[1::2]):
             name = PurePosixPath(path).name
-            if status_code == 'T' or (status_code != 'A' and
-                    (path.startswith('tests/') or name.startswith(('test_', 'test-')))):
+            if status_code == 'T':
+                return 'existing_test_evidence_or_type_change_requires_human_review'
+            evidence = (any(part in ('tests', 'fixtures') for part in PurePosixPath(path).parts)
+                        or name.startswith(('test_', 'test-')))
+            if status_code != 'A' and evidence:
+                if (status_code == 'M' and name.endswith('.py') and name.startswith('test_')
+                        and 'fixtures' not in PurePosixPath(path).parts):
+                    before = self.git(repo, 'show', item['integration_base'] + ':' + path)['stdout']
+                    after = self.git(repo, 'show', 'HEAD:' + path)['stdout']
+                    if additive_test_registration(before, after):
+                        continue
                 return 'existing_test_evidence_or_type_change_requires_human_review'
         return None
 
@@ -626,6 +771,7 @@ class Controller:
         done = self.terminal(item, pr, repo)
         if done:
             return done
+        self.repair_budget(item)
         self.scope(item, repo)
         update = None if checkpoint else self.integrate(item, repo)
         if update:
@@ -827,7 +973,11 @@ def parser():
         'Run IDs identify one guard lease, not an item. After end/expiry use a NEW run ID; prepare resumes the active item. '
         'A dirty advanced-base clone returns needs_update; use checkpoint then reconcile for a non-rewriting merge. '
         'Readiness/auto-merge require a verified strict Skills gate from GitHub Actions (app 15368), enforced without bypass. '
-        'Existing test-evidence edits stay Draft for human review; new-skill/policy maintenance is not automatic. '
+        'Existing assertions, fixtures, deletions/type changes and other test edits stay Draft; only '
+        'AST-preserving fresh test imports plus suite.addTests registrations may use server gates (not semantic review). '
+        'Per-item validation streaks persist across runs: initial failure plus at most TWO repair attempts; '
+        'repair_budget_exhausted preserves clone/PR for human review. Only a fully verified snapshot clears the current streak; '
+        'transport/launch interruptions do not consume it. New-skill/policy maintenance is not automatic. '
         'Failed/unknown clone directories are preserved, never adopted or deleted.')
     sub = p.add_subparsers(dest='action', required=True)
     helptexts = {'start': 'Acquire unchanged devctl lease; same valid run is idempotent.',
