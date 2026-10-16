@@ -211,7 +211,7 @@ Chinese lyric writing plus LLM-to-MIDI composition.
 
 | Skill | 优先级 | 状态 | 版本 | 用途 |
 |---|---|---|---|---|
-| `photo-cinematic-grade` | P2 | draft | 0.12.0 | 确定性 SDR sRGB render、三选候选 candidates 与原尺寸前后对比 compare；独立浮点 sRGB/Oklab/OkLCh、亮度曲线、高光色度滚降、环形分色相调色、分离色调、减法密度、色域映射/占比、抖动量化、显式选区肤色限幅及线性光高光 bloom，自动选区与 CLI 集成待完成；card/lut、计划六风格管线及真实效果待验收 |
+| `photo-cinematic-grade` | P2 | draft | 0.13.0 | 确定性 SDR sRGB render、三选候选 candidates 与原尺寸前后对比 compare；独立浮点 sRGB/Oklab/OkLCh、亮度曲线、高光色度滚降、环形分色相调色、分离色调、减法密度、色域映射/占比、抖动量化、显式选区肤色限幅、线性光高光 bloom 与有色边缘光晕，自动选区与 CLI 集成待完成；card/lut、计划六风格管线及真实效果待验收 |
 | `photo-caption-writer` | P2 | draft | 0.1.1 | 基于拍摄者确认的事实与 EXIF 写图注或作品阐述，不从画面脑补情绪与意图 |
 | `photo-exif-frame` | P2 | draft | 0.1.1 | 照片下方加信息带：光圈、快门、曝光补偿、ISO、时间、设备；缺字段留空不编造 |
 | `photo-poster-stylist` | P2 | draft | 0.1.1 | 按拍摄者描述把照片转译为极简几何 SVG 海报：受限色板、网格、出血，脚本校验 |

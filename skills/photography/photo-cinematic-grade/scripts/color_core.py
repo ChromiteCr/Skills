@@ -787,3 +787,109 @@ def bloom_linear_srgb(linear, *, threshold, sigma_fraction, truncate, strength):
         "opencv_version": backend, "warnings": warnings,
     }
     return result, qa
+
+
+# Rebuilt plan 3.4 spatial colored HALATION, not historical prototype 0.4.1.
+# ENGINEERING effect, not a film-emulsion or lens simulation, nor an approved look.
+# Bright-pass E=max(Y-threshold,0); halo=max(Gaussian(E)-E,0).
+# Removing the local bright-pass suppresses tint in isolated light-source cores;
+# only the positive diffused excess is added, with explicit LINEAR RGB tint.
+# No guessed tint, threshold, radius or strength. Gaussian 1/2 and normalization
+# follow the definition; Y coefficients are the standard sRGB D65 constants above.
+HALATION_ALGORITHM = "linear-srgb-brightpass-positive-residual-tint-v1"
+
+
+def halation_linear_srgb(linear, *, threshold, sigma_fraction, truncate,
+                         strength, tint_linear_rgb):
+    # Nonempty HxWx3 LINEAR sRGB in [0,1]. No ICC/gamma inference or file I/O.
+    # All inputs REQUIRED. threshold: Y in [0,1]; sigma_fraction: (0,1] of the
+    # current short side; truncate: positive sigma multiples; strength: [0,1].
+    # tint_linear_rgb: exactly three finite channel gains in [0,1], NOT encoded
+    # RGB, a hue angle, an observed spectral response or an implicitly normalized
+    # color. E.g. red/magenta must be supplied/confirmed by the caller, not guessed.
+    # Zero tint/strength or constant bright-pass yields an exact independent copy.
+    # Input/parameter validation precedes identity paths, including resource limits.
+    # Output can exceed 1. Preserve and report it; explicit downstream tone/gamut
+    # handling and FINAL skin/clip QA remain mandatory. No LUT representation for
+    # this spatial effect. Legacy CLI, presets and shared I/O remain unchanged.
+    rgb = np.ascontiguousarray(_triples(linear))
+    if rgb.ndim != 3:
+        raise ValueError("halation requires a nonempty HxWx3 image")
+    if np.any((rgb < 0) | (rgb > 1)):
+        raise ValueError("halation input must be linear sRGB in 0..1; handle gamut first")
+    q = _scalar(threshold, "threshold")
+    fraction = _scalar(sigma_fraction, "sigma_fraction")
+    support = _scalar(truncate, "truncate")
+    s = _scalar(strength, "strength")
+    tint = _real_array(tint_linear_rgb)
+    if tint.shape != (3,) or np.any((tint < 0) | (tint > 1)):
+        raise ValueError("tint_linear_rgb must be exactly three channel gains in 0..1")
+    if not 0 <= q <= 1:
+        raise ValueError("threshold must be in 0..1 linear relative luminance")
+    if not 0 < fraction <= 1:
+        raise ValueError("sigma_fraction must be in (0,1] of the short side")
+    if support <= 0:
+        raise ValueError("truncate must be positive")
+    if not 0 <= s <= 1:
+        raise ValueError("strength must be in 0..1")
+    short = min(rgb.shape[:2])
+    sigma = fraction*short
+    extent = support*sigma
+    if not np.isfinite(extent) or extent > short:
+        raise ValueError("Gaussian support radius exceeds the image short-side budget")
+    radius = max(1, int(np.ceil(extent)))
+    with np.errstate(under="ignore"):
+        y = rgb[...,0]*_SRGB_Y[0] + rgb[...,1]*_SRGB_Y[1] + rgb[...,2]*_SRGB_Y[2]
+        extracted = np.maximum(y-q, 0)
+    count = int(np.count_nonzero(extracted > 0))
+    uniform = bool(np.all(extracted == extracted.flat[0]))
+    performed = bool(s != 0 and np.any(tint > 0) and not uniform)
+    result = rgb.copy()
+    backend = None
+    halo_count = 0
+    if performed:
+        try:
+            import cv2
+        except ImportError:
+            raise ValueError("OpenCV is required for halation; no dependency was installed") from None
+        backend = cv2.__version__
+        offsets = np.arange(-radius, radius+1, dtype=np.float64)
+        # For tiny legal sigma, overflowed squared distances have analytic zero
+        # Gaussian weight. The center stays one, so normalization is well-defined.
+        with np.errstate(over="ignore", under="ignore"):
+            distance = offsets/sigma
+            kernel = np.exp(-0.5*distance*distance)
+        kernel /= np.sum(kernel)
+        # Center on the minimum before convolution to preserve constant offsets
+        # and avoid subtracting a large shared baseline in the residual.
+        centered = extracted - np.min(extracted)
+        blurred = cv2.sepFilter2D(centered, cv2.CV_64F, kernel, kernel,
+                                  borderType=cv2.BORDER_REFLECT_101)
+        # Positive-part selection defines the effect; this is NOT clipping RGB.
+        halo = np.maximum(blurred-centered, 0)
+        halo_count = int(np.count_nonzero(halo > 0))
+        with np.errstate(under="ignore"):
+            result += (s*halo)[...,None]*tint
+        if not np.all(np.isfinite(result)) or np.any(result < rgb):
+            raise ValueError("halation arithmetic produced invalid additive light")
+    over = int(np.count_nonzero(np.any(result > 1,axis=-1)))
+    warnings = [] if count else ["no_highlights_above_threshold"]
+    if uniform and count:
+        warnings.append("uniform_brightpass_has_no_edge_halo")
+    if over:
+        warnings.append("linear_output_above_one_requires_explicit_tone_handling")
+    qa = {
+        "algorithm": HALATION_ALGORITHM,
+        "scope": "linear_halation_before_final_output_qa",
+        "input_space": "linear-srgb-d65", "output_space": "linear-srgb-d65",
+        "threshold": q, "sigma_fraction": fraction, "truncate": support,
+        "strength": s, "tint_linear_rgb": tint.tolist(),
+        "sigma_pixels": sigma, "kernel_radius_pixels": radius,
+        "border": "reflect101", "blend": "additive_positive_residual_tint",
+        "pixels_total": int(rgb.shape[0]*rgb.shape[1]), "highlight_pixels": count,
+        "halo_pixels": halo_count,
+        "changed_pixels": int(np.count_nonzero(np.any(result != rgb,axis=-1))),
+        "pixels_above_one": over, "blur_performed": performed,
+        "opencv_version": backend, "warnings": warnings,
+    }
+    return result, qa
