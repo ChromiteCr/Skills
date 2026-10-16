@@ -2,6 +2,7 @@
 No live repository/config/guard is modified and no external API is contacted.
 """
 import argparse
+import hashlib
 import importlib.util
 import io
 import json
@@ -157,6 +158,57 @@ class TestRegistrationPolicyTests(unittest.TestCase):
             with self.subTest(status=status, path=path), patch.object(c, 'paths', return_value=[status, path]), patch.object(c, 'git') as git:
                 self.assertIsNotNone(c.review_required({'integration_base': 'SYNTHETIC'}, Path('/SYNTHETIC')))
                 git.assert_not_called()
+
+
+class ReadableAuditChunkTests(unittest.TestCase):
+    """SYNTHETIC UTF-8/line-boundary fixtures; no actual plan is rewritten."""
+
+    def test_huge_single_line_remains_exact_and_valid_utf8(self):
+        for ending in (b'', b'\n', b'\r\n'):
+            raw = ('合成😀内容' * 20000).encode() + ending
+            parts = p.readable_chunks(raw)
+            self.assertEqual(b''.join(parts), raw)
+            self.assertTrue(all(len(part) <= 24 * 1024 for part in parts))
+            for part in parts:
+                part.decode('utf-8')
+
+    def test_empty_and_exact_boundary_are_readable(self):
+        for raw in (b'', b'abc', b'a' * (24 * 1024), '😀'.encode() * (6 * 1024)):
+            pieces = p.readable_chunks(raw)
+            self.assertEqual(b''.join(pieces), raw)
+            self.assertEqual(len(pieces), 1)
+
+    def test_lines_preferred_without_dropping_whitespace_or_final_newline(self):
+        raw = b'abc\r\ndef\n  ghi'
+        self.assertEqual(p.readable_chunks(raw, 10), [b'abc\r\ndef\n', b'  ghi'])
+
+    def test_more_than_2000_short_lines_preserve_read_offset_pagination(self):
+        raw = b'\xef\xbb\xbf' + b'\n' * 5001 + '尾部空格  '.encode()
+        parts = p.readable_chunks(raw)
+        recovered = []
+        for part in parts:
+            lines = part.splitlines(keepends=True)
+            recovered.extend(b''.join(lines[i:i + 2000]) for i in range(0, len(lines), 2000))
+        self.assertEqual(b''.join(recovered), raw)
+
+    def test_invalid_utf8_rejected(self):
+        with self.assertRaises(UnicodeDecodeError):
+            p.readable_chunks(b'SYNTHETIC\xff')
+
+    def test_snapshot_refuses_symlinks_and_hardlinks(self):
+        with tempfile.TemporaryDirectory(prefix='SYNTHETIC-audit-path-') as tmp:
+            root = Path(tmp).resolve()
+            original = root / 'original'
+            p.immutable_snapshot(original, b'unchanged')
+            alias = root / 'alias'
+            alias.symlink_to(original)
+            with self.assertRaises(p.Refused):
+                p.immutable_snapshot(alias, b'replacement')
+            link = root / 'hardlink'
+            os.link(original, link)
+            with self.assertRaisesRegex(p.Refused, 'unsafe_snapshot_file'):
+                p.immutable_snapshot(link, b'replacement')
+            self.assertEqual(original.read_bytes(), b'unchanged')
 
 
 class FakeGitHub:
@@ -320,9 +372,99 @@ class ControllerTests(unittest.TestCase):
         new = self.advance_main('AUDIT-AND-IDEAS.md', 'SYNTHETIC latest audit\n')
         result = self.c.prepare()
         self.assertEqual(result['base'], new)
-        self.assertEqual(p.load(result['audit_snapshot'])['text'], 'SYNTHETIC latest audit\n')
+        self.assertEqual(Path(result['audit_snapshot']).read_bytes(), b'SYNTHETIC latest audit\n')
+        self.assertEqual(p.load(result['audit_metadata'])['base'], new)
         self.assertEqual(self.git(self.live, 'rev-parse', 'HEAD'), head)
         self.assertEqual((self.live / 'README.md').read_text(), 'SYNTHETIC human edit KEEP')
+
+    def test_large_plan_is_directly_readable_before_any_item_exists(self):
+        # SYNTHETIC 200KB+ Unicode plan reproduces read's 50KB single-line limit.
+        raw = ('# SYNTHETIC 计划\r\n' + ('内容仅为测试夹具，不是真实计划。' * 80 + '\n') * 70).encode('utf-8')
+        (self.source / 'AUDIT-AND-IDEAS.md').write_bytes(raw)
+        self.git(self.source, 'add', 'AUDIT-AND-IDEAS.md')
+        self.git(self.source, 'commit', '-m', 'SYNTHETIC large readable audit')
+        self.git(self.source, 'push', 'origin', 'main')
+        result = self.c.prepare()
+        self.assertIsNone(self.c.state['active'])
+        self.assertGreater(len(raw), 200000)
+        self.assertEqual(Path(result['audit_snapshot']).read_bytes(), raw)
+        self.assertEqual(result['audit_sha256'], hashlib.sha256(raw).hexdigest())
+        self.assertLess(len(json.dumps(result).encode()), 50 * 1024)
+        pieces = [Path(name).read_bytes() for name in result['audit_parts']]
+        self.assertEqual(b''.join(pieces), raw)
+        for part in pieces:
+            self.assertLessEqual(len(part), 24 * 1024)
+            part.decode('utf-8')
+        meta = p.load(result['audit_metadata'])
+        self.assertEqual(meta['source_blob'], self.git(self.source, 'rev-parse', 'HEAD:AUDIT-AND-IDEAS.md'))
+        self.assertEqual(meta['bytes'], len(raw))
+        self.assertEqual(meta['sha256'], result['audit_sha256'])
+        self.assertIn('use read directly', result['read_instructions'])
+        before = {name: Path(name).stat().st_mtime_ns for name in result['audit_parts']}
+        repeated = self.new_controller().prepare()
+        self.assertEqual(repeated['audit_parts'], result['audit_parts'])
+        self.assertEqual(before, {name: Path(name).stat().st_mtime_ns for name in before})
+        with self.assertRaisesRegex(p.Refused, 'no_active_item'):
+            self.c.run(argparse.Namespace(command=['python3', '-c', 'print(1)'], foreground=True))
+
+    def test_interrupted_export_does_not_publish_incomplete_state(self):
+        previous = self.c.prepare()
+        old_base = self.c.state['prepared_base']
+        self.advance_main('AUDIT-AND-IDEAS.md', 'SYNTHETIC next plan\n')
+        original = p.immutable_snapshot
+        def fail_part(path, content):
+            if Path(path).name.startswith('part-'):
+                raise OSError('SYNTHETIC interrupted before publishing parts')
+            return original(path, content)
+        with patch.object(p, 'immutable_snapshot', side_effect=fail_part):
+            with self.assertRaisesRegex(OSError, 'SYNTHETIC interrupted'):
+                self.c.prepare()
+        self.assertEqual(p.load(self.c.state_path)['prepared_base'], old_base)
+        self.assertEqual(Path(previous['audit_snapshot']).read_bytes(), b'SYNTHETIC exact audit snapshot\n')
+        recovered = self.new_controller().prepare()
+        self.assertNotEqual(recovered['base'], old_base)
+        self.assertEqual(b''.join(Path(x).read_bytes() for x in recovered['audit_parts']), b'SYNTHETIC next plan\n')
+
+    def test_tampered_plan_snapshot_is_preserved_and_refused(self):
+        result = self.c.prepare()
+        target = Path(result['audit_snapshot'])
+        target.write_text('SYNTHETIC local edit KEEP')
+        with self.assertRaisesRegex(p.Refused, 'snapshot_content_changed_preserved'):
+            self.c.prepare()
+        self.assertEqual(target.read_text(), 'SYNTHETIC local edit KEEP')
+
+    def test_tampered_plan_part_is_preserved_and_refused(self):
+        result = self.c.prepare()
+        target = Path(result['audit_parts'][0])
+        target.write_text('SYNTHETIC part edit KEEP')
+        with self.assertRaisesRegex(p.Refused, 'snapshot_content_changed_preserved'):
+            self.c.prepare()
+        self.assertEqual(target.read_text(), 'SYNTHETIC part edit KEEP')
+
+    def test_plan_decode_corruption_cannot_pass_git_blob_verification(self):
+        self.c.prepare()
+        original = self.c.git
+        def corrupt(repo, *args, **kwargs):
+            result = original(repo, *args, **kwargs)
+            if args[0] == 'show' and args[1].endswith(':AUDIT-AND-IDEAS.md'):
+                result = {**result, 'stdout': result['stdout'] + 'SYNTHETIC corrupt'}
+            return result
+        with patch.object(self.c, 'git', side_effect=corrupt):
+            with self.assertRaisesRegex(p.Refused, 'audit_source_bytes_changed'):
+                self.c.prepare()
+
+    def test_legacy_single_line_receipt_can_be_migrated_without_overwrite(self):
+        self.c.prepare()
+        base = self.c.state['prepared_base']
+        legacy = self.c.data / ('audit-' + base + '.json')
+        p.atomic(legacy, {'base': base, 'text': 'SYNTHETIC old receipt KEEP'})
+        before = legacy.read_bytes()
+        self.c.state['audit_receipt'] = str(legacy)
+        self.c.save()
+        result = self.new_controller().prepare()
+        self.assertTrue(result['audit_snapshot'].endswith('.md'))
+        self.assertTrue(result['audit_metadata'].endswith('.metadata.json'))
+        self.assertEqual(legacy.read_bytes(), before)
 
     def test_dirty_owned_workspace_resumes_and_plan_is_stable(self):
         repo = self.create()
