@@ -81,14 +81,47 @@ def curve_table(points):
     return table
 
 
+def _clamp_qa(total, mapped, strength):
+    # Plan 3.5: count affected PIXELS once, warn strictly above ten percent.
+    # The legacy encoded-sRGB pipeline clamps before strength interpolation.
+    # This does not call color_core.gamut_map_linear_srgb or measure ICC loss.
+    return {
+        "algorithm": "encoded-srgb-channel-clamp-v1",
+        "scope": "full_strength_before_strength_mix",
+        "applied": strength != 0,
+        "pixels_total": total,
+        "pixels_mapped": mapped,
+        "mapped_fraction": mapped / total,
+        "warning_threshold_fraction": 0.1,
+        "warnings": ["encoded_srgb_clamped_fraction_above_10_percent"] if 10 * mapped > total else [],
+        "limitations": ["excludes_source_icc_conversion", "not_linear_srgb_mapping",
+                        "not_final_output_clipping_or_visual_acceptance"],
+    }
+
+
 def grade_pixels(image, recipe, strength):
+    # Preserve the existing two-result API and its channel-sample count.
+    graded, excursions, _ = grade_pixels_with_qa(image, recipe, strength)
+    return graded, excursions
+
+
+def grade_pixels_with_qa(image, recipe, strength):
+    # Return legacy pixels, channel excursions and stage-scoped pixel QA.
+    # A mapped pixel has at least one full-strength channel outside 0..255.
+    # Counts describe the clamp performed BEFORE the requested strength mix,
+    # not changed output pixels or recoverable detail. Zero strength bypasses
+    # the transform. No new color transform or recipe is applied.
+
     if image.mode != 'RGB':
         raise InputError('grading core requires normalized 8-bit RGB')
     if not _integer(strength, 0, 100):
         raise InputError('strength must be an integer within 0..100')
+    total = image.width * image.height
+    if total == 0:
+        raise InputError("grading QA requires a nonempty image")
     source = image.tobytes()
     if strength == 0:
-        return Image.frombytes('RGB', image.size, source), 0
+        return Image.frombytes("RGB", image.size, source), 0, _clamp_qa(total, 0, strength)
     tone = curve_table(recipe['curve'])
     tables = []
     for shadow, highlight in zip(recipe['shadow_rgb'], recipe['highlight_rgb']):
@@ -97,16 +130,22 @@ def grade_pixels(image, recipe, strength):
     saturation = recipe['saturation_percent']
     result = bytearray(len(source))
     excursion_count = 0
+    mapped_pixels = 0
     for i in range(0, len(source), 3):
         channels = (red[source[i]], green[source[i + 1]], blue[source[i + 2]])
         # Approximate luma weights on encoded values, deliberately not luminance.
         luma = round_div(54 * channels[0] + 183 * channels[1] + 19 * channels[2], 256)
+        pixel_mapped = False
         for c, value in enumerate(channels):
             graded = luma + round_div((value - luma) * saturation, 100)
-            excursion_count += graded < 0 or graded > 255
+            outside = graded < 0 or graded > 255
+            excursion_count += outside
+            pixel_mapped |= outside
             bounded = min(255, max(0, graded))
             result[i + c] = round_div(source[i + c] * (100 - strength) + bounded * strength, 100)
-    return Image.frombytes('RGB', image.size, bytes(result)), excursion_count
+        mapped_pixels += pixel_mapped
+    return (Image.frombytes("RGB", image.size, bytes(result)), excursion_count,
+            _clamp_qa(total, mapped_pixels, strength))
 
 
 def endpoint_qa(image):
@@ -134,7 +173,7 @@ def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False)
         raise InputError('unknown look; use the looks command')
     loaded = load_image(source, assume_srgb=assume_srgb)
     recipe = looks[look]
-    graded, excursions = grade_pixels(loaded.image, recipe, strength)
+    graded, excursions, gamut_qa = grade_pixels_with_qa(loaded.image, recipe, strength)
     png = encode_png(graded)
     report = {
         'schema_version': 1,
@@ -152,7 +191,8 @@ def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False)
         },
         'qa': {
             'before': endpoint_qa(loaded.image), 'after': endpoint_qa(graded),
-            'full_strength_pre_clamp_channel_samples': excursions,
+            "gamut_mapping": gamut_qa,
+            "full_strength_pre_clamp_channel_samples": excursions,
             'channel_sample_count': graded.width * graded.height * 3,
             'human_review_required': ['skin_and_memory_colors', 'highlight_detail', 'shadow_detail', 'banding'],
             'warnings': (['grade_out_of_range_before_clamp'] if excursions else []),
@@ -215,7 +255,7 @@ def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False)
     images, records = {}, []
     for index, name in enumerate(CANDIDATE_LOOKS, 1):
         amount = 0 if name == 'neutral' else strength
-        graded, excursions = grade_pixels(preview, looks[name], amount)
+        graded, excursions, gamut_qa = grade_pixels_with_qa(preview, looks[name], amount)
         png = encode_png(graded)
         filename = f'{index:02d}-{name}.png'
         images[filename] = png
@@ -230,7 +270,8 @@ def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False)
             },
             'qa': {
                 'after': endpoint_qa(graded),
-                'full_strength_pre_clamp_channel_samples': excursions,
+                "gamut_mapping": gamut_qa,
+                "full_strength_pre_clamp_channel_samples": excursions,
                 'channel_sample_count': graded.width * graded.height * 3,
                 'warnings': ['grade_out_of_range_before_clamp'] if excursions else [],
             },
@@ -279,7 +320,7 @@ def compare(source, output, *, look, strength, assume_srgb=False):
     loaded = load_image(source, assume_srgb=assume_srgb)
     original = loaded.image
     recipe = looks[look]
-    graded, excursions = grade_pixels(original, recipe, strength)
+    graded, excursions, gamut_qa = grade_pixels_with_qa(original, recipe, strength)
     width, height = original.size
     # Exact abutting panels, no resize/crop/text/gutter or extra color transform.
     # The 2x width is a layout consequence, not a new aesthetic coefficient.
@@ -312,6 +353,7 @@ def compare(source, output, *, look, strength, assume_srgb=False):
         },
         "qa": {
             "scope": "full_resolution_panels",
+            "gamut_mapping": gamut_qa,
             "before": endpoint_qa(original), "after": endpoint_qa(graded),
             "full_strength_pre_clamp_channel_samples": excursions,
             "channel_sample_count": width * height * 3,
@@ -337,6 +379,11 @@ def compare(source, output, *, look, strength, assume_srgb=False):
     receipt = (json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
     write_new_bundle(output, {"compare.png": png}, receipt)
     return report
+
+
+def _qa_warnings(qa):
+    # Preserve legacy report warnings; surface additive stage warnings in CLI.
+    return qa["warnings"] + qa["gamut_mapping"]["warnings"]
 
 
 def build_parser():
@@ -382,7 +429,7 @@ def main(argv=None):
                             strength=args.strength, assume_srgb=args.assume_srgb)
             print(json.dumps({'status': 'complete', 'output': 'render.png',
                               'look': args.look, 'pixel_sha256': report['output']['pixel_sha256'],
-                              'warnings': report['input']['warnings'] + report['qa']['warnings']}))
+                              'warnings': report['input']['warnings'] + _qa_warnings(report["qa"])}))
         elif args.command == 'candidates':
             report = candidates(args.source, args.output, strength=args.strength,
                                 max_edge=args.max_edge, assume_srgb=args.assume_srgb)
@@ -391,7 +438,7 @@ def main(argv=None):
                 'outputs': [item['output']['file'] for item in report['candidates']],
                 'dimensions': report['preview']['dimensions'], 'automatic_selection': False,
                 'warnings': sorted(set(report['input']['warnings'] + [
-                    warning for item in report['candidates'] for warning in item['qa']['warnings']])),
+                    warning for item in report["candidates"] for warning in _qa_warnings(item["qa"])])),
             }))
 
         elif args.command == "compare":
@@ -402,7 +449,7 @@ def main(argv=None):
                 "dimensions": report["output"]["dimensions"],
                 "look": args.look, "strength_percent": args.strength,
                 "pixel_sha256": report["output"]["pixel_sha256"],
-                "warnings": report["input"]["warnings"] + report["qa"]["warnings"],
+                "warnings": report["input"]["warnings"] + _qa_warnings(report["qa"]),
             }))
         else:
             parser.print_help()

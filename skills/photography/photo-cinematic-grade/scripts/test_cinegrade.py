@@ -994,6 +994,9 @@ def run_tests(group='all'):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(GrainTests))
         from test_bloom import BloomTests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(BloomTests))
+    if group != "io":
+        from test_cli_gamut_qa import CliGamutQATests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(CliGamutQATests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
