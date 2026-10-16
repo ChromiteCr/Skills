@@ -210,13 +210,18 @@ def private_dir(path):
 
 
 def atomic(path, data):
-    path = Path(path)
+    content = (json.dumps(data, sort_keys=True, ensure_ascii=False) + '\n').encode('utf-8')
+    atomic_bytes(path, content)
+
+
+def atomic_bytes(path, content):
+    """Publish exact private UTF-8 bytes; JSON escaping is only for metadata."""
+    path = local_path(path)
     require(not path.is_symlink(), 'symlink_state')
     fd, tmp = tempfile.mkstemp(prefix='.pending-', dir=path.parent)
     try:
-        with os.fdopen(fd, 'w') as out:
-            json.dump(data, out, sort_keys=True, ensure_ascii=False)
-            out.write('\n')
+        with os.fdopen(fd, 'wb') as out:
+            out.write(content)
             out.flush()
             os.fsync(out.fileno())
         os.replace(tmp, path)
@@ -237,6 +242,41 @@ def load(path):
         require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_uid == os.getuid()
                 and not info.st_mode & 0o077, 'unsafe_private_file')
         return json.load(src)
+
+
+def immutable_snapshot(path, content):
+    """Never replace an unknown or altered snapshot; repeated prepare is idempotent."""
+    path = local_path(path)
+    require(not path.is_symlink(), 'symlink_snapshot')
+    if path.exists():
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(fd, 'rb') as source:
+            info = os.fstat(source.fileno())
+            require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and
+                    info.st_uid == os.getuid() and not info.st_mode & 0o077,
+                    'unsafe_snapshot_file')
+            require(info.st_size == len(content) and source.read() == content,
+                    'snapshot_content_changed_preserved')
+    else:
+        atomic_bytes(path, content)
+
+
+def readable_chunks(content, limit=24 * 1024):
+    """Exact concatenation; prefer whole lines, split huge lines only on UTF-8 boundaries."""
+    require(limit >= 4, 'invalid_chunk_limit')
+    content.decode('utf-8')  # Invalid source encoding is never silently repaired.
+    chunks, start = [], 0
+    while start < len(content):
+        end = min(start + limit, len(content))
+        while end < len(content) and content[end] & 0xc0 == 0x80:
+            end -= 1
+        newline = content.rfind(b'\n', start, end) + 1
+        if newline > start:
+            end = newline
+        require(end > start, 'invalid_chunk_boundary')
+        chunks.append(content[start:end])
+        start = end
+    return chunks or [b'']
 
 
 def environment():
@@ -417,12 +457,38 @@ class Controller:
         self.git(seed, 'fetch', '--no-tags', 'origin', 'refs/heads/main:refs/remotes/origin/main')
         base = self.text(seed, 'rev-parse', 'refs/remotes/origin/main')
         require(SHA.fullmatch(base), 'invalid_base')
-        audit = self.git(seed, 'show', base + ':AUDIT-AND-IDEAS.md')['stdout']
-        path = self.data / ('audit-' + base + '.json')
-        atomic(path, {'base': base, 'path': 'AUDIT-AND-IDEAS.md', 'text': audit})
-        self.state.update(prepared_base=base, audit_receipt=str(path))
+        source = base + ':AUDIT-AND-IDEAS.md'
+        audit = self.git(seed, 'show', source)['stdout'].encode('utf-8')
+        blob = self.text(seed, 'rev-parse', source)
+        require(SHA.fullmatch(blob), 'invalid_audit_blob')
+        digest = hashlib.new('sha1' if len(blob) == 40 else 'sha256')
+        digest.update(('blob ' + str(len(audit)) + '\0').encode() + audit)
+        require(digest.hexdigest() == blob, 'audit_source_bytes_changed')
+        path = self.data / ('audit-' + base + '.md')
+        immutable_snapshot(path, audit)
+        folder = private_dir(self.data / ('audit-' + base + '-parts'))
+        parts, offset = [], 0
+        for number, content in enumerate(readable_chunks(audit), 1):
+            part = folder / ('part-%04d.md' % number)
+            immutable_snapshot(part, content)
+            parts.append({'path': str(part), 'offset_bytes': offset, 'bytes': len(content),
+                          'sha256': hashlib.sha256(content).hexdigest()})
+            offset += len(content)
+        require(offset == len(audit), 'incomplete_audit_parts')
+        sha256 = hashlib.sha256(audit).hexdigest()
+        metadata = self.data / ('audit-' + base + '.metadata.json')
+        atomic(metadata, {'schema': 2, 'base': base, 'source_path': 'AUDIT-AND-IDEAS.md',
+                          'source_blob': blob, 'snapshot': str(path), 'bytes': len(audit),
+                          'sha256': sha256, 'parts': parts, 'part_max_bytes': 24 * 1024})
+        self.state.update(prepared_base=base, audit_receipt=str(metadata),
+                          audit_snapshot=str(path), audit_sha256=sha256)
         self.save()
-        return {'status': 'prepared', 'base': base, 'audit_snapshot': str(path)}
+        return {'status': 'prepared', 'base': base, 'audit_snapshot': str(path),
+                'audit_sha256': sha256, 'audit_metadata': str(metadata),
+                'audit_parts': [part['path'] for part in parts],
+                'read_instructions': 'Before create, use read directly on audit_parts in order; '
+                                     'each is <=24KiB UTF-8. Continue offset/limit if line-truncated. '
+                                     'Parts concatenate exactly to audit_snapshot. Do not use run to decode JSON.'}
 
     def create(self, args):
         key, skill = label(args.id), label(args.skill)
@@ -981,7 +1047,7 @@ def parser():
         'Failed/unknown clone directories are preserved, never adopted or deleted.')
     sub = p.add_subparsers(dest='action', required=True)
     helptexts = {'start': 'Acquire unchanged devctl lease; same valid run is idempotent.',
-                 'prepare': 'Resume active item first; otherwise fetch isolated seed and snapshot latest audit.',
+                 'prepare': 'Resume active item first; otherwise fetch seed and export exact UTF-8 audit plus <=24KiB read-ready parts.',
                  'create': 'Select one existing skill; persist immutable explicit plan and create isolated auto/<id> clone.',
                  'run': 'Execute a cooperative foreground argv in the owned clone; no shell/background front door.',
                  'finish': 'Scope/stage exact paths, validate exact snapshot, commit, push, Draft PR, native auto-merge.',
