@@ -115,6 +115,55 @@ class TestRegistrationPolicyTests(unittest.TestCase):
         new = 'from test_extra import ExtraTests\n' + self.added(self.PAIR.split('\n', 1)[1])
         self.assertTrue(p.additive_test_registration(self.BASE, new))
 
+    def test_new_sibling_group_with_identical_pure_condition_is_additive(self):
+        # SYNTHETIC minimal reproduction of PR #3's three-line registration.
+        new = self.added('    if group != "io":\n' + self.PAIR)
+        self.assertTrue(p.additive_test_registration(self.BASE, new))
+        self.assertTrue(p.additive_test_registration(self.BASE, self.added("    if group != 'io':\n" + self.PAIR)))
+
+    def test_new_group_cannot_change_conditions_or_include_other_work(self):
+        additions = [
+            '    if group == "io":\n' + self.PAIR,
+            '    if group != "grade":\n' + self.PAIR,
+            '    if allow_tests():\n' + self.PAIR,
+            '    if group != "io" and allow_tests():\n' + self.PAIR,
+            '    if group != "io":\n' + self.PAIR + '    else:\n        return 0\n',
+            '    if group != "io":\n' + self.PAIR + '        return 0\n',
+            '    if group != "io":\n' + self.PAIR + '        group = "io"\n',
+            '    if group != "io":\n' + self.PAIR + '        suite = unittest.TestSuite()\n',
+            '    if group != "io":\n' + self.PAIR.replace('test_extra', 'os'),
+            '    if group != "io":\n' + self.PAIR.replace('ExtraTests', 'Existing'),
+            '    if group != "io":\n' + self.PAIR + '        Existing.__unittest_skip__ = True\n',
+        ]
+        for addition in additions:
+            with self.subTest(addition=addition):
+                self.assertFalse(p.additive_test_registration(self.BASE, self.added(addition)))
+
+    def test_new_group_requires_existing_adjacent_matching_guard(self):
+        base = self.BASE.replace('    if group != "io":\n', '').replace(
+            '        suite.addTests', '    suite.addTests')
+        new = base.replace('    result =', '    if group != "io":\n' + self.PAIR + '    result =')
+        self.assertFalse(p.additive_test_registration(base, new))
+        # Existing intervening writes can change the predicate's meaning.
+        base = self.BASE.replace('    result =', '    group = "io"\n    result =')
+        new = base.replace('    result =', '    if group != "io":\n' + self.PAIR + '    result =')
+        self.assertFalse(p.additive_test_registration(base, new))
+
+    def test_new_group_requires_source_adjacency_not_pruned_ast_adjacency(self):
+        first = '    if group != "io":\n' + self.PAIR
+        second_pair = self.PAIR.replace('test_extra', 'test_another').replace('ExtraTests', 'AnotherTests')
+        second = '    if group != "io":\n' + second_pair
+        # A second new sibling cannot borrow a nonadjacent OLD guard.
+        self.assertFalse(p.additive_test_registration(self.BASE, self.added(first + second)))
+        # A new top-level import/registration pair is still an intervening statement.
+        intervening = self.PAIR.replace('        ', '    ')
+        self.assertFalse(p.additive_test_registration(self.BASE, self.added(intervening + second)))
+
+    def test_new_group_does_not_allow_old_assertion_or_guard_edits(self):
+        new = self.added('    if group != "io":\n' + self.PAIR)
+        self.assertFalse(p.additive_test_registration(self.BASE, new.replace('2 + 2, 4', '2 + 2, 5')))
+        self.assertFalse(p.additive_test_registration(self.BASE, new.replace('group != "io"', 'group == "io"', 1)))
+
     def test_assertion_modification_deletion_and_fixture_body_edits_rejected(self):
         for old, new in [('2 + 2, 4', '2 + 2, 5'),
                          ('        self.assertEqual(2 + 2, 4)\n', ''),
