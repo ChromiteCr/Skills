@@ -50,8 +50,10 @@ def additive_test_registration(before, after):
     """Narrow syntax proof, NOT semantic safety or a substitute for review.
 
     Imports can have side effects. Only fresh, unaliased test-module imports and
-    matching suite registrations are eligible; server checks still apply. Plain
-    text/fixtures and arbitrary new test bodies in existing files stay Draft.
+    matching suite registrations are eligible; server checks still apply. A fresh
+    sibling group may repeat an immediately preceding pure existing group guard;
+    its entire body must reduce to the same narrow import/registration pair.
+    Plain text/fixtures and arbitrary test-body changes remain Draft.
     """
     old_lines, new_lines = before.splitlines(), after.splitlines()
     inserted = set()
@@ -104,7 +106,7 @@ def additive_test_registration(before, after):
         for field, value in ast.iter_fields(node):
             if isinstance(value, list):
                 kept = []
-                for child in value:
+                for child_index, child in enumerate(value):
                     added = (isinstance(child, ast.stmt) and scope is not None and
                              all(n in inserted for n in range(child.lineno, child.end_lineno + 1)))
                     if added and isinstance(child, ast.ImportFrom):
@@ -128,7 +130,32 @@ def additive_test_registration(before, after):
                                 invalid = True
                             registrations[name] = (scope, id(value), child.lineno)
                             continue
-                    if isinstance(child, ast.AST):
+                    if added and isinstance(child, ast.If):
+                        # PR #3 adds a new `if group != "io"` next to the existing
+                        # identical group. Permit only this AST-preserving wrapper,
+                        # not new predicates, side effects, else arms or movement of
+                        # any old statement. Adjacency avoids intervening group writes.
+                        previous = value[child_index - 1] if child_index else None
+                        predicate = child.test
+                        pure_group_guard = (
+                            isinstance(predicate, ast.Compare) and
+                            isinstance(predicate.left, ast.Name) and predicate.left.id == 'group' and
+                            len(predicate.ops) == 1 and isinstance(predicate.ops[0], (ast.Eq, ast.NotEq)) and
+                            len(predicate.comparators) == 1 and isinstance(predicate.comparators[0], ast.Constant) and
+                            isinstance(predicate.comparators[0].value, str))
+                        same_guard = (scope in ('run_tests', 'load_tests') and not child.orelse and
+                                      isinstance(previous, ast.If) and not previous.orelse and
+                                      previous.lineno not in inserted and
+                                      pure_group_guard and ast.dump(previous.test) == ast.dump(predicate))
+                        if same_guard:
+                            old_imports, old_registrations = len(imports), len(registrations)
+                            prune(child, scope)
+                            if (not invalid and not child.body and not child.orelse and
+                                    len(imports) > old_imports and len(registrations) > old_registrations):
+                                continue
+                        else:
+                            invalid = True
+                    elif isinstance(child, ast.AST):
                         prune(child, scope)
                     kept.append(child)
                 setattr(node, field, kept)
@@ -1040,7 +1067,8 @@ def parser():
         'A dirty advanced-base clone returns needs_update; use checkpoint then reconcile for a non-rewriting merge. '
         'Readiness/auto-merge require a verified strict Skills gate from GitHub Actions (app 15368), enforced without bypass. '
         'Existing assertions, fixtures, deletions/type changes and other test edits stay Draft; only '
-        'AST-preserving fresh test imports plus suite.addTests registrations may use server gates (not semantic review). '
+        'AST-preserving fresh test imports plus suite.addTests registrations may use server gates; '
+        'a new sibling group may repeat only an adjacent identical pure group guard (not semantic review). '
         'Per-item validation streaks persist across runs: initial failure plus at most TWO repair attempts; '
         'repair_budget_exhausted preserves clone/PR for human review. Only a fully verified snapshot clears the current streak; '
         'transport/launch interruptions do not consume it. New-skill/policy maintenance is not automatic. '
