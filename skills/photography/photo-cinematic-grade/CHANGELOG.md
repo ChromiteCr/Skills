@@ -1,5 +1,21 @@
 # Code changes
 
+## 0.17.0 (2026-10-17)
+
+Added a usable LUT export/readback path for the EXISTING three integer SDR recipes. cinegrade.py lut takes an explicit source, look, strength and new output directory. It writes a red-fastest 33-cube in encoded sRGB, reads the written bytes back, verifies their hash, parses them and measures every source pixel against the real integer renderer using tetrahedral interpolation and normalized Oklab Euclidean error. The strict p99 < 0.02 limit comes from AUDIT 3.5. A numerical failure preserves grade.cube and a qa_failed report with CLI exit 1; input/I/O failure exits 2. report.json is published last; occupied outputs and originals are preserved.
+
+The new module also provides standalone unit-domain cube serialization, parsing and tetrahedral interpolation for later floating-pipeline integration. It refuses shapers, unsupported directives/domains, nonfinite values, extrapolation and malformed row counts. The integer recipe is sampled at nearest-uint8 grid nodes and is therefore only approximated between nodes; strength zero exports the exact identity. No creative coefficient or default selection was added. All spatial effects, ICC conversion and dither remain outside the LUT. Application color management and interpolation still need external verification.
+
+Twenty-seven new SYNTHETIC tests cover six independently enumerated tetrahedra, red-fastest rows, endpoints, ties, affine transforms, nontrilinear cases, actual disk readback, malformed input, privacy, nonreplacement, I/O faults, strict error threshold and real CLI success/failure. Existing test assertions and fixtures are unchanged; only new suite registration was added. Full skill tests ran 359 unique cases successfully. Repeated entry points are not extra independent cases.
+
+The initial tests exposed batch-dependent BLAS rounding in Oklab QA. Fixed-order matrix accumulation preserved the failed exact batch-invariance assertion. Its new integration test then exposed erroneous divide/overflow flags for a finite 729x3 grid in the existing forward Oklab BLAS path. The second repair uses the same published matrices with explicit three-term accumulation, retaining finite-result guards and all old assertions. Full-suite revalidation passed. A separate command-construction quoting error was caught before writing code and corrected; no failed validation was hidden.
+
+An additional SYNTHETIC 17-cubed uint8 lattice (4,913 pixels, not photographs or full-domain certification), rendered at test strength 100 using unchanged bundled recipes, measured p99 Delta E OK values of 0.0016434085770841316 (neutral), 0.0016802429206397179 (warm-muted), and 0.0015568506579064607 (cool-muted). These are actual results for a deliberately constructed mathematical fixture, not observed scene data or user-confirmed creative settings. The origin, cube hashes and reports are retained locally in the owned clone evidence directory, not distributed as real-photo examples.
+
+Scope was chosen from audit snapshot base 98e5dba4658922f833f93fcba59bd5c113c0aefa, SHA-256 39ecb93cf66123107e4f3708d81d4563cf3050069855c325430a0b82f64ea8d9. Code inspection confirmed LUT export was absent. Historical 0.4.1 code was not recovered or reproduced. Six planned floating looks, the historical pastel dark-region failure, real-photo/visual acceptance and full plan 3.5 remain pending.
+
+SKILL.md and SKILL_INDEX.md received mechanical version updates only. A Skill Workshop proposal is required to update their reusable capability descriptions (which still say LUT is pending) and document this command. No reusable workflow or reference prose was applied. Library version is unchanged under VERSIONING.md because this is an existing skill capability increment.
+
 ## 0.16.0 (2026-10-17)
 
 Added the standalone numerical API quantization_banding_qa in scripts/banding_qa.py for plan 3.5. Given actual aligned encoded-sRGB floating references and their uint8 quantized arrays before and after grading, it measures RMS quantization residuals in code values and their signed increase. A strict increase above the plan value of 0.35 warns; the report never supplies whole-photo or perceptual acceptance.
