@@ -123,9 +123,15 @@ def linear_to_srgb(linear):
 @_finite_math
 def linear_srgb_to_oklab(linear):
     rgb = _triples(linear)
-    lms = rgb @ _RGB_TO_LMS.T
+    # Fixed three-term accumulation avoids batch-shaped BLAS rounding and
+    # spurious divide/overflow flags observed for finite 729x3 unit-grid inputs
+    # on the local NumPy/BLAS build. Same published matrices, no error masking.
+    def multiply(values, matrix):
+        return np.stack([((values[..., 0] * row[0] + values[..., 1] * row[1])
+                          + values[..., 2] * row[2]) for row in matrix], axis=-1)
+    lms = multiply(rgb, _RGB_TO_LMS)
     # Real cube root, including negative LMS. Fractional power would generate NaN.
-    return np.cbrt(lms) @ _LMS_ROOT_TO_LAB.T
+    return multiply(np.cbrt(lms), _LMS_ROOT_TO_LAB)
 
 
 @_finite_math

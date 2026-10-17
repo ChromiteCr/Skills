@@ -2,7 +2,7 @@
 """Deterministic SDR grading: render, candidate previews, comparisons and QA.
 
 Pixel math uses integers in encoded sRGB, not scene-linear film simulation.
-Comparisons use exact full-size before/after panels. Cards and LUT export remain pending.
+Comparisons use exact full-size before/after panels. LUT export/readback covers the existing integer looks; cards remain pending.
 """
 from __future__ import annotations
 
@@ -410,6 +410,12 @@ def build_parser():
     command.add_argument("--look", required=True, help="explicitly selected look; no automatic selection")
     command.add_argument("--strength", required=True, type=int, help="explicitly selected integer 0..100")
     command.add_argument("--assume-srgb", action="store_true", help="explicitly confirm sRGB for an untagged source")
+    command = sub.add_parser("lut", help="export 33-cube for an existing integer look; QA every supplied source pixel")
+    command.add_argument("source", type=Path)
+    command.add_argument("--output", required=True, type=Path, help="NEW directory for grade.cube and measured report.json")
+    command.add_argument("--look", required=True, help="existing look, explicitly selected; not the six planned looks")
+    command.add_argument("--strength", required=True, type=int, help="explicitly selected integer 0..100")
+    command.add_argument("--assume-srgb", action="store_true", help="explicitly confirm sRGB for an untagged source")
     return parser
 
 
@@ -451,6 +457,16 @@ def main(argv=None):
                 "pixel_sha256": report["output"]["pixel_sha256"],
                 "warnings": report["input"]["warnings"] + _qa_warnings(report["qa"]),
             }))
+        elif args.command == "lut":
+            from cinegrade_lut import export_lut
+            report = export_lut(args.source, args.output, look=args.look,
+                                strength=args.strength, assume_srgb=args.assume_srgb)
+            print(json.dumps({
+                "status": report["status"], "command": "lut", "output": "grade.cube",
+                "cube_sha256": report["output"]["cube_sha256"],
+                "qa": report["qa"], "warnings": report["input"]["warnings"],
+            }, allow_nan=False))
+            return 0 if report["qa"]["pass"] else 1
         else:
             parser.print_help()
         return 0
