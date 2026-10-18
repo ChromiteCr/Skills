@@ -1002,6 +1002,9 @@ def run_tests(group='all'):
     if group != "io":
         from test_lut import LutTests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(LutTests))
+    if group != "io":
+        from test_srgb16 import Png16Tests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(Png16Tests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
