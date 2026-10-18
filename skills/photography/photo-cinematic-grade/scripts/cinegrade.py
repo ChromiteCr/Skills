@@ -18,7 +18,9 @@ from PIL import Image, ImageCms
 
 from image_io import InputError, encode_png, load_image, write_new_bundle, write_new_run
 
+# Preserve the legacy receipt version contract; the optional exporter has its own version.
 VERSION = '0.4.0'
+PNG16_EXPORT_VERSION = "0.18.0"
 ALGORITHM = 'encoded-srgb-integer-v1'
 CANDIDATE_LOOKS = ('neutral', 'warm-muted', 'cool-muted')
 MAX_PREVIEW_EDGE = 2048
@@ -161,20 +163,31 @@ def endpoint_qa(image):
     }
 
 
-def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False):
+def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False, bit_depth=8):
     # Refuse occupied output even when it is an empty directory or dangling link.
     target = Path(output)
     if target.exists() or target.is_symlink():
         raise InputError('output already exists; choose a new directory')
     if not _integer(strength, 0, 100):
         raise InputError('strength must be an integer within 0..100')
+    if type(bit_depth) is not int or bit_depth not in (8, 16):
+        raise InputError("bit-depth must be 8 or 16")
     looks = load_looks()
     if look not in looks:
         raise InputError('unknown look; use the looks command')
     loaded = load_image(source, assume_srgb=assume_srgb)
     recipe = looks[look]
     graded, excursions, gamut_qa = grade_pixels_with_qa(loaded.image, recipe, strength)
-    png = encode_png(graded)
+    if bit_depth == 16:
+        import numpy as np
+        from srgb16 import encode_png16
+        # Lossless 8->16 code expansion: 65535/255 = 257. This adds no detail.
+        samples = np.asarray(graded).astype(np.uint16) * 257
+        png = encode_png16(samples)
+        pixel_bytes = samples.astype(">u2").tobytes()
+    else:
+        png = encode_png(graded)
+        pixel_bytes = graded.tobytes()
     report = {
         'schema_version': 1,
         'status': 'complete',
@@ -186,7 +199,7 @@ def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False)
             'file': 'render.png', 'format': 'PNG', 'mode': 'RGB',
             'dimensions': list(graded.size), 'color_space': 'sRGB',
             'png_sha256': hashlib.sha256(png).hexdigest(),
-            'pixel_sha256': hashlib.sha256(graded.tobytes()).hexdigest(),
+            'pixel_sha256': hashlib.sha256(pixel_bytes).hexdigest(),
             'source_metadata_copied': False,
         },
         'qa': {
@@ -210,6 +223,19 @@ def render(source, output, *, look='warm-muted', strength=60, assume_srgb=False)
             'the sidecar contains content hashes and technical values; keep private unless needed',
         ],
     }
+    if bit_depth == 16:
+        from srgb16 import PROFILE_SHA256
+        report["output"].update({
+            "export_version": PNG16_EXPORT_VERSION,
+            "bit_depth": 16, "sample_encoding": "RGB_uint16_big_endian_row_major",
+            "icc_sha256": PROFILE_SHA256,
+            "precision": {"source_bits": 8, "grading_bits": 8,
+                          "expansion": "uint8_times_257", "adds_detail": False},
+        })
+        report["qa"]["reference_samples"] = "legacy_RGB8_before_lossless_16bit_expansion"
+        report["qa"]["warnings"].append("16bit_container_from_8bit_grade_no_added_precision")
+        report["limitations"].append(
+            "16-bit file preserves the legacy 8-bit grade exactly; full floating CLI integration is pending")
     receipt = (json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + '\n').encode('utf-8')
     write_new_run(output, png, receipt)
     return report
@@ -397,6 +423,8 @@ def build_parser():
     command.add_argument('--look', default='warm-muted')
     command.add_argument('--strength', type=int, default=60, help='integer 0..100 (default: 60)')
     command.add_argument('--assume-srgb', action='store_true', help='explicitly confirm sRGB for an untagged source')
+    command.add_argument("--bit-depth", type=int, choices=(8, 16), default=8,
+                             help="PNG sample depth; 16 expands the existing 8-bit grade without adding detail")
     command = sub.add_parser('candidates', help='write three candidate PNGs + report.json into a NEW directory')
     command.add_argument('source', type=Path)
     command.add_argument('--output', required=True, type=Path, help='new run directory; parent must exist')
@@ -432,7 +460,7 @@ def main(argv=None):
             print(json.dumps(load_looks(), ensure_ascii=False, indent=2, sort_keys=True))
         elif args.command == 'render':
             report = render(args.source, args.output, look=args.look,
-                            strength=args.strength, assume_srgb=args.assume_srgb)
+                            strength=args.strength, assume_srgb=args.assume_srgb, bit_depth=args.bit_depth)
             print(json.dumps({'status': 'complete', 'output': 'render.png',
                               'look': args.look, 'pixel_sha256': report['output']['pixel_sha256'],
                               'warnings': report['input']['warnings'] + _qa_warnings(report["qa"])}))
