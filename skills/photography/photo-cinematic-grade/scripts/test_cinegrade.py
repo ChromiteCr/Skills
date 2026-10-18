@@ -1005,6 +1005,10 @@ def run_tests(group='all'):
     if group != "io":
         from test_srgb16 import Png16Tests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(Png16Tests))
+    if group != "io":
+        from test_style_distinction import DistinctionTests, CandidateDistinctionTests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(DistinctionTests))
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(CandidateDistinctionTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
