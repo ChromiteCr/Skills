@@ -430,6 +430,9 @@ def build_parser():
     parser.add_argument('--selftest', action='store_true', help='run synthetic grading/CLI tests')
     sub = parser.add_subparsers(dest='command')
     sub.add_parser('looks', help='print the bundled recipes as JSON')
+    command = sub.add_parser("analyze", help="read-only JSON hue, saturation and channel-balance measurements; no automatic correction")
+    command.add_argument("source", type=Path)
+    command.add_argument("--assume-srgb", action="store_true", help="explicitly confirm sRGB for an untagged source")
     command = sub.add_parser('render', help='write render.png + privacy-safe report.json into a NEW directory')
     command.add_argument('source', type=Path)
     command.add_argument('--output', required=True, type=Path, help='new run directory; parent must exist')
@@ -474,6 +477,10 @@ def main(argv=None):
     try:
         if args.command == 'looks':
             print(json.dumps(load_looks(), ensure_ascii=False, indent=2, sort_keys=True))
+        elif args.command == "analyze":
+            from photo_analysis import analyze
+            print(json.dumps(analyze(args.source, assume_srgb=args.assume_srgb),
+                             ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False))
         elif args.command == 'render':
             report = render(args.source, args.output, look=args.look,
                             strength=args.strength, assume_srgb=args.assume_srgb, bit_depth=args.bit_depth)

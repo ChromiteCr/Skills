@@ -2,7 +2,7 @@
 name: photo-cinematic-grade
 description: 照片电影感调色、低饱和冷暖分离、先保原片再调色。用确定性像素处理而不是生成式重绘；先确认用途与色彩输入，输出带 sRGB ICC 的新图和隐私优先的参数/QA 边车。支持 8-bit SDR JPEG/PNG 的 render、固定三选候选小样 candidates 与数值 QA，以及原尺寸前后对比 compare；card、LUT 尚未实现。不负责 RAW 显影、修图换景、冲印交付或精确复刻电影/胶片。
 category: photography
-version: 0.19.0
+version: 0.20.0
 status: draft
 priority: P2
 compatible_agents:

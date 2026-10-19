@@ -1009,6 +1009,10 @@ def run_tests(group='all'):
         from test_style_distinction import DistinctionTests, CandidateDistinctionTests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(DistinctionTests))
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(CandidateDistinctionTests))
+    if group != "io":
+        from test_photo_analysis import AnalysisTests, AnalysisCliTests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(AnalysisTests))
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(AnalysisCliTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
