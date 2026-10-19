@@ -264,7 +264,7 @@ def candidate_preview(image, max_edge):
     }
 
 
-def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False):
+def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False, distinction_qa=False):
     """One input snapshot, three fixed-order previews, one final completion receipt."""
     target = Path(output)
     if target.exists() or target.is_symlink():
@@ -279,12 +279,16 @@ def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False)
     loaded = load_image(source, assume_srgb=assume_srgb)
     preview, resize_record = candidate_preview(loaded.image, max_edge)
     images, records = {}, []
+    measured_styles = {}
     for index, name in enumerate(CANDIDATE_LOOKS, 1):
         amount = 0 if name == 'neutral' else strength
         graded, excursions, gamut_qa = grade_pixels_with_qa(preview, looks[name], amount)
         png = encode_png(graded)
         filename = f'{index:02d}-{name}.png'
         images[filename] = png
+        if distinction_qa and name != "neutral":
+            import numpy as np
+            measured_styles[name] = np.asarray(graded, dtype=np.float64) / 255
         records.append({
             'grade': {'look': name, 'strength_percent': amount, 'recipe': looks[name]},
             'output': {
@@ -327,6 +331,15 @@ def candidates(source, output, *, strength=60, max_edge=1024, assume_srgb=False)
             'the sidecar contains content hashes and technical values; keep private unless needed',
         ],
     }
+    if distinction_qa:
+        from style_distinction import style_distinction_qa
+        # Existing muted recipes are not the six planned vivid looks.
+        # Original distances are reference-only, not a vivid-style pass.
+        report["qa"]["style_distinction"] = style_distinction_qa(
+            np.asarray(preview, dtype=np.float64) / 255, measured_styles, vivid_styles=[])
+        report["qa"]["style_distinction"]["scope"] = "resized_preview_only"
+        report["qa"]["style_distinction"]["limitations"].append(
+            "existing_muted_candidates_are_not_the_six_planned_looks")
     receipt = (json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + '\n').encode('utf-8')
     write_new_bundle(output, images, receipt)
     return report
@@ -432,6 +445,9 @@ def build_parser():
     command.add_argument('--max-edge', type=int, default=1024, help='preview long-edge cap 1..2048; never upscale (default: 1024)')
     command.add_argument('--assume-srgb', action='store_true', help='explicitly confirm sRGB for an untagged source')
 
+    command.add_argument("--distinction-qa", action="store_true",
+                         help="measure preview Oklab style separation; original thresholds are reference-only for muted looks")
+
     command = sub.add_parser("compare", help="write full-resolution before-left/after-right compare.png + report.json")
     command.add_argument("source", type=Path)
     command.add_argument("--output", required=True, type=Path, help="new run directory; parent must exist")
@@ -466,13 +482,14 @@ def main(argv=None):
                               'warnings': report['input']['warnings'] + _qa_warnings(report["qa"])}))
         elif args.command == 'candidates':
             report = candidates(args.source, args.output, strength=args.strength,
-                                max_edge=args.max_edge, assume_srgb=args.assume_srgb)
+                                max_edge=args.max_edge, assume_srgb=args.assume_srgb, distinction_qa=args.distinction_qa)
             print(json.dumps({
                 'status': 'complete', 'command': 'candidates',
                 'outputs': [item['output']['file'] for item in report['candidates']],
                 'dimensions': report['preview']['dimensions'], 'automatic_selection': False,
                 'warnings': sorted(set(report['input']['warnings'] + [
-                    warning for item in report["candidates"] for warning in _qa_warnings(item["qa"])])),
+                    warning for item in report["candidates"] for warning in _qa_warnings(item["qa"])]
+                    + report["qa"].get("style_distinction", {}).get("warnings", []))),
             }))
 
         elif args.command == "compare":
