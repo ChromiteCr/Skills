@@ -995,8 +995,16 @@ class Controller:
         path = self.receipt('devctl-result', payload)  # Full structured receipt BEFORE any short output/state.
         require(type(payload.get('exit_code')) is int, 'invalid_guard_receipt; receipt=' + path)
         code = result['exit_code'] or payload['exit_code']
+        if result['exit_code']:
+            # devctl's report-only protocol transports business failures with
+            # process exit zero. A nonzero transport exit is a separate fault.
+            payload = {**payload, 'transport_error': 'guard_transport_failed'}
         if result.get('stdout_truncated') or result.get('stderr_truncated'):
             code = code or 73
+            # The raw guard receipt above stays byte-for-byte attributable to
+            # the guard. Carry transport uncertainty separately in the returned
+            # summary input; code 73 may also be a complete business refusal.
+            payload = {**payload, 'transport_error': 'guard_transport_output_truncated'}
         if args[:1] == ['run'] and (payload.get('writer_finished') is not True
                 or payload.get('outputs_complete') is not True
                 or payload.get('stdout_truncated') is not False
@@ -1013,11 +1021,33 @@ class Controller:
             require(isinstance(inner, dict) and type(inner.get('exit_code')) is int,
                     'invalid_worker_receipt')
         except (ValueError, TypeError, Refused):
-            return {'status': 'refused', 'reason': payload.get('reason') or 'invalid_worker_receipt',
+            return {'status': 'refused',
+                    'reason': payload.get('transport_error') or payload.get('reason') or 'invalid_worker_receipt',
                     'receipt': receipt, 'exit_code': code or 73}
         summary = {**inner, 'receipt': receipt, 'exit_code': code or inner['exit_code']}
         if code:
-            summary.update(status='refused', reason=payload.get('reason') or 'guard_operation_failed')
+            # A completed worker refusal (for example no_active_item) is not a
+            # guard failure. Retain its actionable reason only when the guard
+            # proves complete output and the exact nonzero worker exit. Real
+            # guard/transport failures must still take precedence, even when a
+            # child printed a valid-looking response before it was interrupted.
+            completed_worker_failure = (
+                payload.get('writer_finished') is True
+                and payload.get('outputs_complete') is True
+                and payload.get('stdout_truncated') is False
+                and payload.get('stderr_truncated') is False
+                and payload.get('timed_out') is False
+                and payload.get('signal') is None
+                and payload.get('wrapper_signal') is None
+                and payload.get('outer_exit_code') == 0
+                and type(payload.get('child_exit_code')) is int
+                and payload['child_exit_code'] == inner['exit_code'] == code
+                and isinstance(inner.get('reason'), str) and bool(inner['reason'])
+            )
+            reason = payload.get('transport_error') or payload.get('reason')
+            if not reason and completed_worker_failure:
+                reason = inner['reason']
+            summary.update(status='refused', reason=reason or 'guard_operation_failed')
         return summary
 
     def dispatch(self, args, argv):
