@@ -107,7 +107,12 @@ def _check_png_signaling(blob):
 
 
 def load_image(source, *, assume_srgb=False):
-    blob = _read_source(source)
+    return _load_image_blob(_read_source(source), assume_srgb=assume_srgb)
+
+
+def _load_image_blob(blob, *, assume_srgb=False):
+    # Internal snapshot entry point shared with the precision-preserving loader.
+    # Keeps the public RGB8 loader and all existing color/privacy rules intact.
     png_claims_icc = _check_png_signaling(blob)
     notes = []
     try:
