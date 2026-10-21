@@ -1,5 +1,17 @@
 # Code changes
 
+## 0.21.0 (2026-10-21)
+
+Completed the resumed precision-preserving input increment for audit 3.3. The standalone load_float_image API reads one immutable source snapshot and returns normalized display-referred encoded sRGB float64 with provenance. Noninterlaced opaque RGB16 PNG retains all sample bits through PNG filters and EXIF orientation. Existing RGB8/L8 JPEG/PNG decoding is shared without changing the legacy load_image or CLI contracts.
+
+RGB16 accepts only the exact bundled standard sRGB ICC identity profile, or explicitly confirmed untagged sRGB. Arbitrary 16-bit ICC conversion, including Display P3, is unavailable and rejected rather than reduced to RGB8. Chunk CRC/order, compressed-stream bounds, dimensions, color declarations and EXIF are checked; alpha, animation, HDR signals and unsupported formats fail explicitly. The API creates no output files and excludes private metadata from provenance.
+
+This resumed run passed 459 unique skill tests, including 32 new SYNTHETIC input tests. Repeated suite entry points are not extra independent cases. Constructed code ramps, random byte patterns, metadata and malformed containers are software/math probes, not photographs, observed scene measurements or user-confirmed creative settings. Coverage includes all 65,536 codes, all five PNG filters, eight orientations, low-byte retention, existing floating color-core and 16-bit export roundtrips, bounded failures, source immutability, privacy and legacy compatibility. Existing assertions and fixtures are unchanged; suite registration is additive.
+
+The item was resumed from base cd3cfcbb3ebc267f213df15fb950430036ed9888 with its uncommitted implementation preserved. Reconcile reported that main had advanced and required a validated checkpoint before integration. Historical 0.4.1 prototype code was not recovered or reproduced. This is a new, limited input implementation, not full plan 3.3 acceptance. Full floating grading CLI integration, arbitrary RGB16 profiles, six planned looks and real-photo visual acceptance remain pending.
+
+SKILL.md and SKILL_INDEX.md receive mechanical version updates only. Reusable capability/workflow documentation still requires Skill Workshop proposal and approval; the tool was unavailable, so no such prose was applied. Library version is unchanged under VERSIONING.md.
+
 ## 0.20.0 (2026-10-19)
 
 Added the read-only `cinegrade.py analyze SOURCE [--assume-srgb]` command. It emits a complete JSON report to stdout with measured hue-sector pixel counts and weights, mean HSV saturation, global RGB channel means and centered channel offsets. Every EXIF-oriented, ICC-normalized RGB8 pixel is measured without resizing or sampling. The existing snapshot loader retains its format, profile and metadata protections. No image or report file is written, and existing rendering, candidate order, recipes and legacy report versions are unchanged.

@@ -1013,6 +1013,9 @@ def run_tests(group='all'):
         from test_photo_analysis import AnalysisTests, AnalysisCliTests
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(AnalysisTests))
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(AnalysisCliTests))
+    if group != "io":
+        from test_float_image_io import FloatInputTests
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(FloatInputTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
