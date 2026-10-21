@@ -1149,7 +1149,11 @@ class ControllerTests(unittest.TestCase):
             with patch.object(self.c, 'invoke', return_value=transport):
                 payload, receipt, code = self.c.guard(['run'])
             self.assertEqual(code, 73)
-            self.assertEqual(payload, report)
+            # Transport metadata is separate from the unmodified raw guard
+            # receipt, and must survive even if the worker also exits 73.
+            self.assertEqual(payload, {**report, 'transport_error': 'guard_transport_output_truncated'})
+            self.assertEqual({k: v for k, v in p.load(receipt).items()
+                              if k not in ('kind', 'credential_redaction')}, report)
             self.assertEqual(p.load(receipt)['stdout'], report['stdout'])
         report.pop('exit_code')
         devctl = self.c.control / 'devctl.py'
