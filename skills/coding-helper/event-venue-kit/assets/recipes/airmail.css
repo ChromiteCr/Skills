@@ -1,0 +1,160 @@
+/* =========================================================================
+   airmail — 寄往世界 "Par Avion"
+   Idea: the event is a letter in the post. 58° air-mail stripe frames, stamps with REAL
+   (transparent) perforations, postcode boxes, a tilted postmark, address ruling lines.
+   Stats read as a strip of se-tenant stamps; the entity head is an envelope front.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = airmail-band | perforation | double-rule
+     data-evk-nav      = lines-top-left | tab-strip
+     data-evk-numerals = lining-tabular | oldstyle
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-band      the 58° air-mail chevron band (divider, envelope frame, sheet and panel top edge, bar line)
+                      off: linear-gradient(var(--a), var(--a))  (a solid ink bar and frame)
+     --prop-perf      real perforations punched into stamps, badges and marks          1 = on, off: 0  (square edges)
+     --prop-postmark  the wavy postmark beside the stamp on the envelope front         off: none
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  /* the envelope stripe: accent / paper / ink / paper at 58° (the angle of a stamp's diagonal); prop: band */
+  --band: var(--prop-band, repeating-linear-gradient(-58deg, var(--b) 0 12px, var(--paper) 12px 24px, var(--a) 24px 36px, var(--paper) 36px 48px));
+  --pf: var(--prop-perf, 1);                                        /* perforation scale (prop: perf) */
+  --r-card-radius: 0; --r-badge-r: 0; --r-node-r: 0;
+  --hole: color-mix(in srgb, var(--a-text) 55%, transparent);
+  --bar-line-h: 6px; --bar-line: var(--band);                       /* knobs of base.css: the stripe slides in under the bar on scroll */
+}
+
+/* ---- real perforations: a mask that punches half-circles along all four edges (needs only --r and --s) ---- */
+.evk-mark, .evk-stat, .evk-part-head .no, .evk-entity-head::after, .evk-steps > li::before {
+  --r: max(.01px, calc(2.5px * var(--pf))); --s: 8px;
+  -webkit-mask: linear-gradient(currentColor 0 0),
+    radial-gradient(circle var(--r) at 50% 0, currentColor 98%, transparent) 0 0 / var(--s) 100% space no-repeat,
+    radial-gradient(circle var(--r) at 50% 100%, currentColor 98%, transparent) 0 0 / var(--s) 100% space no-repeat,
+    radial-gradient(circle var(--r) at 0 50%, currentColor 98%, transparent) 0 0 / 100% var(--s) no-repeat space,
+    radial-gradient(circle var(--r) at 100% 50%, currentColor 98%, transparent) 0 0 / 100% var(--s) no-repeat space;
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(currentColor 0 0),
+    radial-gradient(circle var(--r) at 50% 0, currentColor 98%, transparent) 0 0 / var(--s) 100% space no-repeat,
+    radial-gradient(circle var(--r) at 50% 100%, currentColor 98%, transparent) 0 0 / var(--s) 100% space no-repeat,
+    radial-gradient(circle var(--r) at 0 50%, currentColor 98%, transparent) 0 0 / 100% var(--s) no-repeat space,
+    radial-gradient(circle var(--r) at 100% 50%, currentColor 98%, transparent) 0 0 / 100% var(--s) no-repeat space;
+  mask-composite: exclude;
+}
+
+/* ---- bar: plain paper; double rule under the current page ---- */
+.evk-bar { background: var(--paper); }
+.evk-brand { color: var(--a-text); font-family: var(--f-display); font-weight: var(--display-weight); }
+.evk-nav a { border-bottom-style: double; }
+.evk-nav a[aria-current] { border-bottom-color: var(--b); }
+
+/* ---- label voice: typewriter-ish caps; the second line follows, quieter ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 500; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .08em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: the stripe (or a perforation row / a double rule) ---- */
+.evk-divider { height: 14px; border: 0; background: var(--band); }
+:root[data-evk-divider="perforation"] .evk-divider { height: 8px; background: radial-gradient(circle 2.6px at 50% 50%, var(--hole) 98%, transparent) 0 0 / 11px 8px repeat-x; }
+:root[data-evk-divider="double-rule"] .evk-divider { height: 6px; background: linear-gradient(var(--a), var(--a)) 0 0 / 100% 2px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 1px no-repeat; }
+
+/* ---- buttons: flat labels; the quiet one is an outlined "tear here" ---- */
+.evk-btn { padding: 0 20px; background: var(--a); color: var(--on-a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); }
+.evk-btn--quiet { background: transparent; color: var(--a-text); box-shadow: inset 0 0 0 1.5px var(--a-text); }
+
+/* ---- tag: a postcode box, one square per character (monospace glyphs share the cell width) ---- */
+.evk-tag { display: inline-block; padding: .22em 0; border: 1px solid var(--b-text); border-radius: 0; color: var(--b-text); text-indent: .15em;
+  font-family: var(--f-num); font-weight: 600; font-size: .78rem; line-height: 1.25; letter-spacing: .3em;
+  font-variant-numeric: lining-nums tabular-nums;
+  background: linear-gradient(to right, transparent calc(100% - 1px), color-mix(in srgb, var(--b-text) 55%, transparent) 0) 0 0 / calc(1ch + .3em) 100% repeat-x; }
+:root[data-evk-numerals="oldstyle"] .evk-tag { font-variant-numeric: oldstyle-nums tabular-nums; }
+
+/* ---- welcome: a Par-Avion label, a Didone headline, stats as a strip of connected stamps ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight);
+  letter-spacing: var(--display-track); line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: italic; color: var(--b-text); }
+.evk-welcome .evk-eyebrow { display: inline-flex; padding: .45em .9em; background: var(--a); color: var(--on-a); }
+.evk-welcome .evk-eyebrow { --k-2-ink: currentColor; }                      /* on the ink label both lines wear its text colour */
+.evk-stats { gap: 8px; }
+.evk-stat { --r: max(.01px, calc(3px * var(--pf))); --s: 11px; align-items: flex-start; padding: 16px 12px 12px; background: var(--paper-2); color: var(--a-text); }
+.evk-stat:nth-child(3n+1) { background: var(--a); color: var(--on-a); }
+.evk-stat:nth-child(3n+2) { background: var(--b); color: var(--on-b); }
+.evk-stat .n { font-family: var(--f-display); font-weight: var(--display-weight); line-height: .9; color: inherit; font-variant-numeric: lining-nums; }
+:root[data-evk-numerals="oldstyle"] .evk-stat .n { font-variant-numeric: oldstyle-nums; }
+.evk-stat .evk-k { color: inherit; --k-2-ink: currentColor; }               /* stamps are filled: the label follows the stamp's text colour */
+
+/* ---- grid: each entity is a small stamp + postcode, rows cut along a dashed tear line ---- */
+.evk-grid { border: 0; gap: 0 14px; }
+.evk-grid > li { border-bottom: 1px dashed var(--rule); }
+.evk-cell { border: 0; background: transparent; column-gap: 10px; }
+.evk-cell:active { background: var(--paper-2); }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); line-height: 1.1; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { --r: max(.01px, calc(2px * var(--pf))); --s: 7px; position: relative; width: 32px; height: 32px; border: 0; border-radius: 0; color: var(--e-fill-on); font-size: .86rem;
+  background: linear-gradient(var(--e-fill), var(--e-fill)) center / calc(100% - 9px) calc(100% - 9px) no-repeat, color-mix(in srgb, var(--a) 14%, var(--paper)); }
+.evk-mark > img, .evk-mark > svg { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; }
+
+/* ---- entity head = the envelope front: stripe frame, stamp top right, postmark waves, address lines ---- */
+.evk-entity-head { display: block; position: relative; margin-top: 10px; padding: 24px 18px 22px; border: 10px solid transparent; border-radius: var(--radius);
+  background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--band) border-box; }
+.evk-entity-head::after { content: ""; position: absolute; top: 14px; right: 14px; width: 54px; height: 64px; --r: max(.01px, calc(3px * var(--pf))); --s: 10px; color: var(--a);
+  background: linear-gradient(var(--e-fill), var(--e-fill)) center / calc(100% - 12px) calc(100% - 12px) no-repeat, var(--paper-2); }
+.evk-entity-head::before { content: var(--prop-postmark, ""); position: absolute; top: 22px; right: 80px; width: 64px; height: 36px; opacity: .55;
+  background: radial-gradient(circle at 8px 100%, transparent 4.8px, var(--b-text) 5.2px 6.3px, transparent 6.7px) 0 0 / 16px 9px repeat; }
+.evk-entity-head .evk-eyebrow { position: relative; z-index: 1; display: inline-flex; padding: .3em .8em; border: 1.5px solid var(--b-text); border-radius: 2px; background: var(--paper); color: var(--b-text); transform: rotate(-3deg); }
+.evk-entity-name { max-width: calc(100% - 3.5rem); margin-top: 8px; --name-min: 2.7rem; --name-vw: 13vw; --name-max: 6.5rem; line-height: var(--lead-tight, .95); color: var(--a-text); overflow-wrap: anywhere; }
+.evk-entity-rule { max-width: 72%; height: 3.3em; margin-top: 16px; background: repeating-linear-gradient(to bottom, transparent 0 calc(1.1em - 1px), var(--rule) calc(1.1em - 1px) 1.1em); }
+
+/* ---- number strip + parts ---- */
+.evk-strip { border: 0; gap: 0 10px; }
+.evk-num { box-shadow: none; border-bottom: 1px dashed var(--rule); }
+.evk-num b { font-family: var(--f-display); font-weight: var(--display-weight); color: var(--a-text); font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part-head { border-top: 3px double var(--rule); }
+.evk-part-head .no { display: inline-grid; place-items: center; min-width: 2.3em; aspect-ratio: 1; padding: .1em; --r: max(.01px, calc(2.2px * var(--pf))); --s: 8px; background: var(--a); color: var(--on-a);
+  font-family: var(--f-display); font-weight: var(--display-weight); font-size: 1.45rem; line-height: 1; }
+
+/* ---- sheet: a letter slid in with the stripe as its top border; steps are tiny stamps ---- */
+.evk-sheet { border-top: 8px solid transparent; border-image: var(--band) 8 0 0 / 8px 0 0 0 stretch; }
+.evk-grabber::before { height: 4px; border-radius: 2px; }
+.evk-steps { border-top: 0; }
+.evk-steps > li { border-left: 0; border-bottom: 1px dashed var(--rule); }
+.evk-steps > li::before { left: 6px; width: 24px; height: 24px; --r: max(.01px, calc(1.8px * var(--pf))); --s: 6px; border: 0; border-radius: 0; background: var(--paper-2); color: var(--a-text); }
+.evk-steps > li.is-current { background: color-mix(in srgb, var(--b) 8%, var(--paper)); }
+.evk-steps > li.is-current::before { background: var(--b); color: var(--on-b); }
+.evk-steps > li.is-climb::before { background: var(--climb-text); color: var(--paper); }
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); color: var(--paper); }
+
+/* ---- part navigator: dashes (perforation); read = solid ink (base.css); current = long accent ---- */
+.evk-lines i { background: repeating-linear-gradient(90deg, var(--sub) 0 3px, transparent 3px 5px); opacity: .7; }
+:root[data-evk-nav="tab-strip"] .evk-lines { flex-direction: row; align-items: flex-end; gap: 4px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+:root[data-evk-nav="tab-strip"] .evk-lines i { width: 9px; height: 13px; border-radius: 2px 2px 0 0; background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--rule); opacity: 1; }
+:root[data-evk-nav="tab-strip"] .evk-lines i.is-done { background: var(--a); box-shadow: none; }
+:root[data-evk-nav="tab-strip"] .evk-lines i.is-on { width: 9px; height: 20px; background: var(--e-fill); box-shadow: none; }
+.evk-progress { height: 3px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map-hint { background: var(--paper); color: var(--b-text); border: 1.5px solid var(--b-text); border-radius: 2px; }
+.evk-seg { border: 1.5px solid var(--a); }
+.evk-seg > button { border-inline-end: 0; color: var(--a-text); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button + button { border-left: 1.5px dashed var(--a); }
+.evk-search { border-bottom: 2px dashed var(--a); }
+.evk-search:focus { border-bottom-style: solid; border-bottom-color: var(--b); }
+
+/* ---- the small things: panel, chips, folds, empty states, selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { border-top: 8px solid transparent; border-image: var(--band) 8 0 0 / 8px 0 0 0 stretch; }       /* the chapter list is a small letter with the stripe on top */
+.evk-partnav-panel li a { border-bottom-style: dashed; }
+.evk-subnav a { border-style: dashed; border-color: var(--a-text); }
+.evk-subnav a.is-on { border-style: solid; }
+:where(.evk-part details > summary) { border-bottom: 1px dashed var(--rule); }                                           /* fold rows are tear lines */
+.evk-empty { border: 1.5px dashed var(--b-text); background: transparent; }                                             /* "return to sender": a dashed box instead of a bar */
+/* ---- reading blocks: cards cut with a double cap and a tear line, stamp-square badges, double-ruled quotes ---- */
+.evk-r-cards > li { border-top-style: double; border-top-width: 4px; border-bottom: 1px dashed var(--e-edge); }
+.evk-r-quote { --r-quote-bar: 6px; border-inline-start-style: double; }
+.evk-r-note { border: 1.5px dashed var(--rule); padding: .7em 1em; }
+.evk-r-numbers > li { border-top-style: dashed; }
+.evk-r-table thead th { border-bottom-style: double; border-bottom-width: 4px; }
+.evk-r-fold { border-block-style: dashed; }
+@media print { .evk-divider, .evk-entity-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

@@ -1,0 +1,715 @@
+/* event-venue-kit · base.css — structure and floor rules shared by every direction
+   ----------------------------------------------------------------------------------------------
+   Load order:  tokens.css  ->  base.css  ->  recipe.css  ->  engine scripts.
+   This file has NO colours and NO font names of its own: every value is var(--…) from tokens.css
+   (the contract in BUILD-SPEC §2: --paper --paper-2 --rule --text --sub --a --a-text --on-a --b --b-text --on-b
+   --climb --focus, --e… per entity, --m-… for the map, --f-… --label-… --display-… --step-… --radius --chamfer
+   --hair --rule-2 --rule-3 --rule-cap --spring-dur --spring-bounce --press-scale --fade-dur --gutter --gap
+   --row-pad --measure).  Tokens with a unit carry it (--radius: 2px, --chamfer: 0px, --label-track: .1em,
+   --measure: 62ch, --spring-dur: .42s).  Non-colour defaults for all of them sit at :where(:root) (specificity 0),
+   so tokens.css always wins and the file still renders sanely on its own.
+
+   How it is layered (so a recipe can restyle freely and the floor cannot be lost by accident)
+     - structure and default looks are written inside :where(…): specificity 0, any single recipe class wins;
+     - states (:hover :active :focus-visible, [aria-current], .is-on …) keep normal specificity, so a recipe that sets
+       `.evk-btn { box-shadow: … }` does not silently delete the focus ring.
+   Optional knobs this file reads (set them in a recipe or tokens; none are required):
+     --hit 44px · --wrap 1120px · --bar-min 56px · --bar-alpha 90% · --bar-blur · --bar-line · --leading 1.7
+     --focus-w 3px · --focus-off 2px · --sheet-bg · --btn-clip · --hover-opacity (default 1) · --num-variant
+     --icon-stroke --icon-cap --icon-join · --mark 32px · --cols-sm/md/lg 2/3/4 · --part-rail 250px · --lines-gap 4px
+     bilingual pair (§5): --k-1 --k-2 (line sizes, em) · --k-2-ink (the secondary line's colour; `currentColor` on a filled
+     surface) · --track-tight --lead-tight (tight tracking / leading for big Latin names; the script layer zeroes them for CJK)
+   Set by the engine: --evk-bar-h (measured bar height) · --evk-ease (the token spring as a CSS easing) ·
+     --p --i --n on .evk-partnav / .evk-progress · html.is-scrolled · html.evk-has-parts
+   Entity colour (§2.1): the element that sets --e (inline style, .evk-entity, or [data-entity-color]) also gets the
+     scheme-aware aliases --e-fill --e-ink --e-tint, plus --e-edge and --e-fill-on (the text colour that sits on
+     --e-fill: in dark it is --paper, because --e-dk is built to read against the dark ground) and --e-ink-t (--e-ink nudged
+     toward --text: the ink for text that sits on --e-tint, which is a little further from the ground than the ground itself).
+     The aliases are set on :root too, so a tint or chip outside any entity gets the scheme-aware values.
+   Entity name size: a recipe sets `--name-min` `--name-vw` `--name-max` on .evk-entity-name (never font-size); the data-fit tiers scale them (§8).
+   Lead language: <html data-evk-lead="en|zh"> (kit.py root_attrs). The generator writes the PRIMARY language as the first
+     child of every bilingual pair; this file styles roles by position (§5) and scripts by .en/.cn or lang (§1), so the
+     same markup works in both leads.
+   Breakpoints (原站取值 / source values; one instance): 760 tablet · 880 sheet becomes a card · 980 reading rail.
+   Decorations that reach outside their element (recipe contract): a cell (.evk-cell) and a mark (.evk-mark) turn up in .evk-grid, in sheet
+     lists, in plain <ul>/<div> rows, in directory rows (.sp-rows) and in search hits, so a pseudo-element, hard offset shadow or tilt that
+     leaves its host's box must not lean on one ancestor's overflow to stay tidy. Keep the reach inside the host; or scope it to the grid
+     (it has the gap and padding for it: `.evk-grid > li .evk-cell`); or let the row that holds the mark clip it itself
+     (`:has(> .evk-mark) { overflow: clip }`, as transit-signage does for its station line).
+   ---------------------------------------------------------------------------------------------- */
+
+/* ================================================================ 0. defaults for non-colour tokens */
+:where(:root) {
+  --hair: 1px; --rule-2: 2px; --rule-3: 3px; --rule-cap: 6px;
+  --radius: 0px; --chamfer: 0px;
+  --gutter: 20px; --gap: 16px; --row-pad: 12px; --measure: 62ch;
+  --spring-dur: .4s; --spring-bounce: 0; --press-scale: .97; --fade-dur: .2s;
+  --label-case: none; --label-track: .08em; --label-stretch: normal; --label-weight: 600;
+  --display-weight: 600; --display-track: 0em; --display-leading: 1.1;
+  --step--1: .8125rem; --step-0: 1rem; --step-1: 1.25rem; --step-2: 1.5rem; --step-3: 2rem; --step-4: 2.75rem; --step-5: 3.75rem;
+  --hit: 44px; --wrap: 1120px; --bar-min: 56px; --leading: 1.7; --focus-w: 3px; --focus-off: 2px;
+  /* the one shadow a floating surface may have: tinted with the structure ink */
+  --evk-shadow: 0 16px 44px color-mix(in srgb, var(--a) 24%, transparent);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :where(:root:not([data-theme="light"])) { color-scheme: dark; --evk-shadow: 0 16px 44px color-mix(in srgb, var(--paper) 85%, transparent), 0 0 0 var(--hair) var(--rule); }
+}
+:where(:root[data-theme="dark"]) { color-scheme: dark; --evk-shadow: 0 16px 44px color-mix(in srgb, var(--paper) 85%, transparent), 0 0 0 var(--hair) var(--rule); }
+
+/* entity aliases: declared where --e is set, so descendants inherit the resolved values */
+:where(:root, [style*="--e:"], [data-entity-color], .evk-entity) {
+  --e-fill: var(--e, var(--a));
+  --e-ink: var(--e-text, var(--a-text));
+  --e-tint: var(--e-soft, var(--paper-2));
+  --e-edge: var(--e-line, var(--rule));
+  --e-fill-on: var(--e-on, var(--on-a));
+  --e-ink-t: color-mix(in srgb, var(--e-text, var(--a-text)) 70%, var(--text));     /* the entity ink for text that sits ON its own tint: a little toward --text, because the tint is a bit further from the ground than the ground is */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),                       /* the root too: a chip, tint or hover outside any entity must not keep the light tint */
+  :root:not([data-theme="light"]) :where([style*="--e:"], [data-entity-color], .evk-entity),
+  :root:not([data-theme="light"]):where([style*="--e:"], [data-entity-color], .evk-entity) {
+    --e-fill: var(--e-dk, var(--a)); --e-ink: var(--e-dk, var(--a-text)); --e-tint: var(--e-soft-dk, var(--paper-2));
+    --e-edge: var(--rule); --e-fill-on: var(--paper); --e-ink-t: color-mix(in srgb, var(--e-dk, var(--a-text)) 70%, var(--text));
+  }
+}
+:root[data-theme="dark"],
+:root[data-theme="dark"] :where([style*="--e:"], [data-entity-color], .evk-entity),
+:root[data-theme="dark"]:where([style*="--e:"], [data-entity-color], .evk-entity) {
+  --e-fill: var(--e-dk, var(--a)); --e-ink: var(--e-dk, var(--a-text)); --e-tint: var(--e-soft-dk, var(--paper-2));
+  --e-edge: var(--rule); --e-fill-on: var(--paper); --e-ink-t: color-mix(in srgb, var(--e-dk, var(--a-text)) 70%, var(--text));
+}
+
+/* ================================================================ 1. reset + page */
+*, *::before, *::after { box-sizing: border-box; }
+:where(html) { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+:where(body) {
+  margin: 0; min-height: 100vh; min-height: 100dvh;
+  background: var(--paper); color: var(--text);
+  font-family: var(--f-text); font-size: var(--step-0); line-height: var(--leading);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility; font-kerning: normal;
+  overflow-wrap: break-word;
+  line-break: strict;                       /* CJK: no line may start with closing punctuation or small kana */
+  text-autospace: normal;                   /* CJK–Latin spacing where the engine can (the wayfinding copy also spaces it itself) */
+  hanging-punctuation: first last;
+}
+/* SCRIPT layer: how a language is typeset (family, case, tracking, breaking). It follows the language of the element - the
+   class .cn, or an explicit lang attribute - and never its position or role (the ROLE layer is §5). Attribute selectors, not
+   :lang(): an English page is :lang(en) all the way down, so a .cn span without a lang attribute would match :lang(en) too.
+   It re-points the font, case and tracking tokens for the subtree, so a component rule like `font-family: var(--f-display)`
+   written for Latin already resolves to the Chinese display face on a Chinese line. It sits before every component, so a
+   component's own font-family still wins; the html/body exclusion keeps a page-level lang from re-pointing the whole page. */
+:where(.cn, :not(html, body)[lang|="zh"], :not(html, body)[lang|="ja"]) {
+  --f-display: var(--f-cjk-display, var(--f-cjk)); --f-label: var(--f-cjk); --f-text: var(--f-cjk);
+  --label-case: none; --label-stretch: normal; --label-track: .1em; --display-track: 0em; --display-leading: 1.25;
+  --track-tight: 0em; --lead-tight: 1.15;                  /* big Latin names use var(--track-tight, -.02em): CJK never gets negative tracking or sub-1 leading */
+  font-family: var(--f-text); text-transform: none; font-stretch: normal;
+}
+.cn, :not(html, body)[lang|="zh"], :not(html, body)[lang|="ja"] { font-style: normal !important; }   /* Chinese has no italic: no recipe may slant it */
+:where(img, svg, video, canvas) { max-width: 100%; }
+:where(img, video) { height: auto; }
+:where(h1, h2, h3, h4) { margin: 0; font-family: var(--f-display); font-weight: var(--display-weight); line-height: var(--display-leading); letter-spacing: var(--display-track); color: var(--a-text); text-wrap: balance; }
+:where(p, ul, ol, dl, figure, blockquote) { margin-block: 0 1em; }
+:where(p) { text-wrap: pretty; }
+:where(button, input, select, textarea) { font: inherit; color: inherit; }
+:where(a) { color: inherit; }
+:where(p, li, dd, td, figcaption, blockquote, summary) :where(a:not([class])) { text-decoration-line: underline; text-decoration-color: var(--b); text-decoration-thickness: var(--rule-2); text-underline-offset: .22em; }   /* a link in prose is found by its underline, not by colour alone */
+:where(a[class], .evk-nav a, .evk-subnav a, .evk-partnav-panel a) { text-decoration: none; }
+:where(small) { font-size: .85em; }
+:where(em) { font-style: italic; }
+:where(em:lang(zh), em:lang(ja)) { font-style: normal; text-emphasis: filled dot; text-emphasis-position: under right; }   /* Chinese has no italic; em:lang(), not :lang() em - an English <em> inside a Chinese page must not get the dots */
+:where(hr) { border: 0; border-top: var(--hair) solid var(--rule); margin-block: calc(var(--gap) * 2); }
+[hidden] { display: none !important; }       /* hidden always wins over any display rule */
+:where(.nw) { white-space: nowrap; }
+:where(.evk-vh, .vh) { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+:where(a, button, label, input, select, summary, [role="tab"]) { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* numbers: figures that are compared or read as data stay aligned (a recipe may set --num-variant: oldstyle-nums …) */
+:where(.evk-tag, .evk-num b, .evk-stat .n, .evk-part-head .no, .evk-partnav-panel .no, [data-num], time) {
+  font-family: var(--f-num); font-variant-numeric: var(--num-variant, lining-nums tabular-nums);
+}
+
+/* names: keep a name whole where it fits, break inside it only if the box is narrower than the word.
+   keep-all is for Latin names only: on a Chinese name it forbids every break between characters and leaves single-character
+   orphans; CJK names break between characters by strict rules and are balanced over their lines. */
+:where(.name, .evk-entity-name, .evk-brand) { overflow-wrap: break-word; line-break: strict; text-wrap: balance; }
+:where(.name, .evk-entity-name, .evk-brand):where(.en, [lang|="en"]) { word-break: keep-all; }
+
+/* scroll targets clear the sticky bar by its measured height */
+:where([id], [data-part]) { scroll-margin-top: calc(var(--evk-bar-h, 64px) + 12px); }
+
+/* ================================================================ 2. floor: focus, selection, scrollbars, skip link */
+:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: var(--focus-off); }
+/* shapes that clip or scroll their own overflow draw the ring inside: an outside outline would be cut off */
+:is(.evk-cell, .evk-seg > button, .evk-lines, .evk-nav a, .evk-subnav a, .evk-partnav-panel a, .evk-steps button, .evk-map canvas, summary):focus-visible {
+  outline-offset: calc(var(--focus-w) * -1);
+}
+/* clip-path (chamfer) cuts an outside ring too: a transparent outline keeps forced-colors working, the ring is inset with a paper gap so it shows on any fill */
+.evk-btn:focus-visible {
+  outline: var(--focus-w) solid transparent; outline-offset: calc(var(--focus-w) * -1);
+  box-shadow: inset 0 0 0 var(--focus-w) var(--focus), inset 0 0 0 calc(var(--focus-w) + 2px) var(--paper);
+}
+:where(input, select, textarea):focus-visible { outline-offset: 0; }
+
+::selection { background: var(--sel-bg, var(--a)); color: var(--sel-fg, var(--on-a)); }
+:where(html) { scrollbar-color: var(--sub) var(--paper-2); accent-color: var(--a); caret-color: var(--a-text); }
+::placeholder { color: var(--sub); opacity: 1; }
+
+:where(.evk-skip) { position: absolute; left: var(--gutter); top: 0; z-index: 100; padding: .7em 1em; background: var(--a); color: var(--on-a); transform: translateY(-120%); }
+.evk-skip:focus-visible { transform: none; }
+
+/* ================================================================ 3. layout shell */
+:where(main, .evk-wrap) {
+  display: block; max-width: var(--wrap); margin-inline: auto;
+  padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right));
+  padding-bottom: calc(var(--gap) * 4);
+}
+/* full-bleed on a phone without breaking the gutter: the colour touches the edge, the text keeps its line */
+:where(.evk-bleed) { margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); }
+@media (min-width: 760px) { :where(.evk-bleed) { margin-inline: 0; padding-inline: 0; } }
+:where(.evk-stack > * + *) { margin-top: var(--gap); }
+:where(.evk-section) { margin-top: calc(var(--gap) * 3); }
+
+/* ================================================================ 4. bar, brand, nav */
+:where(.evk-bar) {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--bar-min); padding-block: 6px; padding-top: max(6px, env(safe-area-inset-top));
+  padding-left: max(var(--gutter), calc((100% - var(--wrap)) / 2 + var(--gutter)), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), calc((100% - var(--wrap)) / 2 + var(--gutter)), env(safe-area-inset-right));
+  background: var(--paper);
+  background: color-mix(in srgb, var(--paper) var(--bar-alpha, 90%), transparent);   /* the ground at ~90 %: no visible edge at rest */
+  -webkit-backdrop-filter: var(--bar-blur, saturate(160%) blur(16px)); backdrop-filter: var(--bar-blur, saturate(160%) blur(16px));
+}
+/* the bar's hairline: it appears only when content slides under the bar; the reading progress line replaces it */
+.evk-bar::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: var(--bar-line-h, var(--rule-2));
+  background: var(--bar-line, var(--rule)); opacity: 0; pointer-events: none;
+  transition: opacity var(--fade-dur) ease;
+}
+:root.is-scrolled .evk-bar::after { opacity: 1; }
+:root.evk-has-parts .evk-bar::after { display: none; }
+:where(.evk-brand) { display: flex; align-items: center; flex: none; min-height: var(--hit); color: inherit; font-family: var(--f-display); font-weight: var(--display-weight); }
+:where(.evk-brand img, .evk-brand svg) { display: block; width: auto; height: var(--brand-h, 36px); }
+:where(.evk-nav) { display: flex; gap: 2px; margin-inline-start: auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }   /* a narrow phone scrolls the tabs instead of clipping them */
+:where(.evk-nav)::-webkit-scrollbar { display: none; }
+:where(.evk-nav a) {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  flex: none; min-height: var(--hit); padding: 4px 9px; color: inherit;
+  border-bottom: var(--rule-3) solid transparent;       /* the space for "you are here" is always reserved: selecting shifts nothing */
+}
+:where(.evk-nav .evk-k) { flex-direction: column; align-items: center; row-gap: 1px; }
+.evk-nav a[aria-current] { border-bottom-color: var(--b); }
+
+/* ================================================================ 5. the bilingual pair: two layers
+   ROLE layer = hierarchy (size, weight, colour, order). The FIRST child of a pair is the primary line, the LAST child (when it
+   is not also the first) is the secondary line, whichever language each one is: the generator writes the lead language first.
+   SCRIPT layer = typesetting (§1: family, case, tracking, breaking), keyed to .en / .cn / lang, never to position.
+   So `.evk-k > :first-child` may be Latin or Chinese and nothing here has to know. Recipes restyle hierarchy on the same
+   selectors; they never put size, weight or colour on .en / .cn.
+   <html data-evk-lead="zh"> (the primary line is Chinese): the primary line is bigger, the Latin secondary becomes a small
+   label (still >= 11 px, F11) in the quiet ink. Knobs: --k-1 --k-2 (em) and --k-2-ink (set to currentColor where the pair sits
+   on a filled surface, so the secondary line follows the surface's text colour). */
+:where(:root) { --k-1: 1em; --k-2: .9em; }                      /* en lead: label-sized primary, the Chinese a little smaller */
+:where(:root[data-evk-lead="zh"]) { --k-1: 1.1em; --k-2: .86em; }
+:where(.evk-k) {
+  display: inline-flex; flex-wrap: wrap; align-items: baseline; column-gap: .65em; row-gap: 2px;
+  font-family: var(--f-label); font-size: var(--step--1); font-weight: var(--label-weight); font-stretch: var(--label-stretch);
+  line-height: 1.25; letter-spacing: var(--label-track); text-transform: var(--label-case);       /* the Latin label voice: a Latin line needs no class */
+}
+:where(.evk-k > :first-child) { font-size: var(--k-1); }                                         /* weight and colour: the container's (a recipe sets them once, on .evk-k) */
+:where(.evk-k > :last-child:not(:first-child)) { font-size: max(11px, var(--k-2)); font-weight: 500; line-height: 1.3; color: var(--k-2-ink, var(--sub)); }
+:where(.evk-k > :where(.cn, [lang|="zh"], [lang|="ja"])) { letter-spacing: var(--label-track); }   /* the script layer re-points the token to .1em */
+:where(.evk-k--stack) { flex-direction: column; align-items: flex-start; }
+:where(.evk-eyebrow) { margin: 0 0 .4em; color: var(--e-ink); }
+
+/* ================================================================ 6. divider, buttons, tag, icons */
+:where(.evk-divider) { display: block; height: 0; margin: calc(var(--gap) * 1.5) 0; border: 0; border-top: var(--rule-2) solid var(--a); }
+:where(.evk-btn) {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6em; flex: none;
+  min-height: var(--hit); min-width: var(--hit); padding: 0 22px; border: 0; border-radius: var(--radius);
+  background: var(--a); color: var(--on-a);
+  font-family: var(--f-label); font-size: var(--step--1); font-weight: var(--label-weight); font-stretch: var(--label-stretch);
+  line-height: 1.1; letter-spacing: var(--label-track); text-transform: var(--label-case);
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  clip-path: var(--btn-clip, polygon(var(--chamfer) 0, calc(100% - var(--chamfer)) 0, 100% var(--chamfer), 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, var(--chamfer) 100%, 0 calc(100% - var(--chamfer)), 0 var(--chamfer)));
+  transition: transform calc(var(--fade-dur) * .5) ease-out, background-color var(--fade-dur), color var(--fade-dur), opacity var(--fade-dur);
+}
+:where(.evk-btn--primary) { background: var(--b); color: var(--on-b); }
+:where(.evk-btn--quiet) { background: var(--paper-2); color: var(--text); }
+:where(.evk-btn--sm) { padding: 0 16px; font-size: calc(var(--step--1) * .92); }   /* smaller type, the 44 px target stays */
+:where(.evk-btn--block) { display: flex; width: 100%; }
+:where(.evk-btn) { --k-2-ink: currentColor; }                   /* a button's second line follows its own label colour (the fill decides it) */
+:where(.evk-btn > :last-child:not(:first-child)) { font-size: max(11px, var(--k-2)); font-weight: 500; }   /* role: the follower */
+:where(.evk-btn > :where(.cn, [lang|="zh"], [lang|="ja"])) { letter-spacing: var(--label-track); }          /* script */
+.evk-btn:active { transform: scale(var(--press-scale)); }
+.evk-btn:disabled, .evk-btn[aria-disabled="true"] { opacity: .45; cursor: default; transform: none; pointer-events: none; }
+:where(.evk-i) { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: var(--icon-stroke, 2); stroke-linecap: var(--icon-cap, round); stroke-linejoin: var(--icon-join, round); }
+
+:where(.evk-tag) {
+  display: inline-flex; align-items: baseline; gap: .2em; white-space: nowrap;
+  padding: .2em .5em; border: var(--hair) solid currentColor; border-radius: var(--radius);
+  font-size: var(--step--1); font-weight: var(--label-weight); line-height: 1.2; color: var(--a-text);
+}
+:where(.evk-tag small) { font-size: .85em; color: var(--k-2-ink, var(--sub)); }   /* a recipe that fills the tag sets --k-2-ink: currentColor on it, so the small text follows the fill's text colour */
+
+/* FILLS: a bilingual pair inside a filled control wears the control's own text colour. A recipe sets `.evk-k { color: var(--a-text) }`
+   for text on paper; on a fill (a button, a pressed segment, a filled tag) that same colour would sit on its own ground and vanish
+   (ink on ink). Inside these three the pair inherits whatever the control says, in every state (pressed, hover, primary), in every recipe. */
+.evk-btn .evk-k, .evk-seg > button .evk-k, .evk-tag .evk-k { color: inherit; }
+
+/* ================================================================ 7. welcome, stats, grid, cells */
+:where(.evk-welcome) { padding-block: calc(var(--gap) * 2) var(--gap); }
+:where(.evk-stats) { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--gap); margin-top: calc(var(--gap) * 1.5); }
+:where(.evk-stat) { display: flex; flex-direction: column; gap: .35em; min-width: 0; }
+:where(.evk-stat .n) { font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-4); line-height: .9; color: var(--e-ink); }
+
+:where(.evk-grid) { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; grid-template-columns: repeat(var(--cols-sm, 2), minmax(0, 1fr)); border-top: var(--hair) solid var(--rule); border-left: var(--hair) solid var(--rule); }
+@media (min-width: 700px) { :where(.evk-grid) { grid-template-columns: repeat(var(--cols-md, 3), minmax(0, 1fr)); } }
+@media (min-width: 1000px) { :where(.evk-grid) { grid-template-columns: repeat(var(--cols-lg, 4), minmax(0, 1fr)); } }
+:where(.evk-grid > li) { min-width: 0; container-type: inline-size; }
+:where(.evk-cell) {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "mark name" "mark sub" "mark tag"; align-items: center;
+  min-height: 56px; height: 100%; padding: var(--row-pad) calc(var(--row-pad) * 1.2); color: inherit;
+  background: var(--paper); border: 0; border-right: var(--hair) solid var(--rule); border-bottom: var(--hair) solid var(--rule);   /* a ruled grid: uniform padding, so text never touches a rule at any width */
+  transition: background-color calc(var(--fade-dur) * .75);
+}
+/* a cell is  mark, PRIMARY line, secondary line, tag  - roles by position, so a Chinese-led cell is just the same markup with
+   the Chinese line written first (class .name / .cn / .en on the lines only chooses the script, never the role) */
+:where(.evk-cell > .evk-mark) { grid-area: mark; margin-inline-end: .75rem; }                    /* rem, not em: a recipe may zero the mark's font-size to hide its letter */
+:where(.evk-cell > .evk-mark + *) { grid-area: name; min-width: 0; font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-0); line-height: 1.15; color: var(--a-text);
+  overflow-wrap: break-word; line-break: strict; text-wrap: balance; }
+:where(.evk-cell > .evk-mark + * + :not(.evk-tag)) { grid-area: sub; min-width: 0; font-family: var(--f-text); font-size: var(--step--1); line-height: 1.35; color: var(--sub);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:where(.evk-cell > .evk-tag) { grid-area: tag; justify-self: start; margin-top: .4em; }
+/* a roomy cell (>= 16rem wide) moves the tag to the right edge; a narrow one stacks it under the second line, so no name is squeezed */
+@container (min-width: 16rem) {
+  :where(.evk-cell) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark name tag" "mark sub tag"; }
+  :where(.evk-cell > .evk-tag) { justify-self: end; align-self: center; margin-top: 0; margin-inline-start: .75em; }
+}
+/* the mark keeps its size when empty, so a missing crest never shifts the grid */
+:where(.evk-mark) {
+  display: grid; place-items: center; flex: none; overflow: hidden;
+  width: var(--mark, 32px); height: var(--mark, 32px);
+  background: var(--e-tint); border: var(--hair) solid var(--e-fill); border-radius: var(--mark-radius, var(--radius));
+  color: var(--e-ink-t); font-family: var(--f-display); font-weight: var(--display-weight); line-height: 1;     /* the letter sits on --e-tint */
+}
+:where(.evk-mark img) { width: 100%; height: 100%; object-fit: cover; }
+/* a real logo or crest opts in with .evk-mark--img: contained (never cropped) on a paper disc with a hairline ring,
+   so differently shaped marks read as one family; recipes hide images inside plain (colour/shape) marks */
+.evk-mark.evk-mark--img { background: var(--paper); border-color: var(--rule); border-radius: 50%; padding: 6%; }
+.evk-mark.evk-mark--img > img, .evk-mark.evk-mark--img > svg { display: block; width: 100%; height: 100%; object-fit: contain; }
+.evk-cell:active { background: var(--paper-2); transition: none; }   /* the press registers on touch-down, and eases off on release */
+
+/* ================================================================ 8. entity head, strip */
+:where(.evk-entity-head) { display: grid; gap: calc(var(--gap) * .6); padding-block: calc(var(--gap) * 2) var(--gap); }
+:where(.evk-entity-name) {
+  --fit: 1; --fit-min: 1;
+  margin: 0; font-family: var(--f-display); font-weight: var(--display-weight);
+  font-size: max(var(--name-floor, 1.25rem), clamp(calc(var(--name-min, 2.4rem) * var(--fit-min)), calc(var(--name-vw, 12vw) * var(--fit)), calc(var(--name-max, 3.75rem) * var(--fit))));
+  line-height: var(--display-leading); letter-spacing: var(--display-track); color: var(--e-ink); text-wrap: balance;
+}
+/* the name-fit ladder: bigger for short names, set by the build from the character count (原站取值 ≤4, ≤7, ≤12, longer).
+   The tiers are SCALE FACTORS on the three numbers of one fluid size, so a recipe sets the SIZE of its name with
+   `--name-min` `--name-vw` `--name-max` (the clamp(min, vw, max) of the longest tier-1 name, e.g. 2.3rem / 12vw / 5rem) on .evk-entity-name
+   and the ladder keeps working; a recipe never sets `font-size` on the name itself (that flattens the ladder: a 13-letter name would
+   overflow where a 3-letter one fits). Source ladder (原站取值): vw and max x 1 / .76 / .58 / .46, min x 1 / .88 / .76 / .66 (the source's
+   own clamp(3.6rem,19vw,9rem) -> (3rem,14vw,7rem) -> (2.6rem,10.5vw,5.4rem) -> (2.2rem,8.2vw,4.4rem)); never below --name-floor (1.25rem). */
+:where(.evk-entity-name[data-fit="2"]) { --fit: .76; --fit-min: .88; }
+:where(.evk-entity-name[data-fit="3"]) { --fit: .58; --fit-min: .76; }
+:where(.evk-entity-name[data-fit="4"]) { --fit: .46; --fit-min: .66; }
+:where(.evk-entity-rule) { height: var(--rule-cap); max-width: 41rem; background: var(--e-fill); }
+/* the head's two optional text lines are addressed by CLASS, never by `p` (a recipe that styled `.evk-entity-head > p` drew a footer cell
+   on every paragraph a page put in the head): .evk-entity-sub = the name in the other language, .evk-entity-line = one line about the entity */
+:where(.evk-entity-sub) { margin: 0; font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-2); line-height: 1.2; color: var(--sub); text-wrap: balance; }
+:where(.evk-entity-line) { margin: 0; max-width: var(--measure); color: var(--text); }
+:where(.evk-strip) { display: flex; flex-wrap: wrap; overflow: hidden; border-block: var(--hair) solid var(--rule); }
+:where(.evk-num) {
+  flex: 1 1 7.5rem; min-width: 0; padding: var(--row-pad) var(--gap);
+  box-shadow: calc(var(--hair) * -1) 0 0 var(--rule), 0 calc(var(--hair) * -1) 0 var(--rule);   /* left and top edge of every cell: a grid however it wraps */
+}
+:where(.evk-num b) { display: block; font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-3); line-height: 1; color: var(--e-ink); }
+/* the unit sits inside the figure (<small> or .unit); the LABEL is the figure's sibling span. Never `.evk-num span`: that also hit a
+   <span class="cn"> inside the <b> (a Chinese figure like 三层) and shrank it to a small grey label. */
+:where(.evk-num small, .evk-num .unit) { display: inline-block; white-space: nowrap; margin-left: .25em; font-family: var(--f-text); font-size: var(--step--1); font-weight: 500; color: var(--sub); }
+:where(.evk-num > span) { display: block; margin-top: .35em; font-family: var(--f-text); font-size: var(--step--1); line-height: 1.35; color: var(--sub); }
+:where(.evk-num > span > span) { display: block; margin-top: .35em; }        /* a bilingual label: one line per language (a pair as bare spans) */
+
+/* ================================================================ 9. long-form parts */
+:where(.evk-part) { margin-block: calc(var(--gap) * 3); }
+:where(.evk-part-head) { display: flex; flex-wrap: wrap; align-items: baseline; gap: .75em; margin-bottom: var(--gap); padding-top: var(--gap); border-top: var(--rule-2) solid var(--e-fill); }
+:where(.evk-part-head .no) { font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-3); line-height: .9; color: var(--e-ink); }
+:where(.evk-part p, .evk-part li) { max-width: var(--measure); line-height: 1.85; }
+:where(.evk-part, .evk-entity-head) :where(dd, dt) { margin: 0; }
+:where(.evk-part :is(h2, h3, h4)) { margin-block: 1.6em .5em; }
+:where(.evk-part :is(h2, h3, h4):first-child) { margin-top: 0; }
+@media (min-width: 980px) {
+  /* the head becomes a sticky left column that keeps the chapter in view while its body scrolls */
+  :where(.evk-part) { display: grid; grid-template-columns: var(--part-rail, 250px) minmax(0, 1fr); column-gap: 56px; row-gap: 0; align-items: start; }
+  :where(.evk-part > .evk-part-head) {
+    grid-column: 1; grid-row: 1 / span 60; position: sticky; top: calc(var(--evk-bar-h, 64px) + 20px);
+    flex-direction: column; flex-wrap: nowrap; align-items: flex-start; gap: .4em; margin-bottom: 0;
+    max-height: calc(100dvh - var(--evk-bar-h, 64px) - 40px); overflow: auto;
+  }
+  :where(.evk-part > :not(.evk-part-head)) { grid-column: 2; }
+  :where(.evk-part-head > .evk-subnav) { align-self: stretch; }
+}
+:where(.evk-part-head > .evk-subnav) { flex: 1 0 100%; }
+/* sub-section chips: a scrolling row on a phone (bleeding to the edge), a ruled rail on desktop */
+:where(.evk-subnav) {
+  position: relative; display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); margin-bottom: var(--gap);
+}
+:where(.evk-subnav)::-webkit-scrollbar { display: none; }
+:where(.evk-subnav a) {
+  flex: none; display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 14px; color: inherit;
+  border: var(--hair) solid var(--rule); border-radius: var(--radius); font-size: var(--step--1); line-height: 1.2;
+}
+.evk-subnav a.is-on { border-color: var(--e-fill); border-width: var(--rule-2); background: var(--e-tint); color: var(--e-ink-t); }
+@media (min-width: 980px) {
+  :where(.evk-subnav) { flex-direction: column; gap: 0; overflow: visible; margin: .6em 0 0; padding: 0; }
+  :where(.evk-subnav a) { border: 0; border-left: var(--rule-3) solid transparent; border-bottom: var(--hair) solid var(--rule); border-radius: 0; padding: 0 0 0 10px; }
+  .evk-subnav a.is-on { border-width: 0; border-left: var(--rule-3) solid var(--e-fill); border-bottom: var(--hair) solid var(--rule); }
+}
+/* folded content (sources, long lists): native <details>, a drawn chevron that follows the text colour */
+:where(.evk-part details > summary, details.evk-fold > summary, details.evk-r-fold > summary) { display: flex; align-items: center; gap: .75em; min-height: var(--hit); cursor: pointer; list-style: none; }
+:where(.evk-part details > summary, details.evk-fold > summary, details.evk-r-fold > summary)::-webkit-details-marker { display: none; }
+:where(.evk-part details > summary, details.evk-fold > summary, details.evk-r-fold > summary)::after {
+  content: ""; flex: none; margin-inline-start: auto; width: .45em; height: .45em;
+  border: solid currentColor; border-width: 0 calc(var(--hair) * 1.5) calc(var(--hair) * 1.5) 0; transform: rotate(45deg);
+  transition: transform var(--fade-dur) var(--evk-ease, ease);
+}
+:where(.evk-part details[open] > summary, details.evk-fold[open] > summary, details.evk-r-fold[open] > summary)::after { transform: rotate(-135deg); }
+:where(.evk-cite) { font-size: .62em; line-height: 0; vertical-align: super; }
+:where(li, [data-cite]):target { background: var(--e-tint); }
+:where(.evk-empty) { margin-block: var(--gap); padding: calc(var(--gap) * 1.1) calc(var(--gap) * 1.3); background: var(--paper-2); border-left: var(--rule-3) solid var(--b); color: var(--sub); }
+:where(.evk-empty > :first-child) { display: block; font-family: var(--f-display); font-weight: var(--display-weight); color: var(--a-text); }   /* role: the primary line */
+:where(.evk-empty > :last-child:not(:first-child)) { display: block; }
+
+/* ================================================================ 9b. reading blocks (entity.blocks) — STRUCTURE ONLY, tokens only
+   One class per block type of reading.md's closed vocabulary; `evk-r-<type>` goes on the block's own element, anywhere inside or
+   outside .evk-part. The recipe adds character (shape, face, rule); nothing here names a colour or a font.
+   Markup this file styles (the starter writes exactly this; a hand-built page may differ in tag, not in class):
+     p         <p class="evk-r-p">…<strong>…</strong></p>
+     facts     <dl class="evk-r-facts"><div><dt>key</dt><dd>value</dd></div>…</dl>            (or bare dt/dd pairs)
+     cards     <ul class="evk-r-cards [is-short|is-long]"><li><h4>title</h4><p class="meta">meta</p><p>text</p></li>…</ul>
+     steps     <ol class="evk-r-steps"><li>…</li></ol>
+     table     <div class="evk-r-table" role="region" tabindex="0" aria-label="…"><table><caption>…</caption><thead>…</thead><tbody>…</tbody></table></div>
+     timeline  <ol class="evk-r-timeline"><li><time>10:30</time><div>text</div></li>…</ol>
+     numbers   <ul class="evk-r-numbers"><li><b>1,200</b><span>label</span></li>…</ul>
+     qa        <div class="evk-r-qa"><div class="q">question</div><div class="a"><p>answer</p></div></div>  one per item (or one wrapper
+               with item children; <dl class="evk-r-qa"> with dt/dd works too)
+     quote     <blockquote class="evk-r-quote"><p>…</p><cite>by</cite></blockquote>
+     list      <ul class="evk-r-list"><li>…</li></ul>                                              (<ol> keeps its numbers)
+     note      <aside class="evk-r-note"><p>…</p></aside>
+     fold      <details class="evk-r-fold evk-fold"><summary>title</summary>…</details>
+   Knobs a recipe may set: --r-gap (space after a block) · --r-card-min / --r-card-top / --r-card-radius · --r-badge-r (step badge radius)
+   · --r-node / --r-node-r (timeline node size, radius) · --r-at (timeline time column) · --r-quote-bar · --r-leading.
+   Widths: prose-like blocks keep the measure; cards, numbers, tables use the whole column; a table scrolls sideways, it never shrinks type. */
+:where(.evk-r-p, .evk-r-facts, .evk-r-cards, .evk-r-steps, .evk-r-table, .evk-r-timeline, .evk-r-numbers, .evk-r-qa, .evk-r-quote, .evk-r-list, .evk-r-note, .evk-r-fold) { margin-block: 0 var(--r-gap, 1.5rem); }
+:where(.evk-r-p, .evk-r-facts, .evk-r-steps, .evk-r-timeline, .evk-r-qa, .evk-r-quote, .evk-r-list, .evk-r-note, .evk-r-fold) { max-width: var(--measure); }
+:where(.evk-r-p) { font-size: 1.02rem; line-height: var(--r-leading, 1.85); }
+:where(.evk-r-p :is(strong, b)) { color: var(--a-text); font-weight: 700; }
+
+/* facts: a ruled key/value list; the key column is the same width in every row (subgrid), a value wraps inside its own column */
+:where(.evk-r-facts) { display: grid; grid-template-columns: minmax(5.5em, 7.5em) minmax(0, 1fr); border-top: var(--hair) solid var(--rule); }
+:where(.evk-r-facts > div) { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(5.5em, 7.5em) minmax(0, 1fr); }
+@supports (grid-template-columns: subgrid) { :where(.evk-r-facts > div) { grid-template-columns: subgrid; } }
+:where(.evk-r-facts :is(dt, dd)) { min-width: 0; margin: 0; padding-block: 9px; border-bottom: var(--hair) solid var(--rule); overflow-wrap: anywhere; line-height: 1.6; }
+:where(.evk-r-facts dt) { padding-inline-end: var(--gap); font-size: var(--step--1); color: var(--sub); }
+
+/* cards: tinted boxes with a cap line in the entity colour; columns come from the width (is-short: narrow cards, two on a phone;
+   is-long: one wide column), never from the content count */
+:where(.evk-r-cards) { list-style: none; padding: 0; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--r-card-min, 15rem)), 1fr)); }
+:where(.evk-r-cards.is-short) { --r-card-min: 8.5rem; }
+:where(.evk-r-cards.is-long) { grid-template-columns: minmax(0, 1fr); }
+:where(.evk-r-cards > li) {
+  min-width: 0; max-width: none; padding: 15px 16px 14px; line-height: 1.6;
+  background: var(--e-tint); color: var(--text); border-top: var(--r-card-top, var(--rule-3)) solid var(--e-fill); border-radius: var(--r-card-radius, var(--radius));
+}
+:where(.evk-r-cards > li) :is(h3, h4, h5, .t, .title) { display: block; margin: 0 0 .25em; font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-0); line-height: 1.35; letter-spacing: normal; color: var(--text); }
+:where(.evk-r-cards > li) :is(.meta, small) { display: block; margin: 0 0 .35em; font-size: var(--step--1); line-height: 1.4; color: var(--e-ink-t); }   /* --e-ink-t: the entity ink for text that sits ON --e-tint */
+:where(.evk-r-cards > li p) { max-width: none; margin: 0; font-size: .93rem; line-height: 1.75; }
+:where(.evk-r-cards > li p + p) { margin-top: .5em; }
+:where(.evk-r-cards > li p:is(.meta)) { font-size: var(--step--1); line-height: 1.4; }
+
+/* steps: a counter in a square in the entity colour (its own counter name: the route sheet's evk-step is untouched); a hairline joins the squares */
+:where(.evk-r-steps) { list-style: none; padding: 0; counter-reset: evk-rs; }
+:where(.evk-r-steps > li) { counter-increment: evk-rs; position: relative; max-width: none; min-height: 30px; padding: 3px 0 0 44px; margin-bottom: 1em; }
+:where(.evk-r-steps > li):last-child { margin-bottom: 0; }
+:where(.evk-r-steps > li)::before {
+  content: counter(evk-rs); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 30px; height: 30px;
+  background: var(--e-fill); color: var(--e-fill-on); border-radius: var(--r-badge-r, var(--radius));
+  font-family: var(--f-num); font-size: .95rem; font-weight: 700; line-height: 1; font-variant-numeric: var(--num-variant, lining-nums tabular-nums);
+}
+:where(.evk-r-steps > li:not(:last-child))::after { content: ""; position: absolute; left: 15px; top: 34px; bottom: calc(1em * -.75); border-left: var(--hair) solid var(--e-edge); }
+:where(.evk-r-steps > li > :is(strong, b, .t):first-child) { display: block; color: var(--text); }
+
+/* table: ruled, no verticals, no zebra; a wide table scrolls inside its own region (keyboard-focusable) and its first column stays */
+:where(.evk-r-table) { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+:where(.evk-r-table table, table.evk-r-table) { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .92rem; line-height: 1.5; }
+:where(table.evk-r-table) { display: block; overflow-x: auto; }
+:where(.evk-r-table caption) { caption-side: top; padding-bottom: .6em; text-align: start; font-size: var(--step--1); color: var(--sub); }
+:where(.evk-r-table :is(th, td)) { padding: 9px 14px 9px 0; border-bottom: var(--hair) solid var(--rule); text-align: start; vertical-align: top; font-variant-numeric: var(--num-variant, lining-nums tabular-nums); }
+:where(.evk-r-table thead th) { border-bottom: var(--rule-2) solid var(--e-fill); vertical-align: bottom; font-family: var(--f-label); font-size: var(--step--1); font-weight: 700; color: var(--e-ink); }
+:where(.evk-r-table tbody th) { font-weight: 600; color: var(--text); }
+:where(.evk-r-table table:has(thead th:nth-child(4))) { min-width: 620px; }
+:where(.evk-r-table table:has(thead th:nth-child(4)) :is(th, td):first-child) { position: sticky; left: 0; z-index: 1; background: var(--paper); }
+
+/* timeline: a spine in the entity line colour, one node per entry, the time in a fixed column (it stacks on the narrowest phones) */
+:where(.evk-r-timeline) { position: relative; list-style: none; padding: 0 0 0 26px; }
+:where(.evk-r-timeline)::before { content: ""; position: absolute; left: 4px; top: .6em; bottom: .6em; width: var(--hair); background: var(--e-edge); }
+:where(.evk-r-timeline > li) { position: relative; display: grid; grid-template-columns: var(--r-at, 4.6rem) minmax(0, 1fr); column-gap: var(--gap); max-width: none; padding-bottom: 1.2em; line-height: 1.6; }
+:where(.evk-r-timeline > li:last-child) { padding-bottom: 0; }
+:where(.evk-r-timeline > li)::before { content: ""; position: absolute; left: -26px; top: .6em; width: var(--r-node, 9px); height: var(--r-node, 9px); background: var(--e-fill); border-radius: var(--r-node-r, 0); }
+:where(.evk-r-timeline > li > :first-child) { min-width: 0; font-size: var(--step-1); font-weight: 700; line-height: 1.3; color: var(--e-ink); overflow-wrap: anywhere; }
+:where(.evk-r-timeline > li > :not(:first-child)) { min-width: 0; margin: 0; }
+@media (max-width: 380px) { :where(.evk-r-timeline > li) { grid-template-columns: minmax(0, 1fr); } }
+
+/* numbers: free-text figures (a Chinese numeral, a range) over a short label; two columns on a phone */
+:where(.evk-r-numbers) { list-style: none; padding: 0; display: grid; gap: var(--gap); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 700px) { :where(.evk-r-numbers) { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } }
+:where(.evk-r-numbers > li) { min-width: 0; max-width: none; padding-top: .5em; border-top: var(--rule-2) solid var(--e-fill); line-height: 1.3; }
+:where(.evk-r-numbers > li > :first-child) { display: block; font-family: var(--f-display); font-weight: var(--display-weight); font-size: clamp(1.45rem, 6.4vw, 2rem); line-height: 1.1; color: var(--e-ink); overflow-wrap: anywhere; }
+:where(.evk-r-numbers > li > :not(:first-child)) { display: block; margin-top: .35em; font-size: var(--step--1); line-height: 1.4; color: var(--sub); }
+
+/* qa: the question is bold and carries a Q (the pseudo-element has empty alt text), the answer lines up under the question's first letter.
+   One .evk-r-qa per item, or one wrapper whose children are the items. */
+:where(.evk-r-qa > :not(.q, .a, dt, dd) + :not(.q, .a, dt, dd), .evk-r-qa + .evk-r-qa) { margin-top: 1.2em; padding-top: 1.1em; border-top: var(--hair) solid var(--rule); }
+:where(.evk-r-qa) :is(.q, dt, summary) { position: relative; padding-inline-start: 1.8em; margin: 0; font-weight: 700; line-height: 1.5; color: var(--text); }
+:where(.evk-r-qa) :is(.q, dt, summary)::before { content: "Q"; content: "Q" / ""; position: absolute; left: 0; top: 0; font-family: var(--f-display); font-size: 1.2em; font-weight: var(--display-weight); line-height: 1.25; color: var(--e-ink); }
+:where([data-evk-lead="zh"] .evk-r-qa) :is(.q, dt, summary)::before { content: "问"; content: "问" / ""; }
+:where(.evk-r-qa) :is(.a, dd) { margin: .3em 0 0; padding-inline-start: 1.8em; }
+:where(.evk-r-qa) :is(.a, dd) > :last-child { margin-bottom: 0; }
+
+/* quote: a bar in the entity colour, display type in the entity ink, the source small and plain beneath */
+:where(.evk-r-quote) { margin-inline: 0; padding: .1em 0 .1em 1.1em; border-inline-start: var(--r-quote-bar, var(--rule-3)) solid var(--e-fill); font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-1); line-height: 1.7; color: var(--e-ink); }
+:where(.evk-r-quote p) { max-width: none; margin: 0; }
+:where(.evk-r-quote :is(cite, footer, .by)) { display: block; margin-top: .6em; font-family: var(--f-text); font-size: var(--step--1); font-style: normal; font-weight: 400; line-height: 1.4; color: var(--sub); }
+
+/* list / note */
+:where(.evk-r-list) { padding-inline-start: 1.3em; }
+:where(.evk-r-list > li)::marker { color: var(--e-fill); }
+:where(.evk-r-list > li + li) { margin-top: .35em; }
+:where(.evk-r-note) { padding-inline-start: 1em; border-inline-start: var(--rule-2) solid var(--e-edge); font-size: .9rem; line-height: 1.7; color: var(--sub); }
+:where(.evk-r-note > *) { max-width: none; }
+:where(.evk-r-note > :last-child) { margin-bottom: 0; }
+
+/* fold: native <details> (chevron above, section 9); ruled top and bottom, adjacent folds share one rule */
+:where(.evk-r-fold) { border-block: var(--hair) solid var(--rule); }
+:where(.evk-r-fold > summary) { min-height: 54px; font-family: var(--f-display); font-weight: var(--display-weight); color: var(--text); }
+:where(.evk-r-fold[open] > summary) { color: var(--e-ink); }
+:where(.evk-r-fold > :not(summary)) { max-width: none; }
+:where(.evk-r-fold > :last-child:not(summary)) { margin-bottom: 1em; }
+:where(.evk-r-fold + .evk-r-fold) { margin-top: calc(var(--hair) * -1); }
+:where(.evk-r-fold:has(+ .evk-r-fold)) { margin-bottom: 0; }
+
+/* ================================================================ 10. the reading navigator (engine/part-nav.js builds the markup) */
+:where(.evk-partnav) { position: relative; flex: none; margin-inline-start: calc((var(--hit) - 26px) / -2); }   /* the graphic sits on the gutter, the hit area sticks out */
+:where(.evk-partnav.is-floating) { position: fixed; top: 8px; left: 8px; z-index: 35; margin: 0; }
+:where(.evk-lines) {
+  --lh: 2px;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  gap: 4px; gap: clamp(1px, calc((30px - var(--n, 4) * var(--lh)) / max(1, var(--n, 4) - 1)), var(--lines-gap, 4px));
+  width: var(--hit); height: var(--hit); padding: 0 calc((var(--hit) - 26px) / 2); border: 0; background: none; color: inherit; cursor: pointer;
+}
+:where(.evk-lines.is-many) { --lh: 1.5px; }
+:where(.evk-lines i) {
+  display: block; width: 12px; height: var(--lh); background: var(--sub); opacity: .45;
+  transition: width var(--fade-dur) var(--evk-ease, ease), background-color var(--fade-dur), opacity var(--fade-dur);
+}
+.evk-lines i.is-done { background: var(--a); opacity: 1; }                         /* read: short, inked */
+.evk-lines i.is-on { width: 26px; background: var(--e-fill); opacity: 1; }        /* reading: long, in the entity colour */
+:where(.evk-partnav-panel) {
+  position: absolute; left: 0; top: calc(100% + 8px); z-index: 50;
+  width: min(360px, calc(100vw - var(--gutter) * 2 + 8px)); max-height: calc(100dvh - var(--evk-bar-h, 64px) - 24px); overflow: auto; overscroll-behavior: contain;
+  padding: 14px 16px 10px; background: var(--sheet-bg, var(--paper)); color: var(--text);
+  border-top: var(--rule-3) solid var(--e-fill); border-radius: var(--radius); box-shadow: var(--evk-shadow);
+}
+:where(.evk-partnav.is-floating .evk-partnav-panel) { top: calc(100% + 4px); }
+:where(.evk-partnav-panel ol) { list-style: none; margin: 10px 0 0; padding: 0; }
+:where(.evk-partnav-panel li a) {
+  display: flex; align-items: baseline; gap: 12px; min-height: var(--hit); padding: 9px 0 9px 10px; color: inherit;
+  border-left: var(--rule-3) solid transparent; border-bottom: var(--hair) solid var(--rule);
+}
+.evk-partnav-panel li a.is-on { border-left-color: var(--e-fill); background: var(--e-tint); }
+.evk-partnav-panel li a.is-on .no { color: var(--e-ink-t); }                 /* the figure of the current row sits on the tint */
+:where(.evk-partnav-panel .no) { flex: none; min-width: 1.8em; font-size: var(--step--1); font-weight: var(--label-weight); color: var(--e-ink); }
+:where(.evk-partnav-panel .t) { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+:where(.evk-partnav-panel .t > :first-child) { font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-0); line-height: 1.25; }   /* role: primary (part-nav.js writes the lead language first) */
+:where(.evk-partnav-panel .t > :last-child:not(:first-child)) { font-family: var(--f-text); font-size: var(--step--1); line-height: 1.3; color: var(--sub); }
+:where(.evk-partnav-top) { display: inline-flex; align-items: center; min-height: var(--hit); margin-top: 4px; font-size: var(--step--1); color: inherit; text-decoration: underline; text-decoration-color: var(--b); text-underline-offset: .22em; }
+/* the reading progress: one line under the bar, scaled, never laid out */
+:where(.evk-progress) {
+  position: absolute; left: 0; right: 0; top: 100%; height: var(--bar-line-h, var(--rule-2));
+  background: var(--e-fill); transform: scaleX(var(--p, 0)); transform-origin: 0 50%; pointer-events: none;
+}
+:where([dir="rtl"] .evk-progress) { transform-origin: 100% 50%; }
+
+/* ================================================================ 11. the sheet */
+:where(.evk-sheet) {
+  position: fixed; z-index: 40; left: 8px; right: 8px; bottom: 8px;
+  max-height: 70vh; max-height: 70dvh; overflow: auto; overscroll-behavior: contain;
+  padding: 0 18px calc(16px + env(safe-area-inset-bottom));
+  background: var(--sheet-bg, var(--paper)); color: var(--text);
+  border-top: var(--rule-cap) solid var(--a); border-radius: var(--radius); box-shadow: var(--evk-shadow);
+}
+.evk-sheet.is-dragging { -webkit-user-select: none; user-select: none; }
+.evk-sheet.is-dragging :where(.evk-grabber, .evk-sheet-head) { cursor: grabbing; }
+:where(.evk-grabber) {
+  position: sticky; top: 0; z-index: 1; display: block; height: 28px; margin-inline: -18px;
+  background: var(--sheet-bg, var(--paper)); cursor: grab; touch-action: none;
+}
+:where(.evk-grabber)::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 40px; height: 4px; transform: translate(-50%, -50%);
+  background: var(--sub); opacity: .5; border-radius: var(--radius);
+}
+:where(.evk-sheet-head) {
+  position: sticky; top: 28px; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding-bottom: 8px; background: var(--sheet-bg, var(--paper)); cursor: grab; touch-action: none;
+}
+:where(.evk-sheet-head :is(h1, h2, h3)) { font-size: var(--step-1); }
+@media (min-width: 880px) {
+  :where(.evk-sheet) { left: auto; right: 24px; bottom: 24px; width: 400px; max-height: calc(100dvh - 120px); }
+  :where(.evk-grabber) { display: none; }
+  :where(.evk-sheet-head) { top: 0; padding-top: 14px; }
+}
+/* route steps: numbers from CSS counters (the text stays clean for assistive tech), the current one is loud.
+   Climbing is marked by --climb on the tile AND by its words ("Up to 3F"); colour is never the only cue.
+   --climb is a graphic colour (rings, lines: 3:1); everything that is TEXT, or the fill under paper-coloured text, uses
+   --climb-text (4.5:1 against paper, so paper on it passes too). */
+:where(.evk-steps) { list-style: none; margin: 0; padding: 0; counter-reset: evk-step; border-top: var(--rule-2) solid var(--a); }
+:where(.evk-steps > li) {
+  counter-increment: evk-step; position: relative; display: flex; flex-direction: column; gap: 2px;
+  min-height: var(--hit); padding: 9px 4px 9px 42px; border-left: var(--rule-3) solid transparent; border-bottom: var(--hair) solid var(--rule);
+}
+:where(.evk-steps > li)::before {
+  content: counter(evk-step); position: absolute; left: 9px; top: 9px; width: 22px; height: 22px; display: grid; place-items: center;
+  border: calc(var(--hair) * 1.5) solid var(--sub); border-radius: var(--radius); color: var(--sub);
+  font-family: var(--f-num); font-size: var(--step--1); font-weight: var(--label-weight); line-height: 1; font-variant-numeric: var(--num-variant, lining-nums tabular-nums);
+}
+.evk-steps > li.is-current { border-left-color: var(--b); background: var(--paper-2); }
+.evk-steps > li.is-current .evk-k { color: var(--text); --k-2-ink: color-mix(in srgb, var(--sub), var(--text) 40%); }   /* the row may be tinted (recipes do): --text carries it, the follower a notch above --sub */
+.evk-steps > li.is-current::before { background: var(--b); border-color: var(--b); color: var(--on-b); }
+.evk-steps > li.is-climb::before { border-color: var(--climb); border-style: dashed; color: var(--climb-text); }   /* the ring is a graphic (--climb, 3:1); the numeral is text (--climb-text, 4.5:1) */
+.evk-steps > li.is-climb.is-current { border-left-color: var(--climb); }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); border-color: var(--climb); border-style: solid; color: var(--paper); }
+/* a phone shows the running route's CURRENT step only (the Overview toggle, .is-all, brings the rest back), and the sheet is
+   capped so the map keeps >= 40 % of an 812 px screen: 54dvh of sheet + 8px inset + the bar leaves ~46 %. 900 px, not 720:
+   a 812 px phone is "short" for this purpose. The :has() guard keeps every step if none is current.
+   Hidden steps are collapsed, never display:none: display:none removes an item from the CSS counter, and every number after
+   the first would read "1". visibility:hidden also takes them out of the accessibility tree, like display:none would. */
+@media (max-height: 900px) and (max-width: 879px) {
+  .evk-sheet.is-running { max-height: 54vh; max-height: 54dvh; }
+  .evk-sheet.is-running .evk-steps:not(.is-all):has(> .is-current) > li:not(.is-current) {
+    visibility: hidden; height: 0; min-height: 0; margin: 0; padding-block: 0; border-block-width: 0; overflow: hidden;
+  }
+}
+
+/* ================================================================ 12. the map box (engine/venue-map.js draws into the canvas) */
+:where(.evk-map) {
+  position: relative; overflow: hidden; height: clamp(360px, 62vh, 720px); height: clamp(360px, 62dvh, 720px);
+  background: var(--m-ground, var(--paper-2));
+}
+:where(main > .evk-map) { margin-inline: calc(var(--gutter) * -1); }
+@media (min-width: 760px) { :where(main > .evk-map) { margin-inline: 0; } }
+:where(.evk-map canvas) {
+  display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab;
+  -webkit-user-select: none; user-select: none;
+}
+.evk-map.is-dragging canvas { cursor: grabbing; }
+:where(.evk-map-hint) {
+  position: absolute; left: 50%; bottom: 14px; display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 7px 13px;
+  transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  background: var(--paper); background: color-mix(in srgb, var(--paper) var(--bar-alpha, 90%), transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  color: var(--a-text); border-radius: var(--radius);
+  transition: opacity calc(var(--fade-dur) * 2.5) ease;    /* a hint fades slowly; presses are fast */
+}
+.evk-map-hint.is-gone { opacity: 0; }                       /* the engine adds is-gone on the first drag, or after ~6 s */
+
+/* ================================================================ 13. segmented control, search, form controls */
+:where(.evk-seg) { display: inline-flex; max-width: 100%; overflow-x: auto; border: var(--rule-2) solid var(--a); border-radius: var(--radius); }
+:where(.evk-seg > button) {
+  min-height: var(--hit); padding: 0 14px; border: 0; border-inline-end: var(--rule-2) solid var(--a); background: transparent; color: var(--a-text);
+  font-family: var(--f-label); font-size: var(--step--1); font-weight: var(--label-weight); font-stretch: var(--label-stretch);
+  letter-spacing: var(--label-track); text-transform: var(--label-case); line-height: 1.1; white-space: nowrap; cursor: pointer;
+  transition: background-color calc(var(--fade-dur) * .75), color calc(var(--fade-dur) * .75);
+}
+:where(.evk-seg > button:last-child) { border-inline-end: 0; }
+:where(.evk-seg > button) { --k-2-ink: currentColor; }
+:where(.evk-seg > button > :last-child:not(:first-child)) { margin-inline-start: .45em; font-size: max(11px, var(--k-2)); font-weight: 500; }   /* role */
+:where(.evk-seg > button > :where(.cn, [lang|="zh"], [lang|="ja"])) { letter-spacing: var(--label-track); }                                   /* script */
+.evk-seg > button[aria-selected="true"], .evk-seg > button[aria-pressed="true"] { background: var(--a); color: var(--on-a); }
+
+:where(.evk-search, input[type="text"], input[type="search"], input[type="email"], input[type="tel"], input[type="url"], textarea, select) {
+  display: block; width: 100%; min-height: calc(var(--hit) + 4px); padding: 0 .9em; border: 0; border-bottom: var(--rule-2) solid var(--a-text);
+  border-radius: var(--radius); background: var(--paper-2); color: var(--text);
+  font-family: var(--f-text); font-size: max(16px, var(--step-0));    /* 16 px at least: iOS zooms into smaller fields */
+  -webkit-appearance: none; appearance: none;
+}
+:where(textarea) { padding-block: .7em; min-height: 6em; }
+.evk-search:focus, :where(input, textarea, select):focus { border-bottom-color: var(--b-text); }
+:where(select) {
+  padding-inline-end: 2.4em;       /* the chevron is drawn from currentColor gradients: it follows the text colour in both schemes (no data-URI to recolour) */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 1.25em) 52%, calc(100% - .85em) 52%; background-size: .4em .4em; background-repeat: no-repeat;
+}
+:where(input[type="checkbox"], input[type="radio"]) { width: 1.4em; height: 1.4em; accent-color: var(--a); }
+
+/* ================================================================ 14. hover (pointer devices only) */
+@media (hover: hover) {
+  .evk-btn:not(:disabled):hover { text-decoration: underline; text-decoration-thickness: var(--hair); text-underline-offset: .28em; opacity: var(--hover-opacity, 1); }
+  /* hover = an underline, not a fade: 原站 faded the whole button to .88, which takes any fill whose label sits at 4.5–5:1 under the
+     floor (the label and its ground are both mixed toward the page). --hover-opacity stays as an opt-in knob for a direction that wants the fade. */
+  .evk-cell:hover > .name { color: var(--b-text); }
+  .evk-partnav-panel li a:hover, .evk-subnav a:hover { background: var(--e-tint); }
+  .evk-nav a:hover { background: var(--paper-2); }          /* --paper-2, not the tint: --sub is guaranteed on it, a coloured tint would take the second line under 4.5:1 */
+  .evk-seg > button:not([aria-selected="true"], [aria-pressed="true"]):hover { background: var(--paper-2); }
+  :where(p, li, dd, td, figcaption, blockquote) a:not([class]):hover { color: var(--b-text); }
+}
+
+/* ================================================================ 15. user preferences */
+@media (prefers-reduced-motion: reduce) {
+  /* same states, no travel: fades stay, movement goes */
+  .evk-btn, .evk-cell, .evk-seg > button, .evk-map-hint { transition-property: color, background-color, border-color, opacity; }
+  .evk-lines i { transition-property: background-color, opacity; }
+  .evk-btn:active { transform: none; }
+  .evk-part details > summary::after, details.evk-fold > summary::after, details.evk-r-fold > summary::after { transition: none; }
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .evk-bar, .evk-map-hint { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  /* hairlines and secondary text step up to structure ink; specificity stacked so the dark blocks cannot undo it */
+  :root:root:root { --rule: var(--a); --sub: var(--text); --hair: 2px; --focus-w: 4px; }
+}
+@media (forced-colors: active) {
+  .evk-btn { border: var(--hair) solid ButtonText; }
+  .evk-cell, .evk-sheet, .evk-partnav-panel, .evk-seg { border: var(--hair) solid CanvasText; }
+  .evk-steps > li.is-current { border-left-color: Highlight; }
+  .evk-lines i.is-on { background: Highlight; }
+  .evk-progress, .evk-mark, .evk-r-steps > li::before, .evk-r-timeline > li::before { forced-color-adjust: none; }
+  .evk-r-cards > li { border: var(--hair) solid CanvasText; }
+}
+
+/* ================================================================ 16. print */
+@page { margin: 14mm; }
+@media print {
+  :root { color-scheme: light; }
+  body { background: none; color: CanvasText; font-size: 11pt; line-height: 1.5; }
+  .evk-bar, .evk-sheet, .evk-map, .evk-map-hint, .evk-partnav, .evk-lines, .evk-progress, .evk-skip, .evk-seg, .evk-btn--quiet { display: none !important; }
+  main, .evk-wrap { max-width: none; padding: 0; }
+  a:not([class])[href^="http"]::after { content: " (" attr(href) ")"; font-size: .85em; overflow-wrap: anywhere; }
+  .evk-cell, .evk-num, .evk-stat, figure, .evk-part-head, tr, .evk-r-cards > li, .evk-r-timeline > li, .evk-r-qa, .evk-r-quote, .evk-r-steps > li { break-inside: avoid; }
+  h1, h2, h3, h4, .evk-part-head { break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  .evk-part { display: block; }
+  .evk-part > .evk-part-head { position: static; }
+  .evk-entity-rule, .evk-part-head, .evk-mark, .evk-r-cards > li, .evk-r-steps > li::before, .evk-r-timeline > li::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }   /* the entity colour is the identity */
+}

@@ -1,0 +1,4646 @@
+{
+  "version": 2,
+  "kit": "event-venue-kit",
+  "note": "每个方向 = 一整套自洽的外观 + 一个 assets/recipes/<id>.css。列表里的第一个值是 recipe 的默认外观；其余值通过 <html data-evk-divider / data-evk-nav / data-evk-numerals> 钩子在 recipe 里实现（kit.py root_attrs 会写这些属性）。字体栈已含 CJK 回退；google 字段只给 Google Fonts 家族名，axes 是 css2 API 冒号后的部分。fits 只用 derive.md §4 的 33 个标签。 map.projection 里每个方向至少列一个 3D 投影（orbit / oblique / exploded），`--keep projection=3d` 才有处可落；plan 可以留在第一位。map.pitch / yaw / wall_h 可以写成一个范围，也可以写成按投影分的字典（{\"plan\": [80, 88], \"exploded\": [30, 44]}，可带 \"default\"），抽到哪个投影就读哪一项。idea / specimen_note / richness 里出现的颜色词必须被配色包络保证（kit.py --validate 会查）。 色相家族（hue families）：palette 里某个角色的 h 可以写成一个范围 [lo, hi]，也可以写成范围列表 [[lo, hi], …]，每个范围是这种机制的真实活动可能拥有的一个家族（图书卡印台紫 | 红 | 绿）。kit.sample 对每个角色都花一次随机数选家族（只有一个家族时也花），再在家族内抽色相，所以 --keep / adjust 不会让别的值跟着动。角色可写 \"follow\": \"<更靠前的角色>\"，跟随那个角色的家族序号（家族数必须相同；顺序 paper, a, b, climb, night）；\"names\" 给每个家族起名，抽牌结果里会写出来。每个非原站方向的 b 要有 2–4 个家族；原站方向（varsity）保持单一家族。每个方向至少列一个会转的投影（orbit / exploded），`--keep projection=rotate` 才有处可落。idea / specimen_note / richness 里的颜色词必须在该角色的每一个家族里都成立。",
+  "axes": {
+    "palette_structure": {
+      "cn": "配色结构",
+      "values": {
+        "two-inks-paper": "两种墨加纸：面积给纸，注意力给墨；两墨永不直接相碰 / two inks on paper; the paper takes area, inks take attention",
+        "one-ink-spot": "一种主墨加一点专色：专色只给“现在 / 去这里” / one ink plus one spot colour reserved for now/go",
+        "dark-ground": "深色地：paper 本身就是深色（两种配色方案下都是深的），a 是亮色墨；night 只是更深的一档 / the ground itself is dark in BOTH colour schemes; a is the light ink",
+        "duotone-overprint": "双色套印：两种荧光/孔版墨错位叠印，纸是有色纸 / two inks overprinted slightly off-register on stock",
+        "entity-led-neutral": "中性底，颜色交给实体：结构用近黑，点缀只当填色 / neutral ground, structure in near-black, the entity colours do the talking",
+        "tinted-ground": "有色地：整页是一种有色纸或有色墙（浅或深），墨是它的反差色 / the whole page is a tinted stock or painted wall (light or deep)"
+      }
+    },
+    "dark": {
+      "cn": "深色模式推导",
+      "values": {
+        "brand-ink-ground": "深色 = 品牌墨的深档做地（原站：深藏青）/ dark scheme is the brand ink made deep",
+        "neutral-night": "深色 = 近中性夜色 / near-neutral night",
+        "warm-night": "深色 = 暖炭色夜色 / warm charcoal night"
+      }
+    },
+    "shape.language": {
+      "cn": "形状语言",
+      "values": {
+        "chamfer": "45° 切角，按短边比例 / 45° corner cuts as a ratio of the short side",
+        "square": "直角 + 线 / square corners ruled by lines",
+        "soft": "固定小圆角 / a fixed small radius",
+        "pill": "胶囊 + 适度圆角面板 / pills for controls, modest radius for panels",
+        "perforated": "齿孔边（透明遮罩打孔）/ perforated edges punched with a real mask",
+        "notched": "凹口或单边切角 / notches or a single clipped corner",
+        "tab": "凸耳、卡片分隔 / index tabs and card dividers",
+        "arched": "拱形、盾形、叶形 / arches, shields, leaves",
+        "slanted": "平行四边形斜切（向前的方向感）/ parallelogram cuts for things that move"
+      }
+    },
+    "divider": {
+      "cn": "分隔线母题",
+      "values": {
+        "stripe-band": "多色条纹带 / a multi-colour stripe band",
+        "double-rule": "双线 / double rule",
+        "perforation": "齿孔线 / a row of punched holes",
+        "dotted-leader": "点线引导线 / dotted leader",
+        "stitch": "缝线 / a stitched thread",
+        "airmail-band": "58° 航空斜纹 / 58-degree air-mail stripe",
+        "dimension-line": "尺寸线（两端斜切标记）/ dimension line with slash ticks",
+        "thick-thin": "一粗一细（可带短帽）/ thick over thin, optionally with a short cap",
+        "none": "无（只靠间距）/ whitespace only",
+        "frieze": "重复图案带（格纹、人字、齿饰）/ a repeated pattern band (lattice, chevrons)",
+        "route-line": "带站点圆点的线路 / a line with station dots"
+      }
+    },
+    "entity_header": {
+      "cn": "实体页头形式",
+      "values": {
+        "table-tent": "展位桌牌：巨大名字 + 规则线 / booth table tent: huge name over a rule",
+        "placard": "展签 / 号码布 / 站牌 / label, bib or station nameplate",
+        "ticket-stub": "票根 / 登机牌 / ticket or boarding pass",
+        "index-card": "索引卡 / index card",
+        "envelope": "信封正面 / envelope front",
+        "stamp-tile": "邮票或纹章盾 / stamp or armorial shield",
+        "masthead": "报头 / newspaper masthead",
+        "title-block": "图纸标题栏 / drawing title block",
+        "luggage-tag": "行李牌 / 采集签 / luggage or collection tag",
+        "specimen-sheet": "标本台纸 / specimen mounting sheet"
+      }
+    },
+    "entity_token": {
+      "cn": "地图上的实体标记",
+      "values": {
+        "badge": "圆形徽章（带环）/ round badge with a ring",
+        "pin": "针 / pin",
+        "plate": "号码牌 / number plate",
+        "dot": "圆点（站点）/ dot",
+        "flag": "旗 / flag",
+        "stamp": "带齿孔的方章 / perforated square stamp"
+      }
+    },
+    "numerals": {
+      "cn": "数字处理",
+      "values": {
+        "lining-tabular": "等宽齐线数字 / lining tabular figures",
+        "oldstyle": "老式数字 / old-style figures",
+        "outlined": "描边空心大数字 / outlined display figures",
+        "stencil": "模板刻字 / stencil figures",
+        "split-flap": "翻牌：每位数字一块牌 / one split-flap tile per digit",
+        "roman": "罗马数字（章节号）/ Roman part numbers"
+      }
+    },
+    "nav": {
+      "cn": "阅读导航呈现",
+      "values": {
+        "lines-top-left": "左上角一列横线 / a column of short lines top-left",
+        "side-ticks": "刻度 / a ruler of ticks",
+        "tab-strip": "分隔卡凸耳 / index tabs",
+        "progress-ring": "进度环（点数取引擎写在按钮上的 --n）/ a ring of marks, one per part (count from the engine's --n)",
+        "chapter-rail": "站点铁轨 / a rail of station dots"
+      }
+    },
+    "map.projection": {
+      "cn": "地图投影",
+      "values": {
+        "orbit": "自由旋转的弱透视 / free-yaw weak perspective",
+        "oblique": "斜投影，偏航锁定 / oblique, yaw locked",
+        "exploded": "爆炸分层 / exploded floors",
+        "plan": "近俯视平面 / near top-down plan"
+      }
+    },
+    "map.material": {
+      "cn": "地图材质",
+      "values": {
+        "paper": "纸板：浅色板面 + 深色墙帽 / light slabs with dark wall caps",
+        "line": "只有墨线 / ink lines only",
+        "clay": "哑光黏土 + 柔和环境光 / matte clay with soft ambient shading",
+        "blueprint": "深色底浅色线 / light lines on a dark ground",
+        "riso": "平涂套印 + 1–2px 错位 / flat overprint fills with 1–2 px misregistration"
+      }
+    },
+    "density": {
+      "cn": "密度",
+      "values": {
+        "compact": "紧凑",
+        "airy": "宽松"
+      }
+    },
+    "texture": {
+      "cn": "纹理",
+      "values": {
+        "none": "无",
+        "grain": "颗粒",
+        "halftone": "网点（用渐变画，不用图片）/ halftone dots drawn with gradients",
+        "paper-fiber": "纸纤维",
+        "grid": "方格纸（用渐变画）/ graph paper drawn with gradients"
+      }
+    },
+    "type_class": {
+      "cn": "字体类别（fingerprint.display_class 用）",
+      "values": {
+        "slab-serif": "板岩衬线 / slab serif",
+        "didone-serif": "高对比衬线 / didone",
+        "oldstyle-serif": "老式衬线 / old-style serif",
+        "transitional-serif": "过渡体衬线 / transitional serif",
+        "inscriptional-serif": "碑铭体 / inscriptional caps",
+        "small-caps-serif": "小型大写衬线 / small-caps serif",
+        "sans-wide": "宽体无衬线 / expanded sans",
+        "sans-condensed": "窄体无衬线 / condensed sans",
+        "sans-grotesk": "新怪诞体 / grotesk",
+        "sans-humanist": "人文无衬线 / humanist sans",
+        "sans-geometric": "几何无衬线 / geometric sans",
+        "sans-heavy": "超粗海报体 / heavy poster sans",
+        "sans-stencil": "模板体 / stencil",
+        "small-caps-sans": "小型大写无衬线 / small-caps sans",
+        "sans-system": "系统无衬线 / system sans",
+        "mono": "等宽 / monospace",
+        "typewriter": "打字机体 / typewriter",
+        "dot-matrix": "点阵 / dot matrix",
+        "cjk-sans": "中文黑体",
+        "cjk-serif": "中文宋体",
+        "cjk-display-heavy": "中文粗标题体",
+        "cjk-display-playful": "中文活泼标题体"
+      }
+    },
+    "hooks": {
+      "cn": "recipe 的 <html> 钩子（kit.py root_attrs 写入）",
+      "values": {
+        "data-evk-divider": "取 divider 的值；每个 recipe 的默认外观 = 该方向 divider 列表的第一个值",
+        "data-evk-nav": "取 nav 的值；默认 = 第一个值",
+        "data-evk-numerals": "取 numerals 的值；默认 = 第一个值",
+        "dark-ground": "dark-ground 与深色 tinted-ground 方向：paper 本身是深色，两种配色方案下页面都是深的"
+      }
+    }
+  },
+  "directions": [
+    {
+      "id": "varsity",
+      "name": {
+        "en": "Varsity '28",
+        "cn": "校队二八"
+      },
+      "mechanism": "collegiate letterman patch",
+      "idea": "把届号像校队贴章一样缝在身上：同一个有倒角的号码既是标志、房号、统计数字，也是印章；其余全是纸、发丝线和一条围巾色条。这是原站，作为一个明确标注的“原站取值”方向保留，抽到的概率很低。",
+      "fits": [
+        "campus",
+        "ceremony",
+        "sport",
+        "youth",
+        "exam",
+        "application"
+      ],
+      "weight": 0.15,
+      "canonical": true,
+      "palette": {
+        "structure": "two-inks-paper",
+        "paper": {
+          "l": [
+            0.965,
+            0.975
+          ],
+          "c": [
+            0.005,
+            0.01
+          ],
+          "h": [
+            85,
+            92
+          ]
+        },
+        "a": {
+          "l": [
+            0.26,
+            0.31
+          ],
+          "c": [
+            0.055,
+            0.085
+          ],
+          "h": [
+            255,
+            263
+          ]
+        },
+        "b": {
+          "l": [
+            0.51,
+            0.55
+          ],
+          "c": [
+            0.19,
+            0.22
+          ],
+          "h": [
+            20,
+            25
+          ]
+        },
+        "climb": {
+          "l": [
+            0.48,
+            0.56
+          ],
+          "c": [
+            0.1,
+            0.14
+          ],
+          "h": [
+            80,
+            92
+          ]
+        },
+        "night": {
+          "l": [
+            0.225,
+            0.24
+          ],
+          "c": [
+            0.048,
+            0.058
+          ],
+          "h": [
+            257,
+            261
+          ]
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Zilla Slab",
+            "stack": "'Zilla Slab', Rockwell, 'Roboto Slab', Georgia, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', serif",
+            "class": "slab-serif",
+            "google": "Zilla Slab",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "label": [
+          {
+            "name": "Archivo",
+            "stack": "Archivo, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-wide",
+            "google": "Archivo",
+            "axes": "wdth,wght@62..125,400..800"
+          }
+        ],
+        "text": [
+          {
+            "name": "System sans",
+            "stack": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-system"
+          }
+        ],
+        "num": [
+          {
+            "name": "Zilla Slab",
+            "stack": "'Zilla Slab', Rockwell, 'Roboto Slab', Georgia, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', serif",
+            "class": "slab-serif",
+            "google": "Zilla Slab",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "uppercase"
+        ],
+        "label_track": [
+          0.14,
+          0.22
+        ],
+        "label_stretch": [
+          "125%"
+        ],
+        "label_weight": [
+          600,
+          800
+        ],
+        "display_weight": [
+          600,
+          700
+        ],
+        "display_track": [
+          -0.025,
+          -0.006
+        ],
+        "display_leading": [
+          0.86,
+          1.0
+        ],
+        "ratio": [
+          1.25,
+          1.4
+        ]
+      },
+      "shape": {
+        "language": [
+          "chamfer"
+        ],
+        "radius": [
+          0,
+          0
+        ],
+        "chamfer": [
+          6,
+          10
+        ],
+        "rule_cap": [
+          6,
+          6
+        ]
+      },
+      "divider": [
+        "stripe-band",
+        "thick-thin"
+      ],
+      "entity_header": [
+        "table-tent"
+      ],
+      "entity_token": [
+        "badge"
+      ],
+      "numerals": [
+        "outlined",
+        "lining-tabular"
+      ],
+      "nav": [
+        "lines-top-left",
+        "tab-strip"
+      ],
+      "map": {
+        "projection": [
+          "orbit"
+        ],
+        "material": [
+          "paper"
+        ],
+        "pitch": [
+          30,
+          58
+        ],
+        "yaw": [
+          24,
+          40
+        ],
+        "wall_h": [
+          0.9,
+          1.1
+        ],
+        "light": [
+          "left"
+        ],
+        "dim": [
+          0.22,
+          0.3
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.3,
+          0.5
+        ],
+        "bounce": [
+          0.0,
+          0.05
+        ],
+        "press": [
+          0.97,
+          0.98
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "条纹 3:1:2:1:3（深/纸/红/纸/深）只当分隔线和对象边缘，原站取值，纸色间隔让红蓝永不相碰",
+        "线宽就是层级：2px 深色头线 + 1px 浅线行，不用卡片；首行比其余重",
+        "深色长条加一小截红帽（6px + 64px）在大标题下反复出现，是条纹在小尺度上的回声",
+        "实体页头底部整幅出血的红色色带装着“房间 · 展位”一行（桌牌的红带）；中文辅行固定灰色、英文 ≥ 1.1 倍；标签用宽体大写 + 中文尾巴同一基线"
+      ],
+      "watch": [
+        "容易滑向“球队周边”：旗串、针织纹、滚动校名条都删掉，只留号码、条纹和发丝线",
+        "红 / 深蓝对比只有约 2.5:1：红色小字只放在纸色上，深色上的强调用提亮的红",
+        "三层描边只给标志和房号；别让它扩散到按钮、标签和图标"
+      ],
+      "specimen_note": "入口页是一条深色面板加纸面正文，下面压一条围巾色条；校徽格网用发丝线分隔，不用卡片。实体页头像展位桌牌：巨大的校名、一条深色长线配红色短帽、下面一个整宽的红色房号带。",
+      "props": [
+        {
+          "name": "stripe",
+          "var": "--prop-stripe",
+          "off": "none",
+          "what": "班级条纹：分隔线的墨 · 纸 · 点缀 · 纸 · 墨五段带；关掉后是一条墨色线"
+        },
+        {
+          "name": "numeral-edge",
+          "var": "--prop-numeral-edge",
+          "off": "none",
+          "what": "统计数字的校队字母外描边（一圈墨色阴影）；关掉后是平的点缀色数字"
+        }
+      ]
+    },
+    {
+      "id": "airmail",
+      "name": {
+        "en": "Par Avion",
+        "cn": "寄往世界"
+      },
+      "mechanism": "postal system",
+      "idea": "活动是一封被投递的信：斜纹航空边框、带齿孔的邮票、邮编格和邮戳。每个实体是一张邮票，每个数字是邮票面值，每页是一只信封；纸是蓝灰色的航空信笺，不是奶油纸。",
+      "fits": [
+        "letter",
+        "application",
+        "exchange",
+        "international",
+        "travel"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "two-inks-paper",
+        "paper": {
+          "l": [
+            0.945,
+            0.965
+          ],
+          "c": [
+            0.012,
+            0.028
+          ],
+          "h": [
+            232,
+            252
+          ]
+        },
+        "a": {
+          "l": [
+            0.3,
+            0.4
+          ],
+          "c": [
+            0.12,
+            0.17
+          ],
+          "h": [
+            262,
+            274
+          ]
+        },
+        "b": {
+          "l": [
+            0.5,
+            0.55
+          ],
+          "c": [
+            0.17,
+            0.21
+          ],
+          "h": [
+            [
+              28,
+              38
+            ],
+            [
+              150,
+              162
+            ],
+            [
+              300,
+              312
+            ]
+          ],
+          "names": [
+            "邮政红 postal red",
+            "报关绿 customs-form green",
+            "邮戳紫 postmark violet"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.52,
+            0.6
+          ],
+          "c": [
+            0.09,
+            0.13
+          ],
+          "h": [
+            [
+              95,
+              110
+            ],
+            [
+              55,
+              70
+            ],
+            [
+              95,
+              110
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.19,
+            0.24
+          ],
+          "c": [
+            0.05,
+            0.08
+          ],
+          "h": [
+            262,
+            272
+          ]
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Gloock",
+            "stack": "Gloock, 'Big Caslon', 'Hoefler Text', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Gloock"
+          },
+          {
+            "name": "Playfair Display",
+            "stack": "'Playfair Display', Didot, 'Bodoni 72', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Playfair Display",
+            "axes": "wght@600;700;800"
+          },
+          {
+            "name": "DM Serif Display",
+            "stack": "'DM Serif Display', 'Big Caslon', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "DM Serif Display"
+          }
+        ],
+        "label": [
+          {
+            "name": "IBM Plex Mono",
+            "stack": "'IBM Plex Mono', Menlo, 'Courier New', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "mono",
+            "google": "IBM Plex Mono",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "Courier Prime",
+            "stack": "'Courier Prime', 'American Typewriter', 'Courier New', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "typewriter",
+            "google": "Courier Prime",
+            "axes": "wght@400;700"
+          },
+          {
+            "name": "Barlow Semi Condensed",
+            "stack": "'Barlow Semi Condensed', 'Avenir Next Condensed', 'Arial Narrow', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Semi Condensed",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "IBM Plex Sans",
+            "stack": "'IBM Plex Sans', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-humanist",
+            "google": "IBM Plex Sans",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "Source Sans 3",
+            "stack": "'Source Sans 3', 'Gill Sans', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-humanist",
+            "google": "Source Sans 3",
+            "axes": "wght@400;600"
+          }
+        ],
+        "num": [
+          {
+            "name": "IBM Plex Mono",
+            "stack": "'IBM Plex Mono', Menlo, 'Courier New', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "mono",
+            "google": "IBM Plex Mono",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "Gloock",
+            "stack": "Gloock, 'Big Caslon', 'Hoefler Text', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Gloock"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "uppercase",
+          "none"
+        ],
+        "label_track": [
+          0.06,
+          0.14
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          500,
+          700
+        ],
+        "display_weight": [
+          400,
+          700
+        ],
+        "display_track": [
+          -0.02,
+          0.0
+        ],
+        "display_leading": [
+          0.9,
+          1.05
+        ],
+        "ratio": [
+          1.25,
+          1.414
+        ]
+      },
+      "shape": {
+        "language": [
+          "perforated"
+        ],
+        "radius": [
+          0,
+          2
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          4,
+          6
+        ]
+      },
+      "divider": [
+        "airmail-band",
+        "perforation",
+        "double-rule"
+      ],
+      "entity_header": [
+        "envelope"
+      ],
+      "entity_token": [
+        "stamp",
+        "badge"
+      ],
+      "numerals": [
+        "lining-tabular",
+        "oldstyle"
+      ],
+      "nav": [
+        "lines-top-left",
+        "tab-strip"
+      ],
+      "map": {
+        "projection": [
+          "oblique",
+          "orbit"
+        ],
+        "material": [
+          "paper",
+          "line"
+        ],
+        "pitch": [
+          38,
+          52
+        ],
+        "yaw": [
+          18,
+          28
+        ],
+        "wall_h": [
+          0.7,
+          1.0
+        ],
+        "light": [
+          "top",
+          "left"
+        ],
+        "dim": [
+          0.2,
+          0.3
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.35,
+          0.5
+        ],
+        "bounce": [
+          0.0,
+          0.1
+        ],
+        "press": [
+          0.96,
+          0.985
+        ]
+      },
+      "density": [
+        "airy",
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体页头是一只信封：斜纹航空边框（58° 点缀墨/纸/蓝/纸），右上角是实体色的带齿孔邮票，旁边是波纹消印",
+        "统计数字做成一排连号邮票（点缀墨、蓝、纸色交替，共用齿孔边），面值用展示字体",
+        "房间·摊位号写成邮编格：等宽字每个字符一个小方格",
+        "地址横线（三条淡线）代替实体页头的装饰线；眉标写成倾斜 -3° 的邮戳，混合模式 multiply"
+      ],
+      "watch": [
+        "不要滑向“做旧牛皮纸 + 邮戳 + 红泥印”的复古怀旧：保持纸色是冷的、印章是平涂的、边缘是干净的",
+        "点缀墨与蓝只并排不叠放（像信封斜纹）；点缀墨小字只放纸色上",
+        "齿孔用真正透明的遮罩打孔，不要用纸色圆点假装，否则在卡片和弹层上会露馅"
+      ],
+      "specimen_note": "首页像一只摊开的信封：外圈斜纹边框，里面是 Gloock 大标题和一排三张连号邮票（统计）。校徽/实体格是带齿孔的小邮票加邮编格；实体页头是信封正面，右上贴着实体色邮票和消印波纹。",
+      "props": [
+        {
+          "name": "band",
+          "var": "--prop-band",
+          "off": "linear-gradient(var(--a), var(--a))",
+          "what": "航空斜纹带：分隔线、信封框、弹层和章节列表的上沿、顶栏滚动线；关掉后是纯墨色条和墨色框"
+        },
+        {
+          "name": "perf",
+          "var": "--prop-perf",
+          "off": "0",
+          "what": "邮票齿孔：邮票、标记、章节号、步骤编号的锯齿边（比例，1 开 0 关）；关掉后是直边方块"
+        },
+        {
+          "name": "postmark",
+          "var": "--prop-postmark",
+          "off": "none",
+          "what": "实体页头里邮戳的波浪线"
+        }
+      ]
+    },
+    {
+      "id": "heraldry",
+      "name": {
+        "en": "Arms of the Day",
+        "cn": "纹章"
+      },
+      "mechanism": "heraldry (armorial rolls)",
+      "idea": "活动是一套纹章谱：每个实体有自己的盾，盾面颜色是实体色，盾上的“寻常图形”（竖带、横带、人字、斜带、风车）按区域编码。颜色遵守纹章铁律——色不压色，两种色之间永远隔一道纸色镶边；章节号用罗马数字，对称居中。",
+      "fits": [
+        "ceremony",
+        "heritage",
+        "archive",
+        "competition",
+        "campus"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "two-inks-paper",
+        "paper": {
+          "l": [
+            0.945,
+            0.97
+          ],
+          "c": [
+            0.004,
+            0.014
+          ],
+          "h": [
+            235,
+            275
+          ]
+        },
+        "a": {
+          "l": [
+            0.27,
+            0.33
+          ],
+          "c": [
+            0.08,
+            0.12
+          ],
+          "h": [
+            262,
+            272
+          ]
+        },
+        "b": {
+          "l": [
+            0.47,
+            0.55
+          ],
+          "c": [
+            0.17,
+            0.21
+          ],
+          "h": [
+            [
+              22,
+              28
+            ],
+            [
+              150,
+              162
+            ],
+            [
+              305,
+              320
+            ]
+          ],
+          "names": [
+            "gules 纹章红",
+            "vert 纹章绿",
+            "purpure 纹章紫"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.44,
+            0.54
+          ],
+          "c": [
+            0.09,
+            0.13
+          ],
+          "h": [
+            [
+              145,
+              165
+            ],
+            [
+              82,
+              95
+            ],
+            [
+              145,
+              165
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.17,
+            0.21
+          ],
+          "c": [
+            0.04,
+            0.07
+          ],
+          "h": [
+            262,
+            270
+          ]
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Gloock",
+            "stack": "Gloock, 'Big Caslon', 'Hoefler Text', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Gloock"
+          },
+          {
+            "name": "Cinzel",
+            "stack": "Cinzel, Copperplate, 'Big Caslon', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "inscriptional-serif",
+            "google": "Cinzel",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Playfair Display SC",
+            "stack": "'Playfair Display SC', Didot, 'Bodoni 72', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Playfair Display SC",
+            "axes": "wght@400;700"
+          }
+        ],
+        "label": [
+          {
+            "name": "Cormorant SC",
+            "stack": "'Cormorant SC', 'Hoefler Text', 'Big Caslon', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "small-caps-serif",
+            "google": "Cormorant SC",
+            "axes": "wght@500;600;700"
+          },
+          {
+            "name": "Alegreya Sans SC",
+            "stack": "'Alegreya Sans SC', 'Gill Sans', Optima, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "small-caps-sans",
+            "google": "Alegreya Sans SC",
+            "axes": "wght@500;700"
+          },
+          {
+            "name": "Inter Tight",
+            "stack": "'Inter Tight', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Inter Tight",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "opsz,wght@8..60,400..700"
+          },
+          {
+            "name": "Inter Tight",
+            "stack": "'Inter Tight', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Inter Tight",
+            "axes": "wght@400;500;600"
+          }
+        ],
+        "num": [
+          {
+            "name": "Gloock",
+            "stack": "Gloock, 'Big Caslon', 'Hoefler Text', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Gloock"
+          },
+          {
+            "name": "Cinzel",
+            "stack": "Cinzel, Copperplate, 'Big Caslon', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "inscriptional-serif",
+            "google": "Cinzel",
+            "axes": "wght@400;600;700"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          }
+        ],
+        "label_case": [
+          "none",
+          "uppercase"
+        ],
+        "label_track": [
+          0.06,
+          0.16
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          500,
+          700
+        ],
+        "display_weight": [
+          400,
+          700
+        ],
+        "display_track": [
+          -0.01,
+          0.04
+        ],
+        "display_leading": [
+          0.95,
+          1.1
+        ],
+        "ratio": [
+          1.25,
+          1.414
+        ]
+      },
+      "shape": {
+        "language": [
+          "arched"
+        ],
+        "radius": [
+          0,
+          4
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          5,
+          7
+        ]
+      },
+      "divider": [
+        "frieze",
+        "double-rule",
+        "thick-thin"
+      ],
+      "entity_header": [
+        "stamp-tile"
+      ],
+      "entity_token": [
+        "flag",
+        "badge"
+      ],
+      "numerals": [
+        "roman",
+        "lining-tabular"
+      ],
+      "nav": [
+        "chapter-rail",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "exploded",
+          "oblique"
+        ],
+        "material": [
+          "line",
+          "paper"
+        ],
+        "pitch": [
+          34,
+          48
+        ],
+        "yaw": [
+          -30,
+          -12
+        ],
+        "wall_h": [
+          0.5,
+          0.9
+        ],
+        "light": [
+          "top"
+        ],
+        "dim": [
+          0.14,
+          0.24
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.5,
+          0.65
+        ],
+        "bounce": [
+          0.0,
+          0.0
+        ],
+        "press": [
+          0.985,
+          0.995
+        ]
+      },
+      "density": [
+        "airy"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体页头是一面盾：盾底是实体色，顶部一条“盾首”格纹带，盾首与盾面之间隔一道纸色镶边（色不压色的银白规则）",
+        "列表里的小盾按 6 个一轮换寻常图形：竖带、横带、斜带、盾首、人字、风车，作为展区编码，用纸色在实体色上画",
+        "章节号用罗马数字（计数器生成），居中对称版式，眉标与规则线中间夹一枚菱形",
+        "按钮和提示框都用“纸色内线”做镶边：填色里留一圈 1–2px 的纸色线"
+      ],
+      "watch": [
+        "盾形越多越像霍格沃茨：全站只留一种盾形，其余用直角和双线；不要加金色、狮子、丝带、羊皮纸",
+        "点缀色与蓝不直接相接：中间一定隔纸色（镶边）；点缀色小字不放蓝底上",
+        "实体名很长时用名字适配阶梯（data-fit）缩小到盾面放得下，再长就换行；盾面字号不要低于 22px"
+      ],
+      "specimen_note": "首页是居中对称的：顶部一条格纹盾首带，大标题，三面小盾放统计数字；实体格是列表，每行一面带寻常图形的小盾。实体页头是整面盾，实体色盾底、纸色镶边、盾名居中，下方一条中间带菱形的箴言线。",
+      "props": [
+        {
+          "name": "shield",
+          "var": "--prop-shield",
+          "off": "0",
+          "what": "盾形轮廓：实体页头、统计数字和标记的尖底（比例，1 开 0 关）；关掉后是直角铭牌。活动与纹章无关时关"
+        },
+        {
+          "name": "ordinaries",
+          "var": "--prop-ordinaries",
+          "off": "0",
+          "what": "标记上的寻常图形：竖带、横带、斜带、盾首、人字、风车（比例，1 开 0 关）；关掉后是纯色底"
+        },
+        {
+          "name": "frieze",
+          "var": "--prop-frieze",
+          "off": "linear-gradient(var(--b), var(--b))",
+          "what": "盾首格纹带：首页顶部、实体页头顶部和格纹分隔线；关掉后是一条点缀色横条"
+        },
+        {
+          "name": "lozenge",
+          "var": "--prop-lozenge",
+          "off": "0",
+          "what": "菱形：标签前的小菱形、当前导航项的菱形、步骤编号和时间线节点的菱形（比例，1 开 0 关）；关掉后是方块"
+        }
+      ]
+    },
+    {
+      "id": "departures",
+      "name": {
+        "en": "Departures",
+        "cn": "启程"
+      },
+      "mechanism": "airport departure board (split-flap)",
+      "idea": "活动是一座出发大厅：每个实体是一个目的地，每个房间是一个登机口。夜色的翻牌板上，白色字牌和一枚强调色的“正在登机”，数字是一片片带中缝的翻牌，实体页头是一张登机牌，底下带条码的票根。",
+      "fits": [
+        "travel",
+        "transit",
+        "international",
+        "night",
+        "conference",
+        "theatre"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "dark-ground",
+        "paper": {
+          "l": [
+            0.17,
+            0.23
+          ],
+          "c": [
+            0.025,
+            0.06
+          ],
+          "h": [
+            [
+              258,
+              270
+            ],
+            [
+              195,
+              210
+            ]
+          ],
+          "names": [
+            "午夜蓝 midnight navy",
+            "石板青 slate teal"
+          ]
+        },
+        "a": {
+          "l": [
+            0.94,
+            0.97
+          ],
+          "c": [
+            0.006,
+            0.02
+          ],
+          "h": [
+            85,
+            95
+          ]
+        },
+        "b": {
+          "l": [
+            0.78,
+            0.84
+          ],
+          "c": [
+            0.13,
+            0.17
+          ],
+          "h": [
+            [
+              78,
+              88
+            ],
+            [
+              140,
+              155
+            ],
+            [
+              42,
+              52
+            ]
+          ],
+          "names": [
+            "琥珀 amber",
+            "登机绿 boarding green",
+            "信号橙 signal orange"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.74,
+            0.8
+          ],
+          "c": [
+            0.09,
+            0.13
+          ],
+          "h": [
+            [
+              195,
+              215
+            ],
+            [
+              55,
+              70
+            ],
+            [
+              195,
+              215
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.12,
+            0.17
+          ],
+          "c": [
+            0.02,
+            0.05
+          ],
+          "h": [
+            260,
+            270
+          ]
+        },
+        "dark": "neutral-night"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Archivo",
+            "stack": "Archivo, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-wide",
+            "google": "Archivo",
+            "axes": "wdth,wght@62..125,400..900"
+          },
+          {
+            "name": "Unbounded",
+            "stack": "Unbounded, 'Avenir Next', Futura, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-wide",
+            "google": "Unbounded",
+            "axes": "wght@500;700;800"
+          },
+          {
+            "name": "Lexend Giga",
+            "stack": "'Lexend Giga', 'Avenir Next', Futura, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-wide",
+            "google": "Lexend Giga",
+            "axes": "wght@500;700;800"
+          }
+        ],
+        "label": [
+          {
+            "name": "JetBrains Mono",
+            "stack": "'JetBrains Mono', Menlo, 'Courier New', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "mono",
+            "google": "JetBrains Mono",
+            "axes": "wght@500;600;700"
+          },
+          {
+            "name": "Roboto Mono",
+            "stack": "'Roboto Mono', Menlo, 'Courier New', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "mono",
+            "google": "Roboto Mono",
+            "axes": "wght@500;600;700"
+          },
+          {
+            "name": "Archivo",
+            "stack": "Archivo, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-wide",
+            "google": "Archivo",
+            "axes": "wdth,wght@62..125,400..900"
+          }
+        ],
+        "text": [
+          {
+            "name": "Hanken Grotesk",
+            "stack": "'Hanken Grotesk', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Hanken Grotesk",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "Barlow",
+            "stack": "Barlow, 'DIN Alternate', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Barlow",
+            "axes": "wght@400;500;600"
+          }
+        ],
+        "num": [
+          {
+            "name": "Archivo",
+            "stack": "Archivo, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-wide",
+            "google": "Archivo",
+            "axes": "wdth,wght@62..125,400..900"
+          },
+          {
+            "name": "Barlow Condensed",
+            "stack": "'Barlow Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Condensed",
+            "axes": "wght@600;700;800"
+          },
+          {
+            "name": "Doto",
+            "stack": "Doto, DotGothic16, Menlo, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "dot-matrix",
+            "google": "Doto",
+            "axes": "wght@400;700;900"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "uppercase"
+        ],
+        "label_track": [
+          0.1,
+          0.18
+        ],
+        "label_stretch": [
+          "normal",
+          "112.5%"
+        ],
+        "label_weight": [
+          500,
+          700
+        ],
+        "display_weight": [
+          700,
+          800
+        ],
+        "display_track": [
+          -0.025,
+          0.0
+        ],
+        "display_leading": [
+          0.92,
+          1.05
+        ],
+        "ratio": [
+          1.25,
+          1.414
+        ]
+      },
+      "shape": {
+        "language": [
+          "soft"
+        ],
+        "radius": [
+          6,
+          10
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          3,
+          4
+        ]
+      },
+      "divider": [
+        "dotted-leader",
+        "thick-thin",
+        "stripe-band"
+      ],
+      "entity_header": [
+        "ticket-stub"
+      ],
+      "entity_token": [
+        "plate"
+      ],
+      "numerals": [
+        "split-flap",
+        "lining-tabular"
+      ],
+      "nav": [
+        "side-ticks",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "orbit",
+          "exploded"
+        ],
+        "material": [
+          "clay",
+          "paper"
+        ],
+        "pitch": [
+          36,
+          50
+        ],
+        "yaw": [
+          -34,
+          -20
+        ],
+        "wall_h": [
+          1.0,
+          1.6
+        ],
+        "light": [
+          "top",
+          "right"
+        ],
+        "dim": [
+          0.12,
+          0.2
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.3,
+          0.42
+        ],
+        "bounce": [
+          0.12,
+          0.22
+        ],
+        "press": [
+          0.95,
+          0.97
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "每一位数字是一片独立的翻牌：等宽数字 + 每格一块牌面 + 水平中缝，统计和章节号都这样出",
+        "实体页头是登机牌：实体色顶带、大写校名、虚线撕口两侧各一个半圆缺口，底下是条码票根",
+        "状态列用强调色一个词“正在登机”：整站强调色只用在“现在/去这里”，其他一律纸白",
+        "行与行之间用点线引导线（像时刻表），登口号做成小翻牌放在行尾"
+      ],
+      "watch": [
+        "深色底 + 一个亮色容易变成“黑底荧光绿”套路：这里是深色夜景 + 暖白 + 一个强调色，别换成霓虹色或渐变",
+        "翻牌的立体感只靠中缝和牌间距，不要加阴影、发光或 3D 翻转动画",
+        "全大写只给标签和展示名；中文和正文保持常规字形，字距不要套到中文上"
+      ],
+      "specimen_note": "整页是深色夜景。顶栏是一条抬高的牌子，当前页下压一条强调色线；首页的 3 个统计是三组翻牌；实体格是时刻表行（色条、大写名、点线、登口号翻牌）；实体页头是一张登机牌，带撕口和条码。",
+      "props": [
+        {
+          "name": "flap",
+          "var": "--prop-flap",
+          "off": "0",
+          "what": "翻牌：大数字后面的逐位翻牌方块和中缝（比例，1 开 0 关）；关掉后是普通数字"
+        },
+        {
+          "name": "barcode",
+          "var": "--prop-barcode",
+          "off": "none",
+          "what": "登机牌底部的撕线、两个缺口和条形码（实体页头的规则线）"
+        }
+      ]
+    },
+    {
+      "id": "transit-signage",
+      "name": {
+        "en": "Line Diagram",
+        "cn": "线路图"
+      },
+      "mechanism": "metro station signage and line diagrams",
+      "idea": "活动是一条地铁线：每个展位是一个站，圆形站标是实体色的环，房间是线路，楼层是换乘。深色的导视横条加白底，圆角药丸按钮，步骤列表本身就是一条线路图——路线沿着线串起一个个站点，爬楼梯是换线。",
+      "fits": [
+        "transit",
+        "architecture",
+        "outdoor",
+        "festival",
+        "conference"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "entity-led-neutral",
+        "paper": {
+          "l": [
+            0.975,
+            0.99
+          ],
+          "c": [
+            0.002,
+            0.006
+          ],
+          "h": [
+            190,
+            240
+          ]
+        },
+        "a": {
+          "l": [
+            0.2,
+            0.27
+          ],
+          "c": [
+            0.01,
+            0.03
+          ],
+          "h": [
+            190,
+            240
+          ]
+        },
+        "b": {
+          "l": [
+            0.8,
+            0.88
+          ],
+          "c": [
+            0.14,
+            0.19
+          ],
+          "h": [
+            [
+              92,
+              100
+            ],
+            [
+              56,
+              66
+            ],
+            [
+              150,
+              163
+            ]
+          ],
+          "names": [
+            "信号黄 signal yellow",
+            "线路橙 line orange",
+            "线路绿 line green"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.45,
+            0.55
+          ],
+          "c": [
+            0.13,
+            0.17
+          ],
+          "h": [
+            245,
+            258
+          ]
+        },
+        "night": {
+          "l": [
+            0.15,
+            0.2
+          ],
+          "c": [
+            0.008,
+            0.02
+          ],
+          "h": [
+            200,
+            240
+          ]
+        },
+        "dark": "neutral-night"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Overpass",
+            "stack": "Overpass, 'Helvetica Neue', 'Avenir Next', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Overpass",
+            "axes": "wght@500;600;700;800"
+          },
+          {
+            "name": "Hanken Grotesk",
+            "stack": "'Hanken Grotesk', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Hanken Grotesk",
+            "axes": "wght@600;700;800"
+          },
+          {
+            "name": "Public Sans",
+            "stack": "'Public Sans', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Public Sans",
+            "axes": "wght@600;700;800"
+          }
+        ],
+        "label": [
+          {
+            "name": "Overpass",
+            "stack": "Overpass, 'Helvetica Neue', 'Avenir Next', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Overpass",
+            "axes": "wght@500;600;700;800"
+          },
+          {
+            "name": "Atkinson Hyperlegible",
+            "stack": "'Atkinson Hyperlegible', 'Gill Sans', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-humanist",
+            "google": "Atkinson Hyperlegible",
+            "axes": "wght@400;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "Hanken Grotesk",
+            "stack": "'Hanken Grotesk', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Hanken Grotesk",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "Atkinson Hyperlegible",
+            "stack": "'Atkinson Hyperlegible', 'Gill Sans', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-humanist",
+            "google": "Atkinson Hyperlegible",
+            "axes": "wght@400;700"
+          }
+        ],
+        "num": [
+          {
+            "name": "Overpass",
+            "stack": "Overpass, 'Helvetica Neue', 'Avenir Next', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Overpass",
+            "axes": "wght@500;600;700;800"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "none"
+        ],
+        "label_track": [
+          0.0,
+          0.03
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          600,
+          800
+        ],
+        "display_weight": [
+          700,
+          800
+        ],
+        "display_track": [
+          -0.03,
+          -0.01
+        ],
+        "display_leading": [
+          0.95,
+          1.1
+        ],
+        "ratio": [
+          1.2,
+          1.333
+        ]
+      },
+      "shape": {
+        "language": [
+          "pill"
+        ],
+        "radius": [
+          10,
+          20
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          4,
+          6
+        ]
+      },
+      "divider": [
+        "route-line",
+        "thick-thin",
+        "dotted-leader"
+      ],
+      "entity_header": [
+        "placard"
+      ],
+      "entity_token": [
+        "dot",
+        "badge"
+      ],
+      "numerals": [
+        "lining-tabular"
+      ],
+      "nav": [
+        "chapter-rail",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "plan",
+          "oblique",
+          "exploded"
+        ],
+        "material": [
+          "line"
+        ],
+        "pitch": {
+          "plan": [
+            80,
+            88
+          ],
+          "oblique": [
+            38,
+            50
+          ],
+          "exploded": [
+            34,
+            46
+          ]
+        },
+        "yaw": {
+          "plan": [
+            -10,
+            10
+          ],
+          "oblique": [
+            18,
+            30
+          ],
+          "exploded": [
+            14,
+            28
+          ]
+        },
+        "wall_h": {
+          "plan": [
+            0.3,
+            0.5
+          ],
+          "oblique": [
+            0.6,
+            0.9
+          ],
+          "exploded": [
+            0.5,
+            0.8
+          ]
+        },
+        "light": [
+          "top"
+        ],
+        "dim": [
+          0.2,
+          0.3
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.28,
+          0.4
+        ],
+        "bounce": [
+          0.04,
+          0.1
+        ],
+        "press": [
+          0.96,
+          0.975
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体列表是一条线路：每行左侧是实体色的环形站标，一条 4px 的深色线从上到下穿过所有站标",
+        "步骤列表也是线路图：站标圆圈、穿过的竖线、爬楼梯那一段换成换乘色；当前站是强调色实心",
+        "顶栏是深色导视横条（白字、强调色下划线表示当前页），页面本体是纯净冷白",
+        "统计数字放在圆角药丸里，像线路编号牌：近黑、强调色、白环三种交替"
+      ],
+      "watch": [
+        "近黑 + 一个亮色容易变成“工地警示”：亮色只当填色，文字永远用深色；小字不要用亮色",
+        "不要给每个按钮都配图标箭头：线路感来自站标、线和药丸，不是图标库",
+        "药丸圆角只给按钮、标签和统计，大块面板最多 14–18px 圆角，别让整页变成软糖"
+      ],
+      "specimen_note": "顶部一条深色导视横条，下面是冷白页面。入口页是大号粗体标题加三枚线路编号牌；实体格是沿一条竖线排开的站标列表；实体页头是近黑的站牌，强调色药丸写房号，下面一条带站点圆点的实体色线。",
+      "props": [
+        {
+          "name": "line",
+          "var": "--prop-line",
+          "off": "none",
+          "what": "线路本身：实体标记穿过的线、步骤列表的线、章节列表的轨道、阅读导航的轨道；关掉后只剩圆环和编号"
+        },
+        {
+          "name": "stations",
+          "var": "--prop-stations",
+          "off": "0",
+          "what": "站点圆点：分隔线和实体页头规则线上的站点（比例，1 开 0 关）；关掉后是一条纯线"
+        }
+      ]
+    },
+    {
+      "id": "museum-placard",
+      "name": {
+        "en": "Wall Label",
+        "cn": "展签"
+      },
+      "mechanism": "museum gallery wall and object labels",
+      "idea": "整页是一面深色展墙，内容像挂在墙上的展签：象牙色的小卡片、衬线字、编号和一枚圆点。页头是整块展签，展签里的数字用老式数字，章节像展厅里的单元说明牌；安静、间距大、几乎不动。",
+      "fits": [
+        "museum",
+        "art",
+        "heritage",
+        "archive",
+        "craft"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "tinted-ground",
+        "paper": {
+          "l": [
+            0.22,
+            0.3
+          ],
+          "c": [
+            0.04,
+            0.08
+          ],
+          "h": [
+            [
+              150,
+              185
+            ],
+            [
+              18,
+              32
+            ],
+            [
+              238,
+              255
+            ]
+          ],
+          "names": [
+            "松绿墙 deep green wall",
+            "牛血红墙 oxblood wall",
+            "普鲁士蓝墙 deep blue wall"
+          ]
+        },
+        "a": {
+          "l": [
+            0.93,
+            0.96
+          ],
+          "c": [
+            0.012,
+            0.03
+          ],
+          "h": [
+            85,
+            100
+          ]
+        },
+        "b": {
+          "l": [
+            0.7,
+            0.78
+          ],
+          "c": [
+            0.14,
+            0.18
+          ],
+          "h": [
+            [
+              22,
+              32
+            ],
+            [
+              185,
+              200
+            ],
+            [
+              30,
+              42
+            ]
+          ],
+          "names": [
+            "珊瑚点 coral dot",
+            "青绿点 teal dot",
+            "朱红点 vermilion dot"
+          ],
+          "follow": "paper"
+        },
+        "climb": {
+          "l": [
+            0.78,
+            0.84
+          ],
+          "c": [
+            0.08,
+            0.12
+          ],
+          "h": [
+            [
+              215,
+              235
+            ],
+            [
+              70,
+              85
+            ],
+            [
+              215,
+              235
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.17,
+            0.22
+          ],
+          "c": [
+            0.03,
+            0.06
+          ],
+          "h": [
+            [
+              150,
+              185
+            ],
+            [
+              18,
+              32
+            ],
+            [
+              238,
+              255
+            ]
+          ],
+          "follow": "paper"
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Libre Caslon Text",
+            "stack": "'Libre Caslon Text', 'Iowan Old Style', Baskerville, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Libre Caslon Text",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          },
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "ital,opsz,wght@0,8..60,400..700;1,8..60,400..700"
+          },
+          {
+            "name": "Spectral",
+            "stack": "Spectral, 'Iowan Old Style', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Spectral",
+            "axes": "ital,wght@0,400;0,500;1,400"
+          }
+        ],
+        "label": [
+          {
+            "name": "Libre Franklin",
+            "stack": "'Libre Franklin', 'Franklin Gothic Medium', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Libre Franklin",
+            "axes": "wght@400;500;600;700"
+          },
+          {
+            "name": "Public Sans",
+            "stack": "'Public Sans', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Public Sans",
+            "axes": "wght@400;500;600"
+          }
+        ],
+        "text": [
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "ital,opsz,wght@0,8..60,400..700;1,8..60,400..700"
+          },
+          {
+            "name": "Literata",
+            "stack": "Literata, Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Literata",
+            "axes": "opsz,wght@7..72,400..700"
+          }
+        ],
+        "num": [
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "ital,opsz,wght@0,8..60,400..700;1,8..60,400..700"
+          },
+          {
+            "name": "Libre Caslon Text",
+            "stack": "'Libre Caslon Text', 'Iowan Old Style', Baskerville, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Libre Caslon Text",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          }
+        ],
+        "label_case": [
+          "uppercase"
+        ],
+        "label_track": [
+          0.1,
+          0.18
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          500,
+          600
+        ],
+        "display_weight": [
+          400,
+          500
+        ],
+        "display_track": [
+          -0.015,
+          0.005
+        ],
+        "display_leading": [
+          1.0,
+          1.15
+        ],
+        "ratio": [
+          1.2,
+          1.333
+        ]
+      },
+      "shape": {
+        "language": [
+          "square"
+        ],
+        "radius": [
+          0,
+          0
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          3,
+          4
+        ]
+      },
+      "divider": [
+        "thick-thin",
+        "none"
+      ],
+      "entity_header": [
+        "placard"
+      ],
+      "entity_token": [
+        "plate",
+        "pin"
+      ],
+      "numerals": [
+        "oldstyle",
+        "roman"
+      ],
+      "nav": [
+        "lines-top-left",
+        "side-ticks"
+      ],
+      "map": {
+        "projection": [
+          "exploded"
+        ],
+        "material": [
+          "paper",
+          "clay"
+        ],
+        "pitch": [
+          30,
+          42
+        ],
+        "yaw": [
+          20,
+          34
+        ],
+        "wall_h": [
+          0.6,
+          1.0
+        ],
+        "light": [
+          "left"
+        ],
+        "dim": [
+          0.16,
+          0.26
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.5,
+          0.65
+        ],
+        "bounce": [
+          0.0,
+          0.0
+        ],
+        "press": [
+          0.99,
+          0.995
+        ]
+      },
+      "density": [
+        "airy"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体页头是一块象牙色展签：深色油墨、内缩 8px 的细框线、小号大写编号行、衬线大标题、3rem 的点缀色短线",
+        "导航当前页前面贴一枚圆点（展品“已售”圆点）；列表行前也是实体色圆点，圆点外一圈纸色加一圈细线",
+        "数字一律老式数字，像说明牌上的年份；章节号斜体，颜色用点缀色的文字版",
+        "弹层与提示用象牙色整体反相（重设一组令牌），文字用墙面深色，点缀色在象牙底上用更深的文字版"
+      ],
+      "watch": [
+        "深色墙 + 金色会滑向“酒吧 / 精品酒店”套路：这里只用象牙和一枚点缀圆点，不要金线、不要烫金、不要渐变",
+        "展签是纸质小卡片，不是玻璃卡片：不加阴影、不加圆角、不加模糊",
+        "衬线字号不要缩到 13px 以下；展签里的次要信息靠字重和灰度，不靠缩小"
+      ],
+      "specimen_note": "整页是一面深色的墙。大标题和说明文字直接写在墙上，实体列表是一行一行的展品标签；点进去，页头是一张象牙色的展签挂在墙上，下面是正文的“单元说明”。",
+      "props": [
+        {
+          "name": "keyline",
+          "var": "--prop-keyline",
+          "off": "0",
+          "what": "象牙色展签的内细线框：实体页头、弹层、章节列表、卡片、空状态（比例，1 开 0 关）"
+        },
+        {
+          "name": "dot",
+          "var": "--prop-dot",
+          "off": "0",
+          "what": "红点：当前导航项的红点和页头眉标前的实体色点（比例，1 开 0 关）；关掉后导航项用下划线"
+        }
+      ]
+    },
+    {
+      "id": "blueprint",
+      "name": {
+        "en": "Drawing Sheet",
+        "cn": "图纸"
+      },
+      "mechanism": "architectural drawing sheet / cyanotype blueprint",
+      "idea": "活动是一张施工图：靛青底上白色细线，尺寸线、剖切符号、标题栏，实体用测量点标记。每个实体页头是一块带图框的标题栏，数字像图纸上的标注，路线像修订笔。",
+      "fits": [
+        "architecture",
+        "tech",
+        "science",
+        "craft"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "dark-ground",
+        "paper": {
+          "l": [
+            0.26,
+            0.34
+          ],
+          "c": [
+            0.08,
+            0.12
+          ],
+          "h": [
+            235,
+            250
+          ]
+        },
+        "a": {
+          "l": [
+            0.94,
+            0.97
+          ],
+          "c": [
+            0.02,
+            0.04
+          ],
+          "h": [
+            205,
+            230
+          ]
+        },
+        "b": {
+          "l": [
+            0.74,
+            0.8
+          ],
+          "c": [
+            0.15,
+            0.19
+          ],
+          "h": [
+            [
+              52,
+              64
+            ],
+            [
+              16,
+              26
+            ],
+            [
+              100,
+              112
+            ]
+          ],
+          "names": [
+            "橙色修订笔 orange revision pencil",
+            "红色批注笔 red mark-up pen",
+            "荧光黄笔 highlighter yellow"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.72,
+            0.78
+          ],
+          "c": [
+            0.15,
+            0.2
+          ],
+          "h": [
+            [
+              340,
+              355
+            ],
+            [
+              110,
+              125
+            ],
+            [
+              335,
+              350
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.18,
+            0.24
+          ],
+          "c": [
+            0.05,
+            0.09
+          ],
+          "h": [
+            240,
+            252
+          ]
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Saira Condensed",
+            "stack": "'Saira Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'Arial Narrow', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Saira Condensed",
+            "axes": "wght@400;500;600;700"
+          },
+          {
+            "name": "Barlow Condensed",
+            "stack": "'Barlow Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Condensed",
+            "axes": "wght@500;600;700"
+          },
+          {
+            "name": "Roboto Condensed",
+            "stack": "'Roboto Condensed', 'Arial Narrow', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Roboto Condensed",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "label": [
+          {
+            "name": "Saira Condensed",
+            "stack": "'Saira Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'Arial Narrow', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Saira Condensed",
+            "axes": "wght@400;500;600;700"
+          },
+          {
+            "name": "Barlow Semi Condensed",
+            "stack": "'Barlow Semi Condensed', 'Avenir Next Condensed', 'Arial Narrow', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Semi Condensed",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "Barlow",
+            "stack": "Barlow, 'DIN Alternate', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Barlow",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "IBM Plex Sans",
+            "stack": "'IBM Plex Sans', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-humanist",
+            "google": "IBM Plex Sans",
+            "axes": "wght@400;500;600"
+          }
+        ],
+        "num": [
+          {
+            "name": "Share Tech Mono",
+            "stack": "'Share Tech Mono', Menlo, 'Courier New', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', monospace",
+            "class": "mono",
+            "google": "Share Tech Mono"
+          },
+          {
+            "name": "Saira Condensed",
+            "stack": "'Saira Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'Arial Narrow', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Saira Condensed",
+            "axes": "wght@400;500;600;700"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "uppercase"
+        ],
+        "label_track": [
+          0.1,
+          0.2
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          500,
+          700
+        ],
+        "display_weight": [
+          500,
+          700
+        ],
+        "display_track": [
+          0.0,
+          0.04
+        ],
+        "display_leading": [
+          0.95,
+          1.1
+        ],
+        "ratio": [
+          1.25,
+          1.5
+        ]
+      },
+      "shape": {
+        "language": [
+          "notched"
+        ],
+        "radius": [
+          0,
+          0
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          2,
+          3
+        ]
+      },
+      "divider": [
+        "dimension-line",
+        "thick-thin"
+      ],
+      "entity_header": [
+        "title-block"
+      ],
+      "entity_token": [
+        "dot",
+        "pin"
+      ],
+      "numerals": [
+        "lining-tabular"
+      ],
+      "nav": [
+        "side-ticks",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "plan",
+          "exploded"
+        ],
+        "material": [
+          "blueprint"
+        ],
+        "pitch": {
+          "plan": [
+            80,
+            88
+          ],
+          "exploded": [
+            34,
+            46
+          ]
+        },
+        "yaw": {
+          "plan": [
+            0,
+            30
+          ],
+          "exploded": [
+            12,
+            32
+          ]
+        },
+        "wall_h": {
+          "plan": [
+            0.2,
+            0.6
+          ],
+          "exploded": [
+            0.5,
+            0.8
+          ]
+        },
+        "light": [
+          "top"
+        ],
+        "dim": [
+          0.14,
+          0.22
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.3,
+          0.42
+        ],
+        "bounce": [
+          0.0,
+          0.0
+        ],
+        "press": [
+          0.97,
+          0.985
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "grid"
+      ],
+      "richness": [
+        "页面底有两级方格（12px 细、60px 粗），线用 `--a` 的 6% 与 11% 透明度，不是图片",
+        "分隔线是尺寸线：一条 1px 线，两端有斜切标记；实体页头下的规则线也是尺寸线，用实体色",
+        "实体页头是标题栏：2px 外框、顶部一格眉标、底部一格副信息，框外四角有套准标记",
+        "实体标记是测量点（圆里一个十字），步骤是方框编号；所有数字用等宽 / 窄体并带斜线零"
+      ],
+      "watch": [
+        "“深蓝底 + 荧光青线”是常见的科技风：这里线是偏冷的纸白、点缀是一支修订笔的颜色，不用青色辉光、不加发光阴影",
+        "网格要极淡，只当纸；不要让方格线穿过正文造成噪点——正文放在实色面上",
+        "窄体大写标签字号不低于 11px；中文用常规字形，不要套大写字距"
+      ],
+      "specimen_note": "整页是靛青的图纸，淡淡的方格。顶栏一条细线；入口页是大号窄体大写标题 + 三个带框的统计；实体页头是一块标题栏，四角有套准标记；列表是画着测量点的方格，分隔线是尺寸线。",
+      "props": [
+        {
+          "name": "grid",
+          "var": "--prop-grid",
+          "off": "none",
+          "what": "整页的两级绘图网格底纹"
+        },
+        {
+          "name": "dim",
+          "var": "--prop-dim",
+          "off": "linear-gradient(var(--a), var(--a)) 0 50% / 100% 1px no-repeat",
+          "what": "尺寸标注线：分隔线和每章顶部的带斜线端点的线；关掉后是一条细线"
+        },
+        {
+          "name": "registration",
+          "var": "--prop-registration",
+          "off": "none",
+          "what": "标题栏四角的套准十字标记"
+        },
+        {
+          "name": "survey",
+          "var": "--prop-survey",
+          "off": "0",
+          "what": "测点：实体标记的十字准星圆圈（比例，1 开 0 关）；关掉后是实心圆点"
+        }
+      ]
+    },
+    {
+      "id": "broadsheet",
+      "name": {
+        "en": "Special Edition",
+        "cn": "特刊"
+      },
+      "mechanism": "daily newspaper (broadsheet)",
+      "idea": "活动是一份当天的特刊：有色新闻纸、粗细双线、居中的报头、版次与日期行、网点图片和首字下沉。实体是头版小标题，统计是行情栏，章节是版面。关键是纸色——不是奶油纸，而是真有其事的有色新闻纸。",
+      "fits": [
+        "print",
+        "conference",
+        "archive",
+        "community",
+        "heritage",
+        "market"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "tinted-ground",
+        "paper": {
+          "l": [
+            0.91,
+            0.94
+          ],
+          "c": [
+            0.035,
+            0.06
+          ],
+          "h": [
+            [
+              25,
+              48
+            ],
+            [
+              140,
+              165
+            ]
+          ],
+          "names": [
+            "粉色新闻纸 salmon newsprint",
+            "灰绿新闻纸 sage newsprint"
+          ]
+        },
+        "a": {
+          "l": [
+            0.2,
+            0.26
+          ],
+          "c": [
+            0.015,
+            0.035
+          ],
+          "h": [
+            255,
+            285
+          ]
+        },
+        "b": {
+          "l": [
+            0.4,
+            0.48
+          ],
+          "c": [
+            0.08,
+            0.11
+          ],
+          "h": [
+            [
+              190,
+              205
+            ],
+            [
+              18,
+              30
+            ],
+            [
+              248,
+              262
+            ]
+          ],
+          "names": [
+            "青绿 teal",
+            "暗红 claret",
+            "墨蓝 ink blue"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.48,
+            0.56
+          ],
+          "c": [
+            0.1,
+            0.14
+          ],
+          "h": [
+            [
+              60,
+              78
+            ],
+            [
+              225,
+              245
+            ],
+            [
+              60,
+              78
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.19,
+            0.24
+          ],
+          "c": [
+            0.02,
+            0.04
+          ],
+          "h": [
+            20,
+            40
+          ]
+        },
+        "dark": "warm-night"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Old Standard TT",
+            "stack": "'Old Standard TT', Didot, 'Bodoni 72', 'Times New Roman', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Old Standard TT",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          },
+          {
+            "name": "Playfair Display",
+            "stack": "'Playfair Display', Didot, 'Bodoni 72', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Playfair Display",
+            "axes": "ital,wght@0,400..900;1,400..900"
+          },
+          {
+            "name": "DM Serif Display",
+            "stack": "'DM Serif Display', Didot, 'Big Caslon', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "DM Serif Display"
+          }
+        ],
+        "label": [
+          {
+            "name": "Libre Franklin",
+            "stack": "'Libre Franklin', 'Franklin Gothic Medium', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Libre Franklin",
+            "axes": "wght@500;600;700;800"
+          },
+          {
+            "name": "Archivo Narrow",
+            "stack": "'Archivo Narrow', 'Arial Narrow', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Archivo Narrow",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "ital,opsz,wght@0,8..60,400..700;1,8..60,400..700"
+          },
+          {
+            "name": "Libre Baskerville",
+            "stack": "'Libre Baskerville', Baskerville, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Libre Baskerville",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          }
+        ],
+        "num": [
+          {
+            "name": "Playfair Display",
+            "stack": "'Playfair Display', Didot, 'Bodoni 72', Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Playfair Display",
+            "axes": "ital,wght@0,400..900;1,400..900"
+          },
+          {
+            "name": "Old Standard TT",
+            "stack": "'Old Standard TT', Didot, 'Bodoni 72', 'Times New Roman', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "didone-serif",
+            "google": "Old Standard TT",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          }
+        ],
+        "label_case": [
+          "uppercase"
+        ],
+        "label_track": [
+          0.06,
+          0.14
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          600,
+          800
+        ],
+        "display_weight": [
+          700,
+          900
+        ],
+        "display_track": [
+          -0.03,
+          -0.005
+        ],
+        "display_leading": [
+          0.92,
+          1.08
+        ],
+        "ratio": [
+          1.25,
+          1.414
+        ]
+      },
+      "shape": {
+        "language": [
+          "square"
+        ],
+        "radius": [
+          0,
+          0
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          4,
+          6
+        ]
+      },
+      "divider": [
+        "thick-thin",
+        "double-rule",
+        "dotted-leader"
+      ],
+      "entity_header": [
+        "masthead"
+      ],
+      "entity_token": [
+        "pin",
+        "dot"
+      ],
+      "numerals": [
+        "lining-tabular",
+        "roman"
+      ],
+      "nav": [
+        "tab-strip",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "oblique",
+          "orbit"
+        ],
+        "material": [
+          "line"
+        ],
+        "pitch": [
+          40,
+          55
+        ],
+        "yaw": [
+          -35,
+          -25
+        ],
+        "wall_h": [
+          0.5,
+          0.9
+        ],
+        "light": [
+          "left"
+        ],
+        "dim": [
+          0.2,
+          0.3
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.45,
+          0.6
+        ],
+        "bounce": [
+          0.0,
+          0.02
+        ],
+        "press": [
+          0.98,
+          0.99
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体页头是报头：上方粗线、居中的巨大标题（−0.03em）、粗细双线，眉标移到标题下方变成日期行（版次、房号、中文）",
+        "统计做成行情栏：三栏竖线分隔、上下各一道线；实体列表的缩略图是网点（halftone）方块，用实体色画点",
+        "首字下沉只在英文页面出现（:lang(en)），章节顶部一道粗细双线；章节号可换成罗马数字",
+        "步骤像报纸的编号段落：斜体粗体数字加句点；当前一条淡淡填一层强调色"
+      ],
+      "watch": [
+        "“米色 + 衬线 + 红印章 + 等宽小字”是最常见的复古聚类：这里纸色是有色新闻纸（粉或灰绿）、点缀是一种沉着的墨色、标签是窄无衬线，不用等宽",
+        "报纸感来自线和版式，不是做旧：不要纸纹、折痕、污渍、阴影",
+        "整页用了分栏线之后，就别再加卡片和圆角；信息层级用线粗细和字重"
+      ],
+      "specimen_note": "有色的新闻纸。顶部栏像版面目录，当前栏是反白的小标签；首页有一条日期行、巨大的衬线标题、行情栏式的三个统计；实体页头是居中的巨大报头，粗线开头、双线收尾。",
+      "props": [
+        {
+          "name": "dropcap",
+          "var": "--prop-dropcap",
+          "off": "0",
+          "what": "每章第一段的英文首字下沉（比例，1 开 0 关）"
+        },
+        {
+          "name": "halftone",
+          "var": "--prop-halftone",
+          "off": "0",
+          "what": "实体标记里的半色调网点（比例，1 开 0 关）；关掉后是实体色实心方块"
+        }
+      ]
+    },
+    {
+      "id": "festival-riso",
+      "name": {
+        "en": "Risograph Ticket",
+        "cn": "套印票根"
+      },
+      "mechanism": "risograph poster, festival ticket and wristband",
+      "idea": "活动是一张两色套印的海报加一张撕口票根：两种荧光和孔版油墨在彩纸上，略微错位地叠在一起，网点、胶囊按钮、贴纸一样微微歪着的格子，实体页头是带半圆缺口和撕线的票根。节奏是轻快的、有弹性的。",
+      "fits": [
+        "festival",
+        "music",
+        "craft",
+        "art",
+        "youth",
+        "market",
+        "night",
+        "theatre",
+        "food"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "duotone-overprint",
+        "paper": {
+          "l": [
+            0.955,
+            0.975
+          ],
+          "c": [
+            0.015,
+            0.045
+          ],
+          "h": [
+            [
+              95,
+              112
+            ],
+            [
+              160,
+              182
+            ],
+            [
+              38,
+              60
+            ]
+          ],
+          "names": [
+            "黄纸 · 蓝加荧光粉 yellow stock, blue + fluorescent pink",
+            "薄荷纸 · 紫加橙 mint stock, violet + orange",
+            "蜜桃纸 · 青加荧光红 peach stock, teal + fluorescent red"
+          ]
+        },
+        "a": {
+          "l": [
+            0.46,
+            0.54
+          ],
+          "c": [
+            0.13,
+            0.17
+          ],
+          "h": [
+            [
+              240,
+              254
+            ],
+            [
+              296,
+              312
+            ],
+            [
+              188,
+              203
+            ]
+          ],
+          "follow": "paper"
+        },
+        "b": {
+          "l": [
+            0.68,
+            0.76
+          ],
+          "c": [
+            0.17,
+            0.22
+          ],
+          "h": [
+            [
+              346,
+              358
+            ],
+            [
+              48,
+              62
+            ],
+            [
+              22,
+              32
+            ]
+          ],
+          "follow": "paper"
+        },
+        "climb": {
+          "l": [
+            0.5,
+            0.58
+          ],
+          "c": [
+            0.13,
+            0.17
+          ],
+          "h": [
+            [
+              150,
+              170
+            ],
+            [
+              240,
+              254
+            ],
+            [
+              296,
+              310
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.2,
+            0.26
+          ],
+          "c": [
+            0.06,
+            0.1
+          ],
+          "h": [
+            [
+              285,
+              300
+            ],
+            [
+              296,
+              312
+            ],
+            [
+              195,
+              210
+            ]
+          ],
+          "follow": "paper"
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Bricolage Grotesque",
+            "stack": "'Bricolage Grotesque', 'Avenir Next', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-heavy",
+            "google": "Bricolage Grotesque",
+            "axes": "opsz,wdth,wght@12..96,75..100,400..800"
+          },
+          {
+            "name": "Dela Gothic One",
+            "stack": "'Dela Gothic One', 'Arial Black', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-heavy",
+            "google": "Dela Gothic One"
+          },
+          {
+            "name": "Bowlby One",
+            "stack": "'Bowlby One', 'Arial Black', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-heavy",
+            "google": "Bowlby One"
+          }
+        ],
+        "label": [
+          {
+            "name": "Bricolage Grotesque",
+            "stack": "'Bricolage Grotesque', 'Avenir Next', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-heavy",
+            "google": "Bricolage Grotesque",
+            "axes": "opsz,wdth,wght@12..96,75..100,400..800"
+          },
+          {
+            "name": "Rubik",
+            "stack": "Rubik, 'Avenir Next', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-geometric",
+            "google": "Rubik",
+            "axes": "wght@500;600;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "DM Sans",
+            "stack": "'DM Sans', 'Avenir Next', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-geometric",
+            "google": "DM Sans",
+            "axes": "opsz,wght@9..40,400..700"
+          },
+          {
+            "name": "Figtree",
+            "stack": "Figtree, 'Avenir Next', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-geometric",
+            "google": "Figtree",
+            "axes": "wght@400;500;600"
+          }
+        ],
+        "num": [
+          {
+            "name": "Bricolage Grotesque",
+            "stack": "'Bricolage Grotesque', 'Avenir Next', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-heavy",
+            "google": "Bricolage Grotesque",
+            "axes": "opsz,wdth,wght@12..96,75..100,400..800"
+          },
+          {
+            "name": "Dela Gothic One",
+            "stack": "'Dela Gothic One', 'Arial Black', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-heavy",
+            "google": "Dela Gothic One"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "ZCOOL QingKe HuangYou",
+            "stack": "'ZCOOL QingKe HuangYou', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-display-heavy",
+            "google": "ZCOOL QingKe HuangYou"
+          },
+          {
+            "name": "ZCOOL KuaiLe",
+            "stack": "'ZCOOL KuaiLe', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-display-playful",
+            "google": "ZCOOL KuaiLe"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "none",
+          "uppercase"
+        ],
+        "label_track": [
+          0.0,
+          0.08
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          600,
+          800
+        ],
+        "display_weight": [
+          700,
+          800
+        ],
+        "display_track": [
+          -0.04,
+          -0.01
+        ],
+        "display_leading": [
+          0.85,
+          1.0
+        ],
+        "ratio": [
+          1.333,
+          1.5
+        ]
+      },
+      "shape": {
+        "language": [
+          "pill"
+        ],
+        "radius": [
+          14,
+          24
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          4,
+          6
+        ]
+      },
+      "divider": [
+        "perforation",
+        "stripe-band",
+        "dotted-leader"
+      ],
+      "entity_header": [
+        "ticket-stub"
+      ],
+      "entity_token": [
+        "badge",
+        "flag"
+      ],
+      "numerals": [
+        "outlined",
+        "lining-tabular"
+      ],
+      "nav": [
+        "progress-ring",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "orbit",
+          "exploded"
+        ],
+        "material": [
+          "riso"
+        ],
+        "pitch": [
+          36,
+          60
+        ],
+        "yaw": [
+          -45,
+          45
+        ],
+        "wall_h": [
+          1.2,
+          2.0
+        ],
+        "light": [
+          "right",
+          "top"
+        ],
+        "dim": [
+          0.22,
+          0.34
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.34,
+          0.5
+        ],
+        "bounce": [
+          0.2,
+          0.3
+        ],
+        "press": [
+          0.92,
+          0.95
+        ]
+      },
+      "density": [
+        "airy",
+        "compact"
+      ],
+      "texture": [
+        "halftone"
+      ],
+      "richness": [
+        "错位套印：大标题用 `--a` 色，后面偏 .05em 的 `--b` 色副本；统计数字是描边空心字，`--b` 色实心副本错位在后面",
+        "实体页头是票根：左侧 `--a` 色票面，右侧 64px 实体色票根，撕线用重复渐变画，上下两个半圆缺口用遮罩打孔，整体微倾 −1°",
+        "格子像贴纸：2px 边框、3px 错位的第二色底影，奇偶项倾斜 ±1°，点按时影子收回",
+        "导航是一圈点（progress-ring）：每个章节一个点，读过的涂墨，当前的放大成 `--b` 色；点数取引擎写在按钮上的 --n，无需额外脚本"
+      ],
+      "watch": [
+        "不要滑向“新粗野主义 + 渐变玻璃”：这里只有两色套印和平涂，没有渐变、模糊、玻璃",
+        "错位只给标题和数字；正文、标签、小字保持对齐，否则读不了",
+        "亮色油墨小字对比度不够：`--b` 只当填色，需要文字时用 `--b-text`（已加深）",
+        "倾斜只用 ±1°，且 `prefers-reduced-motion` 之外的静态倾斜不会影响点击区域"
+      ],
+      "specimen_note": "彩纸上两种油墨。入口页大标题带第二色错位，三个空心大数字，按钮是胶囊；实体格像一张张微微歪斜的贴纸；实体页头是一张撕口票根，右边实体色票根；弹层也带 2px 主色边和 4px 第二色底影。",
+      "props": [
+        {
+          "name": "halftone",
+          "var": "--prop-halftone",
+          "off": "0",
+          "what": "半色调网点：首页角落、实体标记、票根（比例，1 开 0 关）；关掉后是纯色"
+        },
+        {
+          "name": "offset",
+          "var": "--prop-offset",
+          "off": "0",
+          "what": "第二色套印偏位：文字和色块的错位阴影（比例，1 开 0 关）；关掉后是单色描边"
+        },
+        {
+          "name": "ticket",
+          "var": "--prop-ticket",
+          "off": "0",
+          "what": "票根的缺口和撕线（比例，1 开 0 关）；关掉后是带票根色块的普通卡片"
+        },
+        {
+          "name": "tilt",
+          "var": "--prop-tilt",
+          "off": "0",
+          "what": "贴纸和票根的 ±1° 倾斜（比例，1 开 0 关）"
+        }
+      ]
+    },
+    {
+      "id": "herbarium",
+      "name": {
+        "en": "Pressed Specimen",
+        "cn": "标本"
+      },
+      "mechanism": "herbarium specimen sheet",
+      "idea": "活动是一本植物标本夹：每个实体是压在纸上的一份标本，系着带孔的采集签，旁边写着拉丁学名式的斜体名字；缝线代替分隔线，叶形代替圆点，分层的地图像一块软泥塑。色彩是微绿的衬纸、森林绿墨水和一点压花的颜色。",
+      "fits": [
+        "garden",
+        "science",
+        "archive",
+        "outdoor",
+        "community"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "one-ink-spot",
+        "paper": {
+          "l": [
+            0.955,
+            0.975
+          ],
+          "c": [
+            0.008,
+            0.02
+          ],
+          "h": [
+            135,
+            160
+          ]
+        },
+        "a": {
+          "l": [
+            0.3,
+            0.38
+          ],
+          "c": [
+            0.06,
+            0.09
+          ],
+          "h": [
+            150,
+            168
+          ]
+        },
+        "b": {
+          "l": [
+            0.47,
+            0.54
+          ],
+          "c": [
+            0.15,
+            0.19
+          ],
+          "h": [
+            [
+              345,
+              358
+            ],
+            [
+              250,
+              265
+            ],
+            [
+              35,
+              45
+            ]
+          ],
+          "names": [
+            "压花玫红 pressed rose",
+            "龙胆蓝 gentian blue",
+            "罂粟橙红 poppy"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.5,
+            0.6
+          ],
+          "c": [
+            0.1,
+            0.14
+          ],
+          "h": [
+            [
+              68,
+              88
+            ],
+            [
+              68,
+              88
+            ],
+            [
+              215,
+              235
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.2,
+            0.25
+          ],
+          "c": [
+            0.035,
+            0.06
+          ],
+          "h": [
+            150,
+            170
+          ]
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Alegreya",
+            "stack": "Alegreya, 'Iowan Old Style', 'Hoefler Text', Palatino, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "oldstyle-serif",
+            "google": "Alegreya",
+            "axes": "ital,wght@0,400..800;1,400..800"
+          },
+          {
+            "name": "Sorts Mill Goudy",
+            "stack": "'Sorts Mill Goudy', 'Hoefler Text', Palatino, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "oldstyle-serif",
+            "google": "Sorts Mill Goudy",
+            "axes": "ital@0;1"
+          },
+          {
+            "name": "Cardo",
+            "stack": "Cardo, 'Iowan Old Style', Palatino, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "oldstyle-serif",
+            "google": "Cardo",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          }
+        ],
+        "label": [
+          {
+            "name": "Alegreya Sans SC",
+            "stack": "'Alegreya Sans SC', 'Gill Sans', Optima, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "small-caps-sans",
+            "google": "Alegreya Sans SC",
+            "axes": "wght@500;700"
+          }
+        ],
+        "text": [
+          {
+            "name": "Alegreya",
+            "stack": "Alegreya, 'Iowan Old Style', 'Hoefler Text', Palatino, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "oldstyle-serif",
+            "google": "Alegreya",
+            "axes": "ital,wght@0,400..800;1,400..800"
+          },
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "opsz,wght@8..60,400..700"
+          }
+        ],
+        "num": [
+          {
+            "name": "Alegreya",
+            "stack": "Alegreya, 'Iowan Old Style', 'Hoefler Text', Palatino, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "oldstyle-serif",
+            "google": "Alegreya",
+            "axes": "ital,wght@0,400..800;1,400..800"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          }
+        ],
+        "label_case": [
+          "none",
+          "uppercase"
+        ],
+        "label_track": [
+          0.04,
+          0.1
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          500,
+          700
+        ],
+        "display_weight": [
+          400,
+          700
+        ],
+        "display_track": [
+          -0.01,
+          0.01
+        ],
+        "display_leading": [
+          1.0,
+          1.15
+        ],
+        "ratio": [
+          1.25,
+          1.414
+        ]
+      },
+      "shape": {
+        "language": [
+          "soft"
+        ],
+        "radius": [
+          6,
+          16
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          3,
+          4
+        ]
+      },
+      "divider": [
+        "stitch",
+        "dotted-leader",
+        "thick-thin"
+      ],
+      "entity_header": [
+        "specimen-sheet"
+      ],
+      "entity_token": [
+        "pin",
+        "dot"
+      ],
+      "numerals": [
+        "oldstyle"
+      ],
+      "nav": [
+        "lines-top-left",
+        "side-ticks"
+      ],
+      "map": {
+        "projection": [
+          "oblique",
+          "orbit"
+        ],
+        "material": [
+          "clay",
+          "paper"
+        ],
+        "pitch": [
+          34,
+          50
+        ],
+        "yaw": [
+          20,
+          36
+        ],
+        "wall_h": [
+          0.6,
+          1.0
+        ],
+        "light": [
+          "left",
+          "top"
+        ],
+        "dim": [
+          0.2,
+          0.3
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.45,
+          0.6
+        ],
+        "bounce": [
+          0.05,
+          0.12
+        ],
+        "press": [
+          0.97,
+          0.985
+        ]
+      },
+      "density": [
+        "airy"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体页头是一张标本台纸：衬纸色内框、顶角斜贴的透明胶带条、系着穿孔的采集签（眉标）、斜体大名、一根带叶的茎线",
+        "叶形（border-radius 0 70% 0 70%）当项目符号、章节号底座、实体标记；统计数字上的细茎线末端各长一片压花色的叶",
+        "缝线代替分隔线：虚线、圆头短划，顶栏下边缘也是缝线",
+        "数字用老式数字，标签用小型大写无衬线，英文斜体、中文用宋体"
+      ],
+      "watch": [
+        "“奶油纸 + 衬线 + 赭红”是最常见聚类：这里纸是微绿、墨水是森林绿、点缀是一朵压花的颜色（玫红、龙胆蓝、罂粟橙红，抽到哪种用哪种），不要换成赭红/陶土色",
+        "叶形是图形语言，不是插画：只用圆角造出，不画叶脉、不放植物剪贴画",
+        "不要做旧：没有咖啡渍、折痕、泛黄；标本感来自胶带条、采集签和缝线"
+      ],
+      "specimen_note": "微绿的衬纸色，墨绿标题。入口页的统计上方各有一根茎线和一片压花色的叶；实体列表一行一行，前面是叶形标记，行间是缝线；实体页头是一张标本台纸，带胶带条和采集签。",
+      "props": [
+        {
+          "name": "leaf",
+          "var": "--prop-leaf",
+          "off": "3px",
+          "what": "叶形：标记、章节号、步骤、时间线节点和阅读导航末端的叶片圆角；关掉后是小方角签。活动与植物、标本无关时关"
+        },
+        {
+          "name": "leaf-orn",
+          "var": "--prop-leaf-orn",
+          "off": "none",
+          "what": "散落的叶片装饰：眉标前的叶点、统计数字的茎叶、规则线端的叶、阅读导航当前项的叶"
+        },
+        {
+          "name": "strips",
+          "var": "--prop-strips",
+          "off": "none",
+          "what": "标本台纸页头的胶纸角条和采集签上的穿孔眼"
+        }
+      ]
+    },
+    {
+      "id": "library-catalog",
+      "name": {
+        "en": "Card Catalogue",
+        "cn": "卡片目录"
+      },
+      "mechanism": "library card catalogue and due-date slips",
+      "idea": "活动是一抽屉索引卡：打字机字体、一道点缀色线下的标题行、淡色横格、卡片底部的穿杆孔、右上角盖着“到期”印章；叠起来的卡片边缘当阴影，分隔卡的凸耳当导航。冷白的卡面，墨色是打字机色带的蓝黑。",
+      "fits": [
+        "library",
+        "archive",
+        "print",
+        "museum",
+        "application"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "one-ink-spot",
+        "paper": {
+          "l": [
+            0.945,
+            0.965
+          ],
+          "c": [
+            0.008,
+            0.02
+          ],
+          "h": [
+            [
+              288,
+              312
+            ],
+            [
+              225,
+              248
+            ],
+            [
+              150,
+              172
+            ]
+          ],
+          "names": [
+            "淡紫白卡面 lilac-white card",
+            "雾蓝白卡面 mist-blue card",
+            "淡青绿卡面 celadon card"
+          ]
+        },
+        "a": {
+          "l": [
+            0.22,
+            0.28
+          ],
+          "c": [
+            0.02,
+            0.05
+          ],
+          "h": [
+            270,
+            290
+          ]
+        },
+        "b": {
+          "l": [
+            0.42,
+            0.5
+          ],
+          "c": [
+            0.16,
+            0.21
+          ],
+          "h": [
+            [
+              298,
+              315
+            ],
+            [
+              25,
+              32
+            ],
+            [
+              150,
+              162
+            ]
+          ],
+          "names": [
+            "紫色印台 violet ink pad",
+            "红色印台 red ink pad",
+            "绿色印台 green ink pad"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.48,
+            0.56
+          ],
+          "c": [
+            0.1,
+            0.14
+          ],
+          "h": [
+            [
+              140,
+              160
+            ],
+            [
+              185,
+              200
+            ],
+            [
+              70,
+              85
+            ]
+          ],
+          "follow": "b"
+        },
+        "night": {
+          "l": [
+            0.19,
+            0.24
+          ],
+          "c": [
+            0.03,
+            0.06
+          ],
+          "h": [
+            285,
+            300
+          ]
+        },
+        "dark": "neutral-night"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Courier Prime",
+            "stack": "'Courier Prime', 'American Typewriter', 'Courier New', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', monospace",
+            "class": "typewriter",
+            "google": "Courier Prime",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          },
+          {
+            "name": "Cutive Mono",
+            "stack": "'Cutive Mono', 'American Typewriter', 'Courier New', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', monospace",
+            "class": "typewriter",
+            "google": "Cutive Mono"
+          },
+          {
+            "name": "Special Elite",
+            "stack": "'Special Elite', 'American Typewriter', 'Courier New', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', monospace",
+            "class": "typewriter",
+            "google": "Special Elite"
+          }
+        ],
+        "label": [
+          {
+            "name": "Courier Prime",
+            "stack": "'Courier Prime', 'American Typewriter', 'Courier New', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', monospace",
+            "class": "typewriter",
+            "google": "Courier Prime",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          },
+          {
+            "name": "Cutive Mono",
+            "stack": "'Cutive Mono', 'American Typewriter', 'Courier New', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', monospace",
+            "class": "typewriter",
+            "google": "Cutive Mono"
+          }
+        ],
+        "text": [
+          {
+            "name": "Source Serif 4",
+            "stack": "'Source Serif 4', 'Iowan Old Style', Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Source Serif 4",
+            "axes": "opsz,wght@8..60,400..700"
+          },
+          {
+            "name": "Literata",
+            "stack": "Literata, Charter, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Literata",
+            "axes": "opsz,wght@7..72,400..700"
+          },
+          {
+            "name": "Libre Baskerville",
+            "stack": "'Libre Baskerville', Baskerville, Georgia, 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "transitional-serif",
+            "google": "Libre Baskerville",
+            "axes": "wght@400;700"
+          }
+        ],
+        "num": [
+          {
+            "name": "Courier Prime",
+            "stack": "'Courier Prime', 'American Typewriter', 'Courier New', 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', monospace",
+            "class": "typewriter",
+            "google": "Courier Prime",
+            "axes": "ital,wght@0,400;0,700;1,400"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          },
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Serif SC",
+            "stack": "'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', serif",
+            "class": "cjk-serif",
+            "google": "Noto Serif SC",
+            "axes": "wght@400;600;700"
+          }
+        ],
+        "label_case": [
+          "uppercase",
+          "none"
+        ],
+        "label_track": [
+          0.04,
+          0.1
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          400,
+          700
+        ],
+        "display_weight": [
+          400,
+          700
+        ],
+        "display_track": [
+          -0.02,
+          0.0
+        ],
+        "display_leading": [
+          1.05,
+          1.2
+        ],
+        "ratio": [
+          1.2,
+          1.333
+        ]
+      },
+      "shape": {
+        "language": [
+          "tab"
+        ],
+        "radius": [
+          0,
+          3
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          2,
+          3
+        ]
+      },
+      "divider": [
+        "dotted-leader",
+        "double-rule",
+        "thick-thin"
+      ],
+      "entity_header": [
+        "index-card"
+      ],
+      "entity_token": [
+        "plate",
+        "stamp"
+      ],
+      "numerals": [
+        "lining-tabular"
+      ],
+      "nav": [
+        "tab-strip",
+        "lines-top-left"
+      ],
+      "map": {
+        "projection": [
+          "plan",
+          "oblique",
+          "orbit"
+        ],
+        "material": [
+          "paper",
+          "line"
+        ],
+        "pitch": {
+          "plan": [
+            80,
+            88
+          ],
+          "oblique": [
+            36,
+            48
+          ],
+          "orbit": [
+            36,
+            48
+          ]
+        },
+        "yaw": {
+          "plan": [
+            0,
+            20
+          ],
+          "oblique": [
+            14,
+            28
+          ],
+          "orbit": [
+            14,
+            28
+          ]
+        },
+        "wall_h": {
+          "plan": [
+            0.3,
+            0.6
+          ],
+          "oblique": [
+            0.5,
+            0.8
+          ],
+          "orbit": [
+            0.5,
+            0.8
+          ]
+        },
+        "light": [
+          "top"
+        ],
+        "dim": [
+          0.2,
+          0.3
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.35,
+          0.5
+        ],
+        "bounce": [
+          0.0,
+          0.06
+        ],
+        "press": [
+          0.97,
+          0.985
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "实体页头是一张索引卡：点缀色线下的标题行、淡色横格背景、底部穿杆孔，卡片下面用叠放的阴影画出一叠卡的边缘",
+        "房间·摊位号是盖在卡上的“到期印章”：描边、略斜 −2°、墨色用点缀色的文字版",
+        "导航是分隔卡凸耳：顶栏链接是并排的凸耳，当前一张与页面连成一体；楼层切换也是凸耳",
+        "列表前的标记是一张小卡（顶部一条实体色、底部一个小孔），分隔线是句点引导线"
+      ],
+      "watch": [
+        "打字机字体只给标题、标签和编号；正文用衬线，别把整页正文排成等宽，长文会很难读",
+        "纸色只是一点冷调，不是装饰色：点缀色（印台墨）只出现在印章和当前项上，别铺成渐变或大色块",
+        "横格、叠边、穿杆孔都是装饰层，要保证文字对比度的检查按卡面底色做，不按横线算"
+      ],
+      "specimen_note": "冷白的纸面，打字机体的标题下一道点缀色的线。顶栏是一排分隔卡凸耳；实体列表是一行行目录，前面是顶部带色的小卡，行尾盖着斜着的房号章；实体页头是一张叠在一摞卡上的索引卡。",
+      "props": [
+        {
+          "name": "ruled",
+          "var": "--prop-ruled",
+          "off": "none",
+          "what": "实体卡片上的淡色横格线"
+        },
+        {
+          "name": "rod",
+          "var": "--prop-rod",
+          "off": "0",
+          "what": "卡片底部的穿杆孔（比例，1 开 0 关）；关掉后卡片底部收短"
+        },
+        {
+          "name": "stack",
+          "var": "--prop-stack",
+          "off": "0 0 0 0 transparent",
+          "what": "卡片和弹层下面一叠卡片的边缘"
+        },
+        {
+          "name": "tilt",
+          "var": "--prop-tilt",
+          "off": "0",
+          "what": "到期章（房号标签）和空状态章的微倾（比例，1 开 0 关）"
+        }
+      ]
+    },
+    {
+      "id": "track-meet",
+      "name": {
+        "en": "Track & Field",
+        "cn": "田径场"
+      },
+      "mechanism": "athletics meet: lane lines, bibs, heat sheets",
+      "idea": "活动是一场田径赛：塑胶跑道当页面底，白色分道线当分隔线，号码布（四角有别针孔）当实体页头，成绩单一样的列表，内场的亮色当强调色，数字是模板刻字。斜切的平行四边形是“向前”的方向感。",
+      "fits": [
+        "sport",
+        "competition",
+        "outdoor",
+        "game",
+        "youth",
+        "exam"
+      ],
+      "weight": 1.0,
+      "canonical": false,
+      "palette": {
+        "structure": "tinted-ground",
+        "paper": {
+          "l": [
+            0.32,
+            0.38
+          ],
+          "c": [
+            0.09,
+            0.14
+          ],
+          "h": [
+            [
+              30,
+              42
+            ],
+            [
+              245,
+              258
+            ],
+            [
+              305,
+              318
+            ]
+          ],
+          "names": [
+            "红褐塑胶跑道 brick-red track",
+            "蓝色塑胶跑道 blue track",
+            "紫色塑胶跑道 violet track"
+          ]
+        },
+        "a": {
+          "l": [
+            0.94,
+            0.97
+          ],
+          "c": [
+            0.005,
+            0.02
+          ],
+          "h": [
+            85,
+            100
+          ]
+        },
+        "b": {
+          "l": [
+            0.8,
+            0.86
+          ],
+          "c": [
+            0.16,
+            0.19
+          ],
+          "h": [
+            [
+              128,
+              140
+            ],
+            [
+              92,
+              104
+            ],
+            [
+              52,
+              64
+            ]
+          ],
+          "names": [
+            "内场草绿 infield green",
+            "终点线黄 finish-line yellow",
+            "分道标橙 lane-marker orange"
+          ]
+        },
+        "climb": {
+          "l": [
+            0.78,
+            0.84
+          ],
+          "c": [
+            0.08,
+            0.12
+          ],
+          "h": [
+            225,
+            245
+          ]
+        },
+        "night": {
+          "l": [
+            0.2,
+            0.26
+          ],
+          "c": [
+            0.06,
+            0.1
+          ],
+          "h": [
+            [
+              28,
+              40
+            ],
+            [
+              245,
+              258
+            ],
+            [
+              305,
+              318
+            ]
+          ],
+          "follow": "paper"
+        },
+        "dark": "brand-ink-ground"
+      },
+      "type": {
+        "display": [
+          {
+            "name": "Big Shoulders Display",
+            "stack": "'Big Shoulders Display', 'DIN Condensed', 'Avenir Next Condensed', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Big Shoulders Display",
+            "axes": "wght@600;700;800;900"
+          },
+          {
+            "name": "Barlow Condensed",
+            "stack": "'Barlow Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Condensed",
+            "axes": "wght@600;700;800"
+          },
+          {
+            "name": "Bebas Neue",
+            "stack": "'Bebas Neue', 'DIN Condensed', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Bebas Neue"
+          }
+        ],
+        "label": [
+          {
+            "name": "Barlow Semi Condensed",
+            "stack": "'Barlow Semi Condensed', 'DIN Alternate', 'Avenir Next Condensed', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Semi Condensed",
+            "axes": "wght@500;600;700"
+          },
+          {
+            "name": "Barlow Condensed",
+            "stack": "'Barlow Condensed', 'DIN Condensed', 'Avenir Next Condensed', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Barlow Condensed",
+            "axes": "wght@600;700;800"
+          }
+        ],
+        "text": [
+          {
+            "name": "Barlow",
+            "stack": "Barlow, 'DIN Alternate', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Barlow",
+            "axes": "wght@400;500;600"
+          },
+          {
+            "name": "Hanken Grotesk",
+            "stack": "'Hanken Grotesk', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-grotesk",
+            "google": "Hanken Grotesk",
+            "axes": "wght@400;500;600"
+          }
+        ],
+        "num": [
+          {
+            "name": "Big Shoulders Stencil Display",
+            "stack": "'Big Shoulders Stencil Display', 'Big Shoulders Display', 'DIN Condensed', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-stencil",
+            "google": "Big Shoulders Stencil Display",
+            "axes": "wght@700;800;900"
+          },
+          {
+            "name": "Big Shoulders Display",
+            "stack": "'Big Shoulders Display', 'DIN Condensed', 'Avenir Next Condensed', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-condensed",
+            "google": "Big Shoulders Display",
+            "axes": "wght@600;700;800;900"
+          },
+          {
+            "name": "Saira Stencil One",
+            "stack": "'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "sans-stencil",
+            "google": "Saira Stencil One"
+          }
+        ],
+        "cjk": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "cjk_display": [
+          {
+            "name": "Noto Sans SC",
+            "stack": "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+            "class": "cjk-sans",
+            "google": "Noto Sans SC",
+            "axes": "wght@400;500;700"
+          }
+        ],
+        "label_case": [
+          "uppercase"
+        ],
+        "label_track": [
+          0.06,
+          0.14
+        ],
+        "label_stretch": [
+          "normal"
+        ],
+        "label_weight": [
+          600,
+          700
+        ],
+        "display_weight": [
+          700,
+          900
+        ],
+        "display_track": [
+          -0.01,
+          0.02
+        ],
+        "display_leading": [
+          0.82,
+          0.95
+        ],
+        "ratio": [
+          1.333,
+          1.5
+        ]
+      },
+      "shape": {
+        "language": [
+          "slanted"
+        ],
+        "radius": [
+          0,
+          2
+        ],
+        "chamfer": [
+          0,
+          0
+        ],
+        "rule_cap": [
+          4,
+          6
+        ]
+      },
+      "divider": [
+        "stripe-band",
+        "thick-thin",
+        "dotted-leader"
+      ],
+      "entity_header": [
+        "placard"
+      ],
+      "entity_token": [
+        "plate",
+        "flag"
+      ],
+      "numerals": [
+        "stencil",
+        "lining-tabular"
+      ],
+      "nav": [
+        "lines-top-left",
+        "chapter-rail"
+      ],
+      "map": {
+        "projection": [
+          "plan",
+          "exploded"
+        ],
+        "material": [
+          "clay"
+        ],
+        "pitch": {
+          "plan": [
+            80,
+            88
+          ],
+          "exploded": [
+            34,
+            46
+          ]
+        },
+        "yaw": {
+          "plan": [
+            -20,
+            20
+          ],
+          "exploded": [
+            -24,
+            24
+          ]
+        },
+        "wall_h": {
+          "plan": [
+            0.4,
+            0.8
+          ],
+          "exploded": [
+            0.6,
+            1.0
+          ]
+        },
+        "light": [
+          "top",
+          "left"
+        ],
+        "dim": [
+          0.16,
+          0.26
+        ]
+      },
+      "motion": {
+        "dur": [
+          0.28,
+          0.4
+        ],
+        "bounce": [
+          0.14,
+          0.24
+        ],
+        "press": [
+          0.94,
+          0.965
+        ]
+      },
+      "density": [
+        "compact"
+      ],
+      "texture": [
+        "none"
+      ],
+      "richness": [
+        "分隔线是三条白色分道线（2px、间距 4px），顶栏下沿也是；列表顶是 3px 白线，行间是 2px 暗线，像成绩单",
+        "实体页头是一块号码布：白底、四角别针孔（页面底色的圆）、顶部一条实体色赞助带、超大窄体校名；弹层和提示整块反相（重设令牌）",
+        "按钮与当前导航是平行四边形（clip-path，焦点环画在里面），带出向前的方向感；步骤编号是方块号码牌",
+        "数字用模板刻字（Stencil），统计放大成赛道大字；内场的亮色只当填色，字永远用深色"
+      ],
+      "watch": [
+        "“深色 + 荧光绿”容易变成电竞风：这里的底是塑胶跑道、线是白色、亮色是场地的颜色，不发光不渐变",
+        "斜切只给按钮/导航/标签这些“动”的东西；正文和卡片保持直角，否则整页晃眼",
+        "窄体大写在小字号下很挤：标签不低于 11px，字距别小于 0.06em，中文用常规字形"
+      ],
+      "specimen_note": "塑胶跑道一样的底，白色分道线。入口页是巨大的窄体标题和模板刻字数字；实体列表像成绩单，每行末尾一个别针号码牌；实体页头是白色号码布，顶上一条实体色赞助带。",
+      "props": [
+        {
+          "name": "bib",
+          "var": "--prop-bib",
+          "off": "0",
+          "what": "号码布的别针孔：实体页头四角和房号标签两端（比例，1 开 0 关）"
+        },
+        {
+          "name": "lanes",
+          "var": "--prop-lanes",
+          "off": "0",
+          "what": "白色跑道线：顶栏下沿、分隔线、实体页头规则线（比例，1 开 0 关）；关掉后各是一条实线"
+        },
+        {
+          "name": "slant",
+          "var": "--prop-slant",
+          "off": "0",
+          "what": "向前倾斜的平行四边形：按钮、当前标签、分段控件、小标签、提示（比例，1 开 0 关）；关掉后是矩形"
+        }
+      ]
+    }
+  ]
+}

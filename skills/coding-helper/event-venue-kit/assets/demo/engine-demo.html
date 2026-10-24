@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en" data-evk-lead="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EVK Engine Demo</title>
+<meta name="description" content="event-venue-kit: the venue map, the wayfinding router and the search on a fictional three-floor building with an open corridor, a two-floor atrium and a ring gallery round its void. Switch lead language, projection, material and token live, search, pick a start and an exhibitor, step through the route.">
+<!-- A minimal token block (BUILD-SPEC §2): the PAPER material, light + dark declared twice. This palette is the demo's own, not a recommendation;
+     the --m-* lines at the bottom of each block are what the canvas reads, and the buttons below change some of them live.
+     --m-select is the chosen room's EDGE (>= 3:1 on --m-slab); --m-select-fill is its tint (--m-room mixed 12 % toward --m-select). -->
+<style id="tokens">
+:root {
+  --paper: #F3F1EA; --paper-2: #E9E6DB; --rule: #C4BFAE; --text: #1B2528; --sub: #566366;
+  --a: #1E4D57; --a-text: #1E4D57; --on-a: #F6F4EC; --b: #D8452C; --b-text: #B8341C; --on-b: #FFFFFF; --climb: #1B7F76; --climb-text: #15665F; --focus: #2B5BD7;
+  --f-display: "Avenir Next", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --f-label: "Avenir Next", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --f-text: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --f-num: ui-monospace, "SF Mono", Menlo, Consolas, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", monospace;
+  --f-cjk: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --label-case: uppercase; --label-track: .12em; --label-stretch: normal; --label-weight: 650;
+  --display-weight: 650; --display-track: -.01em; --display-leading: 1.05;
+  --step--1: clamp(.74rem, .72rem + .1vw, .8rem); --step-0: 1rem; --step-1: 1.2rem; --step-2: 1.5rem; --step-3: clamp(1.7rem, 1.4rem + 1.2vw, 2.3rem);
+  --radius: 4px; --chamfer: 0px; --hair: 1px; --rule-2: 2px; --rule-3: 3px; --rule-cap: 5px;
+  --spring-dur: .45s; --spring-bounce: 0; --press-scale: .97; --fade-dur: .2s;
+  --gutter: 16px; --gap: 14px; --row-pad: 12px; --measure: 62ch; --hit: 44px;
+  /* the map */
+  --m-ground: #E9E6DB; --m-slab: #E9E6DB; --m-room: #FFFFFF; --m-block: #D4CFBF; --m-wall: #F8F6EF; --m-cap: #1E3B44; --m-text: #1B2528;
+  --m-route: #D8452C; --m-route-halo: #F8F6EF; --m-dash: #FFFFFF; --m-climb: #1B8C80; --m-select: #2A7F8E; --m-select-fill: #E5F0F1;
+  --m-projection: orbit; --m-material: paper; --m-token: badge; --m-pitch: 30; --m-yaw: 32; --m-wall-h: 1; --m-light: left; --m-dim: .26; --m-label-case: upper;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12191B; --paper-2: #182225; --rule: #2C3C40; --text: #E7EEEA; --sub: #A3B3B0;
+    --a: #8FD3CB; --a-text: #8FD3CB; --on-a: #12191B; --b: #FF7B5C; --b-text: #FF8E73; --on-b: #1A0E0A; --climb: #5AD6C6; --climb-text: #5AD6C6; --focus: #8FB1FF;
+    --m-ground: #182225; --m-slab: #1D2A2E; --m-room: #26373C; --m-block: #31454B; --m-wall: #3A5660; --m-cap: #E9F0EB; --m-text: #E7EEEA;
+    --m-route: #FF7B5C; --m-route-halo: #12191B; --m-dash: #FFFFFF; --m-climb: #5AD6C6; --m-select: #6CC3D1; --m-select-fill: #2E484E;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12191B; --paper-2: #182225; --rule: #2C3C40; --text: #E7EEEA; --sub: #A3B3B0;
+  --a: #8FD3CB; --a-text: #8FD3CB; --on-a: #12191B; --b: #FF7B5C; --b-text: #FF8E73; --on-b: #1A0E0A; --climb: #5AD6C6; --climb-text: #5AD6C6; --focus: #8FB1FF;
+  --m-ground: #182225; --m-slab: #1D2A2E; --m-room: #26373C; --m-block: #31454B; --m-wall: #3A5660; --m-cap: #E9F0EB; --m-text: #E7EEEA;
+  --m-route: #FF7B5C; --m-route-halo: #12191B; --m-dash: #FFFFFF; --m-climb: #5AD6C6; --m-select: #6CC3D1; --m-select-fill: #2E484E;
+}
+</style>
+<!-- zero-specificity stand-ins so the page is usable on its own; ../floor/base.css (next line) replaces them when it is there -->
+<style id="fallback">
+  :where(html) { background: var(--paper); color: var(--text); font-family: var(--f-text); line-height: 1.5; }
+  :where(body) { margin: 0; background: var(--paper); }
+  :where(.evk-map) { position: relative; overflow: hidden; height: clamp(360px, 62vh, 720px); background: var(--m-ground); }
+  :where(.evk-map canvas) { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+  :where(.evk-map-hint) { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0; padding: 7px 13px; background: var(--paper); color: var(--a-text); pointer-events: none; transition: opacity .5s; }
+  :where(.evk-map-hint.is-gone) { opacity: 0; }
+  :where(.evk-seg) { display: inline-flex; max-width: 100%; overflow-x: auto; border: 2px solid var(--a); }
+  :where(.evk-seg > button) { min-height: 44px; padding: 0 14px; border: 0; border-inline-end: 2px solid var(--a); background: transparent; color: var(--a-text); font: inherit; cursor: pointer; }
+  :where(.evk-seg > button[aria-pressed="true"]) { background: var(--a); color: var(--on-a); }
+  :where(.evk-btn) { display: inline-flex; align-items: center; gap: .5em; min-height: 44px; padding: 0 18px; border: 0; background: var(--a); color: var(--on-a); font: inherit; cursor: pointer; }
+  :where(.evk-btn--quiet) { background: var(--paper-2); color: var(--text); }
+  :where(.evk-search) { box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 .8em; border: 0; border-bottom: 2px solid var(--a); border-radius: var(--radius); background: var(--paper-2); color: var(--text); font: inherit; }
+  :where(.evk-steps) { list-style: none; margin: 0; padding: 0; }
+  :where(.evk-steps > li) { padding: 9px 4px 9px 14px; border-bottom: 1px solid var(--rule); }
+  :where(.evk-steps > li.is-current) { background: var(--paper-2); }
+</style>
+<link rel="stylesheet" href="../floor/base.css">
+<style>
+  /* demo furniture only */
+  .demo { max-width: 1240px; margin: 0 auto; padding: 18px var(--gutter) 40px; }
+  .demo-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; margin-bottom: 14px; }
+  .demo-head h1 { margin: 0; font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-3); line-height: 1.05; letter-spacing: var(--display-track); }
+  .demo-head p { margin: 0; color: var(--sub); font-size: var(--step--1); max-width: 56ch; }
+  .demo-grid { display: grid; gap: 16px; align-items: start; }
+  @media (min-width: 960px) { .demo-grid { grid-template-columns: minmax(0, 1fr) 372px; } .demo-stage .evk-map { height: clamp(520px, 78vh, 820px); } }
+  .demo-stage { min-width: 0; }
+  @media (min-width: 960px) { .demo-stage { position: sticky; top: 14px; } }
+
+  /* bilingual pairs, the demo's own copy of the rule: the FIRST child is the primary language (role layer: size, colour, order);
+     which script it is decides the font and case (script layer) */
+  .demo .evk-k > :first-child { color: inherit; font-size: 1em; }
+  .demo .evk-k > :last-child:not(:first-child) { margin-inline-start: .45em; font-size: .86em; color: var(--sub); }
+  .demo .evk-k .en { font-family: var(--f-label); }
+  .demo .evk-k .cn { font-family: var(--f-cjk); letter-spacing: .04em; text-transform: none; }
+  .demo [aria-pressed="true"] .evk-k > :last-child:not(:first-child), .demo .evk-btn--primary .evk-k > :last-child:not(:first-child) { color: inherit; opacity: .8; }
+  .demo .evk-map-hint.evk-k > :last-child:not(:first-child) { color: inherit; opacity: .75; }
+
+  .demo-look > summary { display: flex; align-items: baseline; gap: 10px; min-height: 44px; cursor: pointer; font-family: var(--f-label); font-size: var(--step--1); font-weight: var(--label-weight); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--a-text); }
+  .demo-look > summary small { font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--sub); }
+  .demo-look-body { display: grid; gap: 14px; padding-top: 6px; }
+  .demo-panel { display: grid; gap: 14px; min-width: 0; }
+  .demo-group { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+  .demo-group > legend, .demo-group > .lab, .lab { padding: 0; font-family: var(--f-label); font-size: var(--step--1); font-weight: var(--label-weight); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--sub); }
+  .demo-group > legend .evk-k > :first-child, .lab .evk-k > :first-child { color: var(--text); }
+  .demo-group code { font-family: var(--f-num); font-size: .9em; letter-spacing: 0; text-transform: none; }
+  .demo-seg { display: flex; flex-wrap: wrap; border: 0; }
+  .demo-seg.evk-seg { flex-wrap: wrap; overflow: visible; }
+  .demo-seg > button { flex: 1 1 auto; }
+  .demo-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: flex-start; }
+  .demo-sliders { display: grid; grid-template-columns: auto 1fr 3.2em; gap: 2px 10px; align-items: center; font-size: var(--step--1); }
+  .demo-sliders input[type=range] { width: 100%; min-height: 32px; margin: 0; accent-color: var(--a); }
+  .demo-sliders output { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; color: var(--sub); }
+  .demo-sel { display: grid; gap: 6px; }
+  .demo-sel select { width: 100%; min-height: 44px; padding: 0 .7em; border: 0; border-bottom: 2px solid var(--a); border-radius: var(--radius); background: var(--paper-2); color: var(--text); font: inherit; }
+
+  /* search: a combobox over a short list */
+  .demo-find { position: relative; display: grid; gap: 6px; }
+  .demo-found { position: absolute; z-index: 5; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 0; list-style: none; max-height: min(52vh, 360px); overflow: auto; background: var(--paper); border: 1px solid var(--rule); border-top: 2px solid var(--a); box-shadow: 0 8px 22px rgb(0 0 0 / .14); }
+  .demo-found[hidden] { display: none; }
+  .demo-found li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 10px; min-height: 44px; padding: 6px 12px; cursor: pointer; border-bottom: 1px solid var(--rule); }
+  .demo-found li:last-child { border-bottom: 0; }
+  .demo-found li[aria-selected="true"], .demo-found li:hover { background: var(--paper-2); }
+  .demo-found .nm { display: grid; gap: 1px; min-width: 0; }
+  .demo-found .nm b { font-weight: 600; overflow-wrap: anywhere; }
+  .demo-found .nm small { color: var(--sub); font-size: .8rem; overflow-wrap: anywhere; }
+  .demo-found .rt { display: grid; justify-items: end; gap: 1px; font-family: var(--f-num); font-size: .74rem; color: var(--sub); white-space: nowrap; }
+  .demo-found .why { opacity: .8; }
+  .demo-found .none { display: block; color: var(--sub); cursor: default; }
+
+  .demo-card { display: grid; gap: 8px; padding: 12px 14px 14px; border-top: var(--rule-cap, 5px) solid var(--e, var(--a)); background: var(--paper-2); }
+  .demo-card[hidden] { display: none; }
+  .demo-card h2 { margin: 0; font-family: var(--f-display); font-size: var(--step-1); font-weight: var(--display-weight); line-height: 1.15; }
+  .demo-card p { margin: 0; color: var(--sub); font-size: var(--step--1); }
+  .demo-sw { display: inline-block; width: .8em; height: .8em; margin-right: .45em; vertical-align: -.05em; background: var(--e, var(--a)); border: 1px solid var(--rule); }
+  .demo-found .demo-sw { margin: 0; width: 1em; height: 1em; }
+  .demo-run[hidden] { display: none; }
+  .demo-run { display: grid; gap: 8px; }
+  .demo-run .sum { margin: 0; font-family: var(--f-num); font-size: var(--step--1); color: var(--sub); }
+  .demo-run .nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .demo-steps { max-height: 46vh; overflow: auto; }
+  .demo-steps > li { padding: 0 !important; }
+  .demo-steps > li::before { top: 11px !important; z-index: 1; }
+  .demo-steps button { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 9px 6px 9px 42px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .demo-steps .h { font-family: var(--f-label); font-size: var(--step--1); font-weight: var(--label-weight); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--sub); }
+  .demo-steps li.is-current .h { color: var(--b-text); }
+  .demo-steps li.is-climb .h { color: var(--climb-text, var(--climb)); }
+  .demo-steps .t { font-size: .92rem; line-height: 1.5; }
+  .demo-steps .t2 { font-size: .78rem; line-height: 1.45; color: var(--sub); }
+  .demo-steps .is-zh-line { font-family: var(--f-cjk); }
+  .demo-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .demo-map-tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; }
+  .evk-map-reset[hidden] { display: none; }
+  .demo-warn { margin: 0; font-size: var(--step--1); color: var(--b-text); }
+  .demo-foot { margin: 16px 0 0; color: var(--sub); font-size: var(--step--1); max-width: 88ch; }
+  .demo-foot code { font-family: var(--f-num); font-size: .92em; }
+</style>
+</head>
+<body>
+<main class="demo" id="main">
+  <header class="demo-head">
+    <h1><span class="evk-k"><span class="en">Pier Nine Hall</span><span class="cn">九号码头展馆</span></span></h1>
+    <p>A fictional three-floor venue with an open corridor (3F), a two-floor atrium (1F + 2F) and a ring gallery round the atrium void (2F). Drag to turn it, tap a token or a room, search, choose where you are and who you are going to see. Everything on the left is read from CSS tokens; the buttons only change them.</p>
+  </header>
+
+  <div class="demo-grid">
+    <section class="demo-stage" aria-label="Map">
+      <div class="evk-map" id="map">
+        <canvas></canvas>
+        <p class="evk-map-hint evk-k"><span class="en">Drag to rotate</span><span class="cn">拖动旋转</span></p>
+        <div class="demo-map-tools"><button class="evk-btn evk-btn--quiet evk-btn--sm evk-map-reset" type="button" hidden><span class="evk-k"><span class="en">Reset</span><span class="cn">复位</span></span></button></div>
+      </div>
+      <p class="demo-warn" id="warn" hidden></p>
+    </section>
+
+    <aside class="demo-panel" aria-label="Controls">
+      <div class="demo-find">
+        <label class="lab" for="q"><span class="evk-k"><span class="en">Find a booth</span><span class="cn">找展位</span></span></label>
+        <input id="q" class="evk-search" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" role="combobox" aria-expanded="false" aria-controls="found" aria-autocomplete="list" placeholder="loom · 手作 · 203 · craft · west">
+        <ul id="found" class="demo-found" role="listbox" aria-label="Matches" hidden></ul>
+      </div>
+
+      <div class="demo-sel">
+        <label class="lab" for="from"><span class="evk-k"><span class="en">I am at</span><span class="cn">我现在在</span></span></label>
+        <select id="from"></select>
+        <label class="lab" for="to"><span class="evk-k"><span class="en">Go to</span><span class="cn">去哪里</span></span></label>
+        <select id="to"></select>
+        <div class="demo-row"><span class="lab"><span class="evk-k"><span class="en">Via</span><span class="cn">方式</span></span></span><div class="evk-seg demo-seg" id="seg-via" role="group" aria-label="Via"></div></div>
+      </div>
+
+      <div class="demo-card" id="card" hidden>
+        <h2 id="card-name"></h2>
+        <p id="card-where"></p>
+        <div class="demo-row"><button class="evk-btn evk-btn--primary" id="go" type="button"><span class="evk-k"><span class="en">Directions</span><span class="cn">怎么走</span></span></button><button class="evk-btn evk-btn--quiet" id="drop" type="button"><span class="evk-k"><span class="en">Clear</span><span class="cn">取消</span></span></button></div>
+      </div>
+
+      <div class="demo-run" id="run" hidden>
+        <p class="sum" id="sum"></p>
+        <ol class="evk-steps demo-steps" id="steps"></ol>
+        <div class="nav">
+          <button class="evk-btn evk-btn--quiet" id="prev" type="button"><span class="evk-k"><span class="en">Back</span><span class="cn">上一步</span></span></button>
+          <button class="evk-btn evk-btn--quiet" id="all" type="button" aria-pressed="false"><span class="evk-k"><span class="en">Overview</span><span class="cn">全览</span></span></button>
+          <button class="evk-btn evk-btn--primary" id="next" type="button"><span class="evk-k"><span class="en">Next</span><span class="cn">下一步</span></span></button>
+        </div>
+        <button class="evk-btn evk-btn--quiet" id="clear" type="button"><span class="evk-k"><span class="en">Change route</span><span class="cn">重新选择</span></span></button>
+      </div>
+      <p class="demo-live" id="live" aria-live="polite"></p>
+
+      <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Floor</span><span class="cn">楼层</span></span></legend><div class="evk-seg demo-seg" id="seg-floor" role="group" aria-label="Floor"></div></fieldset>
+
+      <details class="demo-look" open>
+        <summary><span class="evk-k"><span class="en">Look</span><span class="cn">外观</span></span> <small>the tokens the canvas reads</small></summary>
+        <div class="demo-look-body">
+          <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Lead language</span><span class="cn">主语言</span></span> <code>data-evk-lead</code></legend><div class="evk-seg demo-seg" id="seg-lead" role="group" aria-label="Lead language"></div></fieldset>
+          <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Projection</span><span class="cn">投影</span></span> <code>--m-projection</code></legend><div class="evk-seg demo-seg" id="seg-projection" role="group" aria-label="Projection"></div></fieldset>
+          <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Material</span><span class="cn">材质</span></span> <code>--m-material</code></legend><div class="evk-seg demo-seg" id="seg-material" role="group" aria-label="Material"></div></fieldset>
+          <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Token</span><span class="cn">标记</span></span> <code>--m-token</code></legend><div class="evk-seg demo-seg" id="seg-token" role="group" aria-label="Token"></div></fieldset>
+          <div class="demo-row">
+            <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Light</span><span class="cn">光</span></span></legend><div class="evk-seg demo-seg" id="seg-light" role="group" aria-label="Light"></div></fieldset>
+            <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Theme</span><span class="cn">明暗</span></span></legend><div class="evk-seg demo-seg" id="seg-theme" role="group" aria-label="Theme"></div></fieldset>
+            <fieldset class="demo-group"><legend><span class="evk-k"><span class="en">Directions</span><span class="cn">路线文字</span></span></legend><div class="evk-seg demo-seg" id="seg-lang" role="group" aria-label="Directions language"></div></fieldset>
+          </div>
+          <div class="demo-sliders" id="sliders"></div>
+        </div>
+      </details>
+    </aside>
+  </div>
+
+  <p class="demo-foot">Scripts: <code>search.js</code> (name / group / room search), <code>wayfind.js</code> (venue model, router, directions text) and <code>venue-map.js</code> (the canvas map). Venue data: <code>venue.json</code>, validated by <code>../engine/venue.schema.json</code>: <code>areas[]</code> (the 3F west corridor, the 1F atrium floor) are open zones with no walls, a <code>void</code> block (the 2F atrium) is an opening to the floor below, the 2F gallery is an area with <code>holes</code> (a ring round that void), floors have a <code>short</code> name for sentences (2F) beside the heading name (Second Floor), and the Tide Radio kiosk stands on an open floor by <code>at</code> + <code>floor</code>. The lead language is <code>&lt;html data-evk-lead&gt;</code>: the map follows it. Keyboard on the map: arrows turn and tilt, + / − zoom, [ and ] step through exhibitors, 0 resets.</p>
+</main>
+
+<!-- the same data as venue.json, inline, so this page also works from file:// (fetch is refused there) -->
+<script type="application/json" id="venue-data">{"unit":"m","name":{"en":"Pier Nine Hall","cn":"九号码头展馆"},"event":{"en":"Harbour Science & Craft Fair","cn":"港湾科学与手作博览会"},"terms":{"booth":{"en":"booth","cn":"展位"},"room":{"en":"Room","cn":"展室"},"tags":{"craft":{"en":"Craft","cn":"手作"},"science":{"en":"Science","cn":"科学"},"space":{"en":"Space","cn":"太空"},"robotics":{"en":"Robotics","cn":"机器人"},"radio":{"en":"Radio","cn":"无线电"},"print":{"en":"Print","cn":"印刷"}}},"floors":[{"id":"1F","level":1,"name":{"en":"First Floor","cn":"一层"},"short":{"en":"1F","cn":"1 层"},"outline":[[0,0],[30,0],[30,24],[7,24],[7,19],[0,19]],"lobby":{"at":[15,21],"name":{"en":"1F Lobby","cn":"一层大堂"}},"entrance":{"at":[15,24],"width":3.4,"name":{"en":"Entrance","cn":"入口"}},"rooms":[{"id":"HALL","label":"H1","name":{"en":"Grand Hall","cn":"大展厅"},"poly":[[0,0],[17,0],[17,8.2],[0,8.2]],"doors":[[5,8.2,2],[12.5,8.2,2]],"layout":{"cols":2}},{"id":"101","label":"101","name":{"en":"Workshop Room","cn":"工坊"},"poly":[[19.5,0],[30,0],[30,8.2],[19.5,8.2]],"doors":[[24.7,8.2,1.6]]}],"areas":[{"id":"ATRIUM","kind":"open","name":{"en":"atrium","cn":"中庭"},"poly":[[16.4,8.4],[25.2,8.4],[25.2,18.4],[16.4,18.4]]}],"blocks":[{"kind":"stairs","id":"S1","poly":[[10,10.5],[13.2,10.5],[13.2,16.9],[10,16.9]],"doors":[[11.6,16.9]],"links":"S1"},{"kind":"lift","id":"L1","poly":[[13.2,10.5],[15.6,10.5],[15.6,13.1],[13.2,13.1]],"doors":[[14.4,10.5]],"links":"L1"},{"kind":"wc","id":"WC1","poly":[[13.2,13.1],[15.6,13.1],[15.6,16.9],[13.2,16.9]]},{"kind":"stairs","id":"S2","poly":[[26,10.5],[30,10.5],[30,16.5],[26,16.5]],"doors":[[26,13.5]],"links":"S2","label":{"en":"stairs at the east end","cn":"东侧楼梯"}},{"kind":"office","id":"CLK","poly":[[7,19],[12,19],[12,24],[7,24]],"label":{"en":"Cloakroom","cn":"寄存处"}},{"kind":"office","id":"INFO","poly":[[18.5,19],[24.5,19],[24.5,24],[18.5,24]],"label":{"en":"Info & Tickets","cn":"咨询与票务"}}]},{"id":"2F","level":2,"name":{"en":"Second Floor","cn":"二层"},"short":{"en":"2F","cn":"2 层"},"outline":[[0,0],[30,0],[30,24],[7,24],[7,19],[0,19]],"lobby":{"at":[14,19.5],"name":{"en":"2F Lobby","cn":"二层大堂"}},"rooms":[{"id":"201","label":"201","name":{"en":"Glass & Green Room","cn":"玻璃与绿植室"},"poly":[[0,0],[9.5,0],[9.5,8.2],[0,8.2]],"doors":[[4.7,8.2,1.4]]},{"id":"202","label":"202","name":{"en":"Tinkering Room","cn":"拆装室"},"poly":[[9.5,0],[19.5,0],[19.5,8.2],[9.5,8.2]],"doors":[[14.5,8.2,1.4]]},{"id":"203","label":"203","name":{"en":"Clay & Kite Room","cn":"陶与风筝室"},"poly":[[19.5,0],[30,0],[30,8.2],[19.5,8.2]],"doors":[[24.7,8.2,1.4]]},{"id":"204","label":"204","name":{"en":"Star Room","cn":"星空室"},"poly":[[17.5,16.5],[30,16.5],[30,24],[17.5,24]],"doors":[[21,16.5,1.4]]}],"areas":[{"id":"GALLERY","kind":"corridor","name":{"en":"atrium gallery","cn":"中庭回廊"},"poly":[[16,8.4],[26,8.4],[26,16.4],[16,16.4]],"holes":[[[17.8,10.6],[24,10.6],[24,14.4],[17.8,14.4]]]}],"blocks":[{"kind":"stairs","id":"S1","poly":[[10,10.5],[13.2,10.5],[13.2,16.9],[10,16.9]],"doors":[[11.6,16.9]],"links":"S1"},{"kind":"lift","id":"L1","poly":[[13.2,10.5],[15.6,10.5],[15.6,13.1],[13.2,13.1]],"doors":[[14.4,10.5]],"links":"L1"},{"kind":"wc","id":"WC2","poly":[[13.2,13.1],[15.6,13.1],[15.6,16.9],[13.2,16.9]]},{"kind":"void","id":"ATR","poly":[[17.8,10.6],[24,10.6],[24,14.4],[17.8,14.4]],"label":{"en":"Atrium, open to 1F","cn":"中庭 · 下通一层"}},{"kind":"stairs","id":"S2","poly":[[26,10.5],[30,10.5],[30,16.5],[26,16.5]],"doors":[[26,13.5]],"links":"S2","label":{"en":"stairs at the east end","cn":"东侧楼梯"}},{"kind":"office","id":"STAFF","poly":[[0,14.5],[6,14.5],[6,19],[0,19]],"label":{"en":"Staff Room","cn":"工作人员室"}},{"kind":"solid","id":"STO","poly":[[7,19],[12,19],[12,24],[7,24]],"label":{"en":"Storage","cn":"储藏室"}}]},{"id":"3F","level":3,"name":{"en":"Third Floor","cn":"三层"},"short":{"en":"3F","cn":"3 层"},"outline":[[0,0],[30,0],[30,24],[7,24],[7,19],[0,19]],"lobby":{"at":[14,19.5],"name":{"en":"3F Lobby","cn":"三层大堂"}},"rooms":[{"id":"301","label":"301","name":{"en":"Sun Lab","cn":"日光实验室"},"poly":[[0,0],[12,0],[12,8.2],[0,8.2]],"doors":[[6,8.2,1.4]]},{"id":"302","label":"302","name":{"en":"Pixel Reef","cn":"像素珊瑚厅"},"poly":[[18,0],[30,0],[30,8.2],[18,8.2]],"doors":[[24,8.2,1.4]]}],"areas":[{"id":"WEST","kind":"corridor","name":{"en":"west corridor","cn":"西走廊"},"poly":[[0,8.4],[9.6,8.4],[9.6,10.3],[0,10.3]]}],"blocks":[{"kind":"office","id":"MEET","poly":[[0,10.5],[6,10.5],[6,14.5],[0,14.5]],"label":{"en":"Meeting Room","cn":"会议室"}},{"kind":"stairs","id":"S1","poly":[[10,10.5],[13.2,10.5],[13.2,16.9],[10,16.9]],"doors":[[11.6,16.9]],"links":"S1"},{"kind":"lift","id":"L1","poly":[[13.2,10.5],[15.6,10.5],[15.6,13.1],[13.2,13.1]],"doors":[[14.4,10.5]],"links":"L1"},{"kind":"wc","id":"WC3","poly":[[13.2,13.1],[15.6,13.1],[15.6,16.9],[13.2,16.9]]},{"kind":"stairs","id":"S2","poly":[[26,10.5],[30,10.5],[30,16.5],[26,16.5]],"doors":[[26,13.5]],"links":"S2","label":{"en":"stairs at the east end","cn":"东侧楼梯"}},{"kind":"office","id":"STAFF","poly":[[0,14.5],[6,14.5],[6,19],[0,19]],"label":{"en":"Staff Room","cn":"工作人员室"}},{"kind":"office","id":"CAFE","poly":[[18.5,19],[24.5,19],[24.5,24],[18.5,24]],"label":{"en":"Cafe Counter","cn":"咖啡角"}}]}],"entities":[{"id":"kelp","name":{"en":"Kelp & Co. Bioplastics","cn":"海带生物塑料"},"short":"Kelp","color":"#2F8F6B","room":"HALL","booth":"01","tags":["materials","sustainability"]},{"id":"orbital","name":{"en":"Orbital Kitchen","cn":"轨道厨房"},"short":"Orbital","color":"#E4572E","room":"HALL","booth":"02","tags":["food","space"]},{"id":"tideclock","name":{"en":"Tideclock Works","cn":"潮汐钟表坊"},"short":"Tideclock","color":"#1F6FB2","room":"HALL","booth":"03","tags":["craft","engineering"]},{"id":"paperlab","name":{"en":"Paper Lab","cn":"纸上实验室"},"short":"Paper Lab","color":"#F2B134","room":"HALL","booth":"04","tags":["paper","craft"]},{"id":"loomhouse","name":{"en":"Loomhouse","cn":"织机屋"},"short":"Loomhouse","color":"#8E4A9E","room":"101","booth":"01","tags":["textile","craft"]},{"id":"ironbird","name":{"en":"Ironbird Forge","cn":"铁鸟锻坊"},"short":"Ironbird","color":"#5B6770","room":"101","booth":"02","tags":["metal","craft"]},{"id":"lumen","name":{"en":"Lumen Glassworks","cn":"流明玻璃"},"short":"Lumen","color":"#17A2B8","room":"201","booth":"01","tags":["glass","craft"]},{"id":"mosswire","name":{"en":"Moss & Wire","cn":"苔与线"},"short":"Moss & Wire","color":"#5E8C31","room":"201","booth":"02","tags":["plants","robotics"]},{"id":"tinker","name":{"en":"Tinker Tide Robotics","cn":"潮玩机器人"},"short":"Tinker","color":"#C2185B","room":"202","booth":"01","tags":["robotics","kids"]},{"id":"saltair","name":{"en":"Salt & Air Kites","cn":"盐风风筝"},"short":"Salt & Air","color":"#3F51B5","room":"203","booth":"01","tags":["kites","outdoor"]},{"id":"echo","name":{"en":"Echo Pottery","cn":"回声陶艺"},"short":"Echo","color":"#A66A3F","room":"203","booth":"02","tags":["clay","craft"]},{"id":"starlight","name":{"en":"Starlight Astronomy Club","cn":"星光天文社"},"short":"Starlight","color":"#1B2A5C","room":"204","booth":"01","tags":["space","science"]},{"id":"sunbeam","name":{"en":"Sunbeam Solar Lab","cn":"日光太阳能实验室"},"short":"Sunbeam","color":"#FFD43B","room":"301","booth":"01","tags":["energy","science"]},{"id":"pixelreef","name":{"en":"Pixel Reef Studio","cn":"像素珊瑚工作室"},"short":"Pixel Reef","color":"#FF6F91","room":"302","booth":"01","tags":["digital","art"]},{"id":"inkwell","name":{"en":"Inkwell Press","cn":"墨池印社"},"short":"Inkwell","color":"#6A4CC8","room":"WEST","booth":"05","tags":["print","craft"]},{"id":"beacon","name":{"en":"Beacon Signal Club","cn":"灯塔信号社"},"short":"Beacon","color":"#9AA81B","room":"WEST","booth":"06","tags":["radio","electronics"]},{"id":"driftwood","name":{"en":"Driftwood Joinery","cn":"浮木木作"},"short":"Driftwood","color":"#0E7C86","room":"WEST","booth":"07","tags":["wood","craft"]},{"id":"lanterns","name":{"en":"Atrium Lanterns","cn":"中庭灯笼"},"short":"Lanterns","color":"#D97706","room":"ATRIUM","booth":"01","at":[20.8,13.4],"tags":["light","craft"]},{"id":"driftmap","name":{"en":"Driftmap Cartographers","cn":"漂图制图社"},"short":"Driftmap","color":"#B5483A","room":"GALLERY","booth":"01","at":[16.9,12.5],"tags":["maps","craft"]},{"id":"saltprint","name":{"en":"Salt Print Studio","cn":"盐印工作室"},"short":"Salt Print","color":"#2C6E91","room":"GALLERY","booth":"02","at":[22.4,15.4],"tags":["print","craft"]},{"id":"tidaltextiles","name":{"en":"Tidal Textiles","cn":"潮纹织物"},"short":"Tidal","color":"#7A9A2E","room":"GALLERY","booth":"03","tags":["textile","craft"]},{"id":"tideradio","name":{"en":"Tide Radio Kiosk","cn":"潮声电台"},"short":"Tide Radio","color":"#6D4C41","floor":"1F","at":[3.5,14],"booth":"K1","tags":["radio","media"]}]}</script>
+<script src="../engine/search.js"></script>
+<script src="../engine/wayfind.js"></script>
+<script src="../engine/venue-map.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $("map"), canvas = stage.querySelector("canvas"), root = document.documentElement;
+  var inline = JSON.parse($("venue-data").textContent);
+
+  if (location.protocol === "file:" || !window.fetch) boot(inline);
+  else fetch("venue.json").then(function (r) { return r.ok ? r.json() : inline; }).catch(function () { return inline; }).then(boot);
+
+  function boot(venue) {
+    var wf = EVK.wayfind.create(venue), model = wf.model;
+    /* the map is given no `lead`: it follows <html data-evk-lead>, which the Lead language control below changes */
+    var state = { lang: "both", via: "stairs", floor: null, plan: null, step: -1, sel: null };
+    var map = new EVK.VenueMap(canvas, venue, {
+      onSelect: function (id) { choose(id); if (!id) map.focusRoom(null); },
+      onRoom: function (rid) { map.focusRoom(map.room === rid ? null : rid); },
+      onFloor: function (fid) { setFloor(fid); }
+    });
+    window.demoMap = map; window.demoRouter = wf;       // for poking at in the console
+    function lead() { return root.getAttribute("data-evk-lead") === "zh" ? "zh" : "en"; }
+
+    if (model.warnings.length) { var w = $("warn"); w.hidden = false; w.textContent = model.warnings.join(" · "); }
+
+    /* ---- segmented controls: a row of toggle buttons, one pressed. A label with a second language is a bilingual pair. ---- */
+    function seg(id, options, current, onChange) {
+      var host = $(id);
+      function paint(v) { Array.prototype.forEach.call(host.children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === v)); }); }
+      options.forEach(function (o) {
+        var b = document.createElement("button");
+        b.type = "button"; b.dataset.v = o[0];
+        b.innerHTML = o[2] ? '<span class="evk-k"><span class="en">' + o[1] + '</span><span class="cn">' + o[2] + '</span></span>' : '<span>' + o[1] + '</span>';
+        b.addEventListener("click", function () { paint(o[0]); onChange(o[0]); });
+        host.appendChild(b);
+      });
+      paint(current);
+      return paint;
+    }
+    function token(name, value) { stage.style.setProperty(name, value); map.refresh(); }
+
+    /* ---- the lead language: one attribute on <html>; bilingual pairs put the lead first (the markup contract), the map follows by itself ---- */
+    function orderPairs() {
+      var zh = lead() === "zh";
+      Array.prototype.forEach.call(document.querySelectorAll(".evk-k"), function (k) {
+        var en = k.querySelector(":scope > .en"), cn = k.querySelector(":scope > .cn");
+        if (en && cn) k.insertBefore(zh ? cn : en, zh ? en : cn);
+      });
+    }
+    function setLead(v) {
+      root.setAttribute("data-evk-lead", v); root.lang = v === "zh" ? "zh-CN" : "en";
+      orderPairs();
+      renderSteps(); announce(); renderFound(); if (state.sel) fillCard(state.sel); fillSelects();
+    }
+    var paintLead = seg("seg-lead", [["en", "English first", "英文优先"], ["zh", "Chinese first", "中文优先"]], lead(), function (v) { setLead(v); });
+
+    /* the hint follows what a drag really does in this projection: map.dragMode() is "rotate" (orbit, exploded, plan) or "pan" (oblique);
+       the map root also carries it as data-evk-drag, which is what a stylesheet-only hint would read */
+    function paintHint() {
+      var h = document.querySelector("#map .evk-map-hint"), pan = map.dragMode() === "pan";
+      if (!h) return;
+      h.querySelector(".en").textContent = pan ? "Drag to pan" : "Drag to rotate";
+      h.querySelector(".cn").textContent = pan ? "拖动平移" : "拖动旋转";
+    }
+    seg("seg-projection", [["orbit", "orbit", "环绕"], ["oblique", "oblique", "斜"], ["exploded", "exploded", "爆炸"], ["plan", "plan", "平面"]], "orbit", function (v) { token("--m-projection", v); paintHint(); });
+    seg("seg-material", [["paper", "paper", "纸"], ["line", "line", "线"], ["clay", "clay", "泥"], ["blueprint", "blueprint", "蓝图"], ["riso", "riso", "孔版"]], "paper", function (v) { token("--m-material", v); });
+    seg("seg-token", [["badge", "badge", "徽章"], ["pin", "pin", "图钉"], ["plate", "plate", "号牌"], ["dot", "dot", "圆点"], ["flag", "flag", "旗"], ["stamp", "stamp", "邮票"]], "badge", function (v) { token("--m-token", v); });
+    seg("seg-light", [["left", "left", "左"], ["right", "right", "右"], ["top", "top", "顶"]], "left", function (v) { token("--m-light", v); });
+    seg("seg-theme", [["auto", "auto", "自动"], ["light", "light", "明"], ["dark", "dark", "暗"]], "auto", function (v) { if (v === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", v); });
+    seg("seg-lang", [["both", "EN+中", ""], ["zh", "中", ""], ["en", "EN", ""]], "both", function (v) { state.lang = v; renderSteps(); announce(); if (state.sel) fillCard(state.sel); });
+    seg("seg-via", [["stairs", "stairs", "楼梯"], ["lift", "lift", "电梯"], ["any", "either", "都可"]], "stairs", function (v) { state.via = v; if (state.plan) route(); });
+
+    /* ---- sliders write tokens too ---- */
+    [["Pitch", "俯仰", "--m-pitch", 16, 84, 1, 30, ""], ["Yaw", "转角", "--m-yaw", -60, 60, 1, 32, ""], ["Wall", "墙高", "--m-wall-h", 0.4, 2.4, 0.05, 1, " m"], ["Dim", "淡出", "--m-dim", 0.05, 0.6, 0.01, 0.26, ""], ["Bounce", "回弹", "--spring-bounce", 0, 0.35, 0.01, 0, ""]].forEach(function (s) {
+      var lab = document.createElement("label"), inp = document.createElement("input"), out = document.createElement("output");
+      lab.innerHTML = '<span class="evk-k"><span class="en">' + s[0] + '</span><span class="cn">' + s[1] + '</span></span>';
+      inp.type = "range"; inp.min = s[3]; inp.max = s[4]; inp.step = s[5]; inp.value = s[6]; inp.setAttribute("aria-label", s[0]);
+      out.textContent = s[6] + s[7];
+      inp.addEventListener("input", function () { out.textContent = inp.value + s[7]; token(s[2], inp.value); });
+      lab.htmlFor = "sl-" + s[2]; inp.id = "sl-" + s[2];
+      $("sliders").appendChild(lab); $("sliders").appendChild(inp); $("sliders").appendChild(out);
+    });
+
+    /* ---- floors ---- */
+    var paintFloor = seg("seg-floor", [["", "All", "全部"]].concat(model.floors.map(function (f) { return [f.id, f.short.en, f.short.cn]; })), "", function (v) { setFloor(v || null); });
+    function setFloor(fid) {
+      if (state.plan) clearRoute(true);
+      state.floor = fid; map.setFloor(fid); paintFloor(fid || "");
+    }
+
+    /* ---- names: the lead language first ---- */
+    function nameOf(o, l) { l = l || lead(); return l === "zh" ? o.name.cn : o.name.en; }
+    function otherOf(o, l) { l = l || lead(); return l === "zh" ? o.name.en : o.name.cn; }
+    function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+    function areaName(r, l) { return (l || lead()) === "zh" ? r.name.cn : cap(r.name.en); }
+    function placeOf(e) {                               // where an entity stands: a room's plate, an area's name, or nothing on an open floor
+      var r = e.room ? model.roomById[e.room] : null;
+      return r ? (r.area ? areaName(r) : r.label) : "";
+    }
+
+    /* ---- selection ---- */
+    var from = $("from"), to = $("to");
+    function opt(sel, value, text, group) { var o = document.createElement("option"); o.value = value; o.textContent = text; (group || sel).appendChild(o); }
+    var groups = { entrance: "Entrance 入口", lobby: "Lobbies 大堂", room: "Rooms 展室", area: "Open areas 开放区", entity: "Booths 展位" };
+    function fillSelects() {
+      var fv = from.value, tv = to.value, zh = lead() === "zh";
+      from.textContent = ""; to.textContent = "";
+      var gEl = {};
+      wf.starts().forEach(function (s) {
+        if (!gEl[s.kind]) { gEl[s.kind] = document.createElement("optgroup"); gEl[s.kind].label = groups[s.kind]; from.appendChild(gEl[s.kind]); }
+        var t = s.kind === "room" ? (s.label + " · " + nameOf(s) + " " + otherOf(s)) : s.kind === "area" ? (areaName(s) + " " + otherOf(s)) : s.kind === "entity" ? (nameOf(s) + " · " + otherOf(s)) : (nameOf(s) + " " + otherOf(s));
+        opt(from, s.id, t, gEl[s.kind]);
+      });
+      model.entities.forEach(function (e) { opt(to, e.id, nameOf(e) + " · " + otherOf(e) + "  (" + [placeOf(e), e.booth].filter(Boolean).join(" · ") + ")"); });
+      from.value = fv || "entrance:1F"; if (tv) to.value = tv;
+    }
+    fillSelects();
+    to.addEventListener("change", function () { choose(to.value, true); });
+    from.addEventListener("change", function () { if (state.plan) route(); });
+
+    function fillCard(id) {
+      var e = model.entityById[id], f = model.floorById[e.floor], zh = lead() === "zh";
+      $("card-name").innerHTML = '<span class="demo-sw"></span>';
+      $("card-name").appendChild(document.createTextNode(nameOf(e)));
+      $("card").style.setProperty("--e", e.color);
+      var place = placeOf(e), booth = zh ? "第 " + e.booth + " 号展位" : "booth " + e.booth;
+      $("card-where").textContent = otherOf(e) + " · " + (place ? place + " · " : "") + booth + " · " + (zh ? f.short.cn : f.short.en);
+    }
+    function choose(id, fromSelect) {
+      state.sel = id;
+      if (!id) { $("card").hidden = true; map.select(null); return; }
+      if (state.plan) clearRoute(true);
+      fillCard(id); $("card").hidden = false; to.value = id;
+      map.select(id);
+      if (fromSelect) map.setFloor(model.entityById[id].floor), paintFloor(model.entityById[id].floor);
+    }
+    $("drop").addEventListener("click", function () { choose(null); });
+    $("go").addEventListener("click", function () { if (state.sel) route(); });
+
+    /* ---- search: EVK.search over the model's entities; group words, the rooms and areas (so 201, "corridor" and "atrium" list their booths) ---- */
+    var search = EVK.search.create(model.entities, {
+      rooms: model.floors,
+      groups: [
+        { words: ["handmade", "手作", "crafts"], tags: ["craft"] },
+        { words: ["science", "科学", "stem"], tags: ["science", "energy", "robotics", "space", "electronics"] },
+        { words: ["food", "美食", "吃"], tags: ["food"] },
+        { words: ["kids", "亲子", "孩子"], tags: ["kids", "robotics"] },
+        { words: ["west", "西侧"], rooms: ["201", "301", "WEST"] }
+      ]
+    });
+    window.demoSearch = search;
+    var q = $("q"), found = $("found"), active = -1, shown = [];
+    function renderFound() {
+      var text = q.value;
+      found.textContent = "";
+      if (!text.trim()) { found.hidden = true; q.setAttribute("aria-expanded", "false"); q.removeAttribute("aria-activedescendant"); shown = []; active = -1; return; }
+      shown = search.query(text, { limit: 8 });
+      if (!shown.length) {
+        var li = document.createElement("li"); li.className = "none"; li.textContent = lead() === "zh" ? "没有匹配  No match" : "No match  没有匹配"; found.appendChild(li);
+      }
+      shown.forEach(function (r, i) {
+        var e = r.entity, li = document.createElement("li"), place = [placeOf(e), e.booth, e.floor].filter(Boolean).join(" · ");
+        li.id = "found-" + i; li.setAttribute("role", "option"); li.setAttribute("aria-selected", String(i === active)); li.dataset.id = e.id;
+        li.innerHTML = '<span class="demo-sw"></span><span class="nm"><b></b><small></small></span><span class="rt"><span class="pl"></span><span class="why"></span></span>';
+        li.style.setProperty("--e", e.color);
+        li.querySelector("b").textContent = nameOf(e); li.querySelector("small").textContent = otherOf(e);
+        li.querySelector(".pl").textContent = place; li.querySelector(".why").textContent = r.why + " · " + r.score;
+        li.addEventListener("pointerdown", function (ev) { ev.preventDefault(); });          // keep focus in the box
+        li.addEventListener("click", function () { pick(e.id); });
+        found.appendChild(li);
+      });
+      found.hidden = false; q.setAttribute("aria-expanded", "true");
+      if (active >= 0 && shown[active]) q.setAttribute("aria-activedescendant", "found-" + active); else q.removeAttribute("aria-activedescendant");
+    }
+    function pick(id) { q.value = ""; active = -1; renderFound(); choose(id, true); }
+    q.addEventListener("input", function () { active = -1; renderFound(); });
+    q.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (!shown.length) return;
+        e.preventDefault(); active = (active + 1 + (e.key === "ArrowDown" ? 1 : -1) + shown.length + 1) % (shown.length + 1) - 1;       // -1 (the box itself) … last, round and round
+        Array.prototype.forEach.call(found.children, function (li, i) { li.setAttribute("aria-selected", String(i === active)); });
+        if (active >= 0) q.setAttribute("aria-activedescendant", "found-" + active); else q.removeAttribute("aria-activedescendant");
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        var hit = active >= 0 ? shown[active] : shown[0];
+        if (hit) pick(hit.entity.id);
+      } else if (e.key === "Escape" && q.value) { e.stopPropagation(); q.value = ""; active = -1; renderFound(); }
+    });
+    q.addEventListener("blur", function () { setTimeout(function () { found.hidden = true; q.setAttribute("aria-expanded", "false"); }, 120); });
+    q.addEventListener("focus", function () { if (q.value.trim()) renderFound(); });
+
+    /* ---- the route ---- */
+    function route() {
+      var id = state.sel || to.value;
+      var plan = wf.plan(from.value, id, { via: state.via });
+      if (!plan) { $("live").textContent = "No route found."; return; }
+      state.plan = plan; state.step = 0; state.sel = id;
+      to.value = id; $("card").hidden = true;
+      map.lock(true); paintFloor("");
+      map.setRoute(plan, true); map.routeStep(0, true);
+      $("run").hidden = false; $("all").setAttribute("aria-pressed", "false");
+      renderSteps(); announce();
+      $("steps").scrollTop = 0;
+    }
+    function clearRoute(keepSel) {
+      state.plan = null; state.step = -1;
+      map.setRoute(null); map.lock(false);
+      $("run").hidden = true; $("steps").textContent = "";
+      if (!keepSel) { /* leave the selection on the map */ }
+      map.setFloor(state.floor); paintFloor(state.floor || "");
+    }
+    /* a step in the lead language (head, sentence); with "both" the other language's sentence follows, smaller */
+    var KEY = { en: "en", zh: "cn" };                    // describe() names its Chinese half `cn`
+    function lines(s) {
+      var l = state.lang === "both" ? lead() : state.lang, o = l === "zh" ? "en" : "zh";
+      return { head: s[KEY[l]].head, text: s[KEY[l]].text, second: state.lang === "both" ? s[KEY[o]].text : "", l: l, o: o };
+    }
+    function renderSteps() {
+      if (!state.plan) return;
+      var steps = wf.describe(state.plan, "both"), ol = $("steps");
+      ol.className = "evk-steps demo-steps is-" + state.lang + (state.step < 0 ? " is-all" : "");
+      ol.textContent = "";
+      steps.forEach(function (s, i) {
+        var li = document.createElement("li"), b = document.createElement("button"), ln = lines(s);
+        b.type = "button";
+        b.innerHTML = '<span class="h"></span><span class="t"></span>' + (ln.second ? '<span class="t2"></span>' : "");
+        b.querySelector(".h").textContent = ln.head; b.querySelector(".t").textContent = ln.text;
+        if (ln.second) b.querySelector(".t2").textContent = ln.second;
+        if (ln.l === "zh") { b.querySelector(".t").classList.add("is-zh-line"); } else if (ln.second) { b.querySelector(".t2").classList.add("is-zh-line"); }
+        b.addEventListener("click", function () { setStep(i === state.step ? -1 : i); });
+        if (i === state.step) { li.className = "is-current"; b.setAttribute("aria-current", "step"); }
+        if (s.kind === "stairs") li.classList.add("is-climb");
+        li.appendChild(b); ol.appendChild(li);
+      });
+      var total = state.plan.metres, zhSum = (state.lang === "both" ? lead() : state.lang) === "zh";
+      $("sum").textContent = (zhSum ? "约 " + total + " 米 · " + steps.length + " 步" : "about " + total + " m · " + steps.length + " steps") + (state.plan.hops.length ? " · " + state.plan.hops.map(function (h) { return h.from + "→" + h.to; }).join(", ") : "");
+      $("prev").disabled = state.step <= 0; $("next").disabled = state.step >= steps.length - 1;
+      var cur = ol.querySelector(".is-current");      // keep the current step in view inside the list only; never scroll the page under the map
+      if (cur) { var top = cur.offsetTop - ol.offsetTop, bot = top + cur.offsetHeight; if (top < ol.scrollTop) ol.scrollTop = top; else if (bot > ol.scrollTop + ol.clientHeight) ol.scrollTop = bot - ol.clientHeight; }
+    }
+    function announce() {
+      if (!state.plan) return;
+      var steps = wf.describe(state.plan, "both"), en = (state.lang === "both" ? lead() : state.lang) === "en";
+      $("live").textContent = state.step < 0
+        ? (en ? "Overview: " + state.plan.metres + " m, " + steps.length + " steps." : "全程约 " + state.plan.metres + " 米，共 " + steps.length + " 步。")
+        : (en ? "Step " + (state.step + 1) + " of " + steps.length + ": " : "第 " + (state.step + 1) + " 步，共 " + steps.length + " 步：") + steps[state.step][en ? "en" : "cn"].text;
+    }
+    function setStep(i) {
+      state.step = i; map.routeStep(i < 0 ? null : i, true);
+      $("all").setAttribute("aria-pressed", String(i < 0));
+      renderSteps(); announce();
+    }
+    $("prev").addEventListener("click", function () { if (state.step > 0) setStep(state.step - 1); });
+    $("next").addEventListener("click", function () { if (state.plan && state.step < state.plan.steps.length - 1) setStep(state.step + 1); });
+    $("all").addEventListener("click", function () { setStep(state.step < 0 ? 0 : -1); });
+    $("clear").addEventListener("click", function () { clearRoute(true); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && state.plan) clearRoute(true);
+    });
+
+    /* ?lead=zh opens the page with the Chinese line first */
+    var want = new URLSearchParams(location.search).get("lead");
+    if (want === "zh" || want === "en") { paintLead(want); setLead(want); }
+  }
+})();
+</script>
+</body>
+</html>

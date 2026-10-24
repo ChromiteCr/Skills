@@ -1,0 +1,141 @@
+/* =========================================================================
+   broadsheet — 特刊 "Special Edition"
+   Idea: the event is today's paper. Tinted newsprint, thick–thin and double rules, a centred
+   masthead for every entity, a dateline instead of an eyebrow, halftone thumbnails, ticker-style
+   statistics between vertical rules, drop caps in English. Structure comes from rules, not boxes.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = thick-thin | double-rule | dotted-leader
+     data-evk-nav      = tab-strip | lines-top-left
+     data-evk-numerals = lining-tabular | roman
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values). Both are scales: 1 = on, 0 = off.
+     --prop-dropcap   the English drop cap on the first paragraph of a part      off: 0  (an ordinary first letter)
+     --prop-halftone  halftone dots in the entity marks                          off: 0  (a solid square in the entity colour)
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root { --dc: var(--prop-dropcap, 1); --hf: var(--prop-halftone, 1); --r-card-radius: 0; --r-badge-r: 0; --r-node-r: 0; --r-node: 7px; }
+body { counter-reset: evk-part; }
+
+/* ---- bar: a section index with a thick–thin rule under it; the current section is an inverted tab ---- */
+.evk-bar { background: var(--paper); padding-bottom: 10px; box-shadow: inset 0 -4px 0 var(--paper), inset 0 -5px 0 var(--a), inset 0 -6px 0 var(--paper), inset 0 -7px 0 var(--a); }
+.evk-brand { color: var(--a-text); font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--track-tight, -.02em); }
+.evk-nav { gap: 0; }
+.evk-nav a + a { border-left: 1px solid var(--rule); }
+.evk-nav a[aria-current] { background: var(--a); color: var(--on-a); border-bottom-color: transparent; }
+.evk-nav a[aria-current], .evk-nav a[aria-current] .evk-k { color: var(--on-a); --k-2-ink: currentColor; }   /* the inverted tab: both lines in paper */
+
+/* ---- label voice: sans caps for section tags; the follower is lighter ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 400; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .06em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: the classic thick-thin rule ---- */
+.evk-divider { height: 7px; margin-block: 22px; border: 0; border-top: 3px solid var(--a); border-bottom: 1px solid var(--a); background: none; }
+:root[data-evk-divider="double-rule"] .evk-divider { height: 5px; border-top-width: 1px; }
+:root[data-evk-divider="dotted-leader"] .evk-divider { height: 0; border: 0; border-top: 2px dotted var(--sub); }
+
+/* ---- buttons: flat ink rectangles, caps; no radius, no shadow ---- */
+.evk-btn { padding: 0 20px; background: var(--a); color: var(--on-a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); }
+.evk-btn--quiet { background: transparent; color: var(--a-text); box-shadow: inset 0 0 0 1px var(--a); }
+
+/* ---- tag: a byline — italic display figures ---- */
+.evk-tag { padding: 0; border: 0; color: var(--b-text); font-family: var(--f-num); font-style: italic; font-weight: var(--display-weight); font-size: var(--step-0); }
+
+/* ---- welcome: dateline over a big headline, standfirst, statistics as a ticker ---- */
+.evk-welcome .evk-eyebrow { display: flex; justify-content: space-between; width: 100%; padding: .45em 0; border-top: 3px double var(--a); border-bottom: 1px solid var(--a); color: var(--a-text); }
+.evk-welcome :is(h1, h2), .evk-display { margin-top: .5em; font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track);
+  line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: italic; color: var(--b-text); }
+.evk-welcome p:lang(en) { font-style: italic; }
+.evk-stats { gap: 0; margin-top: 22px; border-block: 1px solid var(--a); }
+.evk-stat { align-items: center; padding: 12px 6px 10px; text-align: center; }
+.evk-stat + .evk-stat { border-left: 1px solid var(--rule); }
+.evk-stat .n { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .9; color: var(--a-text); font-variant-numeric: lining-nums tabular-nums; }
+.evk-stat .evk-k { justify-content: center; }
+
+/* ---- grid: dense columns divided by hairlines; thumbnails are halftone dots in the entity colour ---- */
+.evk-grid { border: 0; border-top: 3px double var(--a); overflow: hidden; }
+.evk-grid > li { margin-right: -1px; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--track-tight, -.01em); line-height: 1.1; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { width: 32px; height: 32px; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px var(--a); font-size: 0; color: transparent;
+  background: radial-gradient(circle at 50% 50%, var(--e-fill) 0 calc(1.5px + 2px * (1 - var(--hf))), transparent calc(1.9px + 2px * (1 - var(--hf)))) 0 0 / 4.5px 4.5px, var(--paper-2); }
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+@media (hover: hover) { .evk-cell:hover > .evk-mark + * { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .15em; } }
+
+/* ---- entity head = the masthead: thick rule, huge centred name, double rule, dateline underneath ---- */
+.evk-entity-head { display: flex; flex-direction: column; margin-top: 14px; padding-top: 12px; text-align: center; border-top: 5px solid var(--a); }
+.evk-entity-name { order: 1; --name-min: 2.8rem; --name-vw: 15vw; --name-max: 7.5rem; line-height: var(--lead-tight, .92); letter-spacing: var(--track-tight, -.03em); overflow-wrap: anywhere; }
+.evk-entity-rule { order: 2; max-width: none; height: 7px; margin-top: 12px; background: none; border-top: 3px solid var(--e-fill); border-bottom: 1px solid var(--e-fill); }
+.evk-entity-head .evk-eyebrow { order: 3; display: flex; justify-content: center; margin: 0; padding: .4em 0; border-bottom: 1px solid var(--a); color: var(--a-text); }
+.evk-entity-head > :is(.evk-entity-sub, .evk-entity-line) { order: 4; margin: 12px 0 0; color: var(--sub); }
+.evk-entity-head > :is(.evk-entity-sub, .evk-entity-line):lang(en) { font-style: italic; }
+
+/* ---- number strip + parts: sections with a thick–thin cap and an English drop cap ---- */
+.evk-strip { margin-top: 22px; border-block: 1px solid var(--a); text-align: center; }
+.evk-num { align-items: center; }
+.evk-num b { font-family: var(--f-num); font-weight: var(--display-weight); color: var(--e-ink); font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part { counter-increment: evk-part; }
+.evk-part-head { border-top: 3px solid var(--a); box-shadow: inset 0 4px 0 var(--paper), inset 0 5px 0 var(--a); }
+.evk-part-head .no { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .9; color: var(--b-text); }
+:root[data-evk-numerals="roman"] .evk-part-head .no { font-size: 0; }
+:root[data-evk-numerals="roman"] .evk-part-head .no::before { content: counter(evk-part, upper-roman); font-size: var(--step-3); }
+.evk-part-head ~ p:first-of-type:lang(en)::first-letter { float: left; margin: calc(.04em * var(--dc)) calc(.1em * var(--dc)) 0 0; font-family: var(--f-display); font-weight: calc(400 + 500 * var(--dc)); font-size: calc(1em + 2.5em * var(--dc)); line-height: calc(1.85 - 1.05 * var(--dc)); color: var(--a-text); }
+
+/* ---- sheet: a boxed insert with a heavy top rule; steps are numbered paragraphs ---- */
+.evk-sheet { border-top: 5px solid var(--a); border-bottom: 1px solid var(--a); border-radius: 0; }
+.evk-steps { border-top: 0; }
+.evk-steps > li { border-left: 0; padding-left: 38px; }
+.evk-steps > li::before { content: counter(evk-step) "."; left: 4px; top: 7px; width: 28px; height: auto; border: 0; justify-content: end; font: italic 700 1.1rem/1.3 var(--f-num); color: var(--b-text); }
+.evk-steps > li.is-current { background: color-mix(in srgb, var(--b) 9%, transparent); font-weight: 600; }
+.evk-steps > li.is-current::before { background: none; color: color-mix(in srgb, var(--b-text), var(--text) 25%); }   /* on the tinted row */
+.evk-steps > li.is-climb::before { color: var(--climb-text); border: 0; }
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: none; color: color-mix(in srgb, var(--climb-text), var(--text) 30%); }   /* the row is tinted: the numeral a notch stronger */
+
+/* ---- part navigator: small tabs — read ones inked, the current one taller and teal ---- */
+.evk-lines { flex-direction: row; align-items: flex-end; justify-content: flex-start; gap: 3px; width: auto; min-width: var(--hit); min-height: var(--hit); padding: 0 10px 12px; }
+.evk-lines i { width: 9px; height: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--sub); opacity: 1; }
+.evk-lines i.is-done { background: var(--a); box-shadow: none; }
+.evk-lines i.is-on { width: 9px; height: 20px; background: var(--e-fill); box-shadow: none; }
+:root[data-evk-nav="lines-top-left"] .evk-lines { flex-direction: column; align-items: flex-start; justify-content: center; width: var(--hit); padding: 0 calc((var(--hit) - 26px) / 2); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i { width: 12px; height: var(--lh); box-shadow: none; background: var(--sub); opacity: .45; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-done { background: var(--a); opacity: 1; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-on { width: 26px; height: var(--lh); background: var(--e-fill); opacity: 1; }
+.evk-progress { height: 3px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map { box-shadow: inset 0 0 0 1px var(--a); }
+.evk-map-hint { background: var(--paper); color: var(--a-text); padding: 8px 15px; box-shadow: inset 0 0 0 1px var(--a), inset 0 0 0 3px var(--paper), inset 0 0 0 4px var(--a); }
+.evk-seg { border: 0; border-block: 1px solid var(--a); }
+.evk-seg > button { border-inline-end: 0; font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button + button { border-left: 1px solid var(--rule); }
+.evk-search { border-top: 3px solid var(--a); border-bottom: 1px solid var(--a); }
+.evk-search::placeholder { font-style: italic; }
+.evk-search:focus { border-top-color: var(--b); }
+
+/* ---- the small things: panel, chips, empty states, selection ---- */
+:root { --sel-bg: var(--a); --sel-fg: var(--on-a); }
+.evk-partnav-panel { border-top: 5px solid var(--a); border-radius: 0; box-shadow: inset 0 -1px 0 var(--a), var(--evk-shadow); }
+.evk-partnav-panel .t b { font-family: var(--f-display); font-weight: var(--display-weight); }
+.evk-subnav a { border-radius: 0; border: 0; border-bottom: 1px solid var(--a); padding-inline: 6px; }
+.evk-subnav a.is-on { background: var(--a); color: var(--on-a); border: 0; }
+.evk-empty { border-left: 0; border-block: 1px solid var(--a); background: transparent; font-style: italic; }
+/* ---- reading blocks: rules, not boxes — a thick-thin cap on cards, numbered paragraphs, a centred pull quote ---- */
+.evk-r-cards > li { padding: 10px 0 0; border-top: 3px double var(--a); background: none; }
+.evk-r-numbers > li { border-top-color: var(--a); text-align: center; }
+.evk-r-steps > li::before { content: counter(evk-rs) "."; width: 28px; height: auto; justify-content: end; background: none; color: var(--b-text); font: italic 700 1.2rem/1.3 var(--f-num); }
+.evk-r-steps > li { padding-left: 38px; }
+.evk-r-steps > li:not(:last-child)::after { content: none; }
+.evk-r-timeline::before { background: var(--a); }
+.evk-r-timeline > li::before { background: var(--a); }
+.evk-r-table thead th { border-bottom: 3px double var(--a); }
+.evk-r-quote { padding: .7em 0; border: 0; border-block: 3px double var(--a); text-align: center; }
+.evk-r-quote:lang(en) { font-style: italic; }
+.evk-r-note { padding: .6em 0; border: 0; border-block: 1px solid var(--a); }
+.evk-r-note:lang(en) { font-style: italic; }
+.evk-r-fold { border-block-color: var(--a); }
+@media print { body { background: none; } .evk-divider, .evk-part-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }   /* newsprint tint is for screens; the rules print */

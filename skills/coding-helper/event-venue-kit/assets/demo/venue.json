@@ -1,0 +1,152 @@
+{
+  "$schema": "../engine/venue.schema.json",
+  "unit": "m",
+  "name": { "en": "Pier Nine Hall", "cn": "九号码头展馆" },
+  "event": { "en": "Harbour Science & Craft Fair", "cn": "港湾科学与手作博览会" },
+  "terms": {
+    "booth": { "en": "booth", "cn": "展位" }, "room": { "en": "Room", "cn": "展室" },
+    "tags": { "craft": { "en": "Craft", "cn": "手作" }, "science": { "en": "Science", "cn": "科学" }, "space": { "en": "Space", "cn": "太空" }, "robotics": { "en": "Robotics", "cn": "机器人" }, "radio": { "en": "Radio", "cn": "无线电" }, "print": { "en": "Print", "cn": "印刷" } }
+  },
+  "floors": [
+    {
+      "id": "1F",
+      "level": 1,
+      "name": { "en": "First Floor", "cn": "一层" }, "short": { "en": "1F", "cn": "1 层" },
+      "outline": [[0, 0], [30, 0], [30, 24], [7, 24], [7, 19], [0, 19]],
+      "lobby": { "at": [15, 21], "name": { "en": "1F Lobby", "cn": "一层大堂" } },
+      "entrance": { "at": [15, 24], "width": 3.4, "name": { "en": "Entrance", "cn": "入口" } },
+      "rooms": [
+        {
+          "id": "HALL", "label": "H1",
+          "name": { "en": "Grand Hall", "cn": "大展厅" },
+          "poly": [[0, 0], [17, 0], [17, 8.2], [0, 8.2]],
+          "doors": [[5, 8.2, 2], [12.5, 8.2, 2]],
+          "layout": { "cols": 2 }
+        },
+        {
+          "id": "101", "label": "101",
+          "name": { "en": "Workshop Room", "cn": "工坊" },
+          "poly": [[19.5, 0], [30, 0], [30, 8.2], [19.5, 8.2]],
+          "doors": [[24.7, 8.2, 1.6]]
+        }
+      ],
+      "areas": [
+        { "id": "ATRIUM", "kind": "open", "name": { "en": "atrium", "cn": "中庭" }, "poly": [[16.4, 8.4], [25.2, 8.4], [25.2, 18.4], [16.4, 18.4]] }
+      ],
+      "blocks": [
+        { "kind": "stairs", "id": "S1", "poly": [[10, 10.5], [13.2, 10.5], [13.2, 16.9], [10, 16.9]], "doors": [[11.6, 16.9]], "links": "S1" },
+        { "kind": "lift", "id": "L1", "poly": [[13.2, 10.5], [15.6, 10.5], [15.6, 13.1], [13.2, 13.1]], "doors": [[14.4, 10.5]], "links": "L1" },
+        { "kind": "wc", "id": "WC1", "poly": [[13.2, 13.1], [15.6, 13.1], [15.6, 16.9], [13.2, 16.9]] },
+        { "kind": "stairs", "id": "S2", "poly": [[26, 10.5], [30, 10.5], [30, 16.5], [26, 16.5]], "doors": [[26, 13.5]], "links": "S2", "label": { "en": "stairs at the east end", "cn": "东侧楼梯" } },
+        { "kind": "office", "id": "CLK", "poly": [[7, 19], [12, 19], [12, 24], [7, 24]], "label": { "en": "Cloakroom", "cn": "寄存处" } },
+        { "kind": "office", "id": "INFO", "poly": [[18.5, 19], [24.5, 19], [24.5, 24], [18.5, 24]], "label": { "en": "Info & Tickets", "cn": "咨询与票务" } }
+      ]
+    },
+    {
+      "id": "2F",
+      "level": 2,
+      "name": { "en": "Second Floor", "cn": "二层" }, "short": { "en": "2F", "cn": "2 层" },
+      "outline": [[0, 0], [30, 0], [30, 24], [7, 24], [7, 19], [0, 19]],
+      "lobby": { "at": [14, 19.5], "name": { "en": "2F Lobby", "cn": "二层大堂" } },
+      "rooms": [
+        {
+          "id": "201", "label": "201",
+          "name": { "en": "Glass & Green Room", "cn": "玻璃与绿植室" },
+          "poly": [[0, 0], [9.5, 0], [9.5, 8.2], [0, 8.2]],
+          "doors": [[4.7, 8.2, 1.4]]
+        },
+        {
+          "id": "202", "label": "202",
+          "name": { "en": "Tinkering Room", "cn": "拆装室" },
+          "poly": [[9.5, 0], [19.5, 0], [19.5, 8.2], [9.5, 8.2]],
+          "doors": [[14.5, 8.2, 1.4]]
+        },
+        {
+          "id": "203", "label": "203",
+          "name": { "en": "Clay & Kite Room", "cn": "陶与风筝室" },
+          "poly": [[19.5, 0], [30, 0], [30, 8.2], [19.5, 8.2]],
+          "doors": [[24.7, 8.2, 1.4]]
+        },
+        {
+          "id": "204", "label": "204",
+          "name": { "en": "Star Room", "cn": "星空室" },
+          "poly": [[17.5, 16.5], [30, 16.5], [30, 24], [17.5, 24]],
+          "doors": [[21, 16.5, 1.4]]
+        }
+      ],
+      "areas": [
+        {
+          "id": "GALLERY", "kind": "corridor", "name": { "en": "atrium gallery", "cn": "中庭回廊" },
+          "poly": [[16, 8.4], [26, 8.4], [26, 16.4], [16, 16.4]],
+          "holes": [[[17.8, 10.6], [24, 10.6], [24, 14.4], [17.8, 14.4]]]
+        }
+      ],
+      "blocks": [
+        { "kind": "stairs", "id": "S1", "poly": [[10, 10.5], [13.2, 10.5], [13.2, 16.9], [10, 16.9]], "doors": [[11.6, 16.9]], "links": "S1" },
+        { "kind": "lift", "id": "L1", "poly": [[13.2, 10.5], [15.6, 10.5], [15.6, 13.1], [13.2, 13.1]], "doors": [[14.4, 10.5]], "links": "L1" },
+        { "kind": "wc", "id": "WC2", "poly": [[13.2, 13.1], [15.6, 13.1], [15.6, 16.9], [13.2, 16.9]] },
+        { "kind": "void", "id": "ATR", "poly": [[17.8, 10.6], [24, 10.6], [24, 14.4], [17.8, 14.4]], "label": { "en": "Atrium, open to 1F", "cn": "中庭 · 下通一层" } },
+        { "kind": "stairs", "id": "S2", "poly": [[26, 10.5], [30, 10.5], [30, 16.5], [26, 16.5]], "doors": [[26, 13.5]], "links": "S2", "label": { "en": "stairs at the east end", "cn": "东侧楼梯" } },
+        { "kind": "office", "id": "STAFF", "poly": [[0, 14.5], [6, 14.5], [6, 19], [0, 19]], "label": { "en": "Staff Room", "cn": "工作人员室" } },
+        { "kind": "solid", "id": "STO", "poly": [[7, 19], [12, 19], [12, 24], [7, 24]], "label": { "en": "Storage", "cn": "储藏室" } }
+      ]
+    },
+    {
+      "id": "3F",
+      "level": 3,
+      "name": { "en": "Third Floor", "cn": "三层" }, "short": { "en": "3F", "cn": "3 层" },
+      "outline": [[0, 0], [30, 0], [30, 24], [7, 24], [7, 19], [0, 19]],
+      "lobby": { "at": [14, 19.5], "name": { "en": "3F Lobby", "cn": "三层大堂" } },
+      "rooms": [
+        {
+          "id": "301", "label": "301",
+          "name": { "en": "Sun Lab", "cn": "日光实验室" },
+          "poly": [[0, 0], [12, 0], [12, 8.2], [0, 8.2]],
+          "doors": [[6, 8.2, 1.4]]
+        },
+        {
+          "id": "302", "label": "302",
+          "name": { "en": "Pixel Reef", "cn": "像素珊瑚厅" },
+          "poly": [[18, 0], [30, 0], [30, 8.2], [18, 8.2]],
+          "doors": [[24, 8.2, 1.4]]
+        }
+      ],
+      "areas": [
+        { "id": "WEST", "kind": "corridor", "name": { "en": "west corridor", "cn": "西走廊" }, "poly": [[0, 8.4], [9.6, 8.4], [9.6, 10.3], [0, 10.3]] }
+      ],
+      "blocks": [
+        { "kind": "office", "id": "MEET", "poly": [[0, 10.5], [6, 10.5], [6, 14.5], [0, 14.5]], "label": { "en": "Meeting Room", "cn": "会议室" } },
+        { "kind": "stairs", "id": "S1", "poly": [[10, 10.5], [13.2, 10.5], [13.2, 16.9], [10, 16.9]], "doors": [[11.6, 16.9]], "links": "S1" },
+        { "kind": "lift", "id": "L1", "poly": [[13.2, 10.5], [15.6, 10.5], [15.6, 13.1], [13.2, 13.1]], "doors": [[14.4, 10.5]], "links": "L1" },
+        { "kind": "wc", "id": "WC3", "poly": [[13.2, 13.1], [15.6, 13.1], [15.6, 16.9], [13.2, 16.9]] },
+        { "kind": "stairs", "id": "S2", "poly": [[26, 10.5], [30, 10.5], [30, 16.5], [26, 16.5]], "doors": [[26, 13.5]], "links": "S2", "label": { "en": "stairs at the east end", "cn": "东侧楼梯" } },
+        { "kind": "office", "id": "STAFF", "poly": [[0, 14.5], [6, 14.5], [6, 19], [0, 19]], "label": { "en": "Staff Room", "cn": "工作人员室" } },
+        { "kind": "office", "id": "CAFE", "poly": [[18.5, 19], [24.5, 19], [24.5, 24], [18.5, 24]], "label": { "en": "Cafe Counter", "cn": "咖啡角" } }
+      ]
+    }
+  ],
+  "entities": [
+    { "id": "kelp", "name": { "en": "Kelp & Co. Bioplastics", "cn": "海带生物塑料" }, "short": "Kelp", "color": "#2F8F6B", "room": "HALL", "booth": "01", "tags": ["materials", "sustainability"] },
+    { "id": "orbital", "name": { "en": "Orbital Kitchen", "cn": "轨道厨房" }, "short": "Orbital", "color": "#E4572E", "room": "HALL", "booth": "02", "tags": ["food", "space"] },
+    { "id": "tideclock", "name": { "en": "Tideclock Works", "cn": "潮汐钟表坊" }, "short": "Tideclock", "color": "#1F6FB2", "room": "HALL", "booth": "03", "tags": ["craft", "engineering"] },
+    { "id": "paperlab", "name": { "en": "Paper Lab", "cn": "纸上实验室" }, "short": "Paper Lab", "color": "#F2B134", "room": "HALL", "booth": "04", "tags": ["paper", "craft"] },
+    { "id": "loomhouse", "name": { "en": "Loomhouse", "cn": "织机屋" }, "short": "Loomhouse", "color": "#8E4A9E", "room": "101", "booth": "01", "tags": ["textile", "craft"] },
+    { "id": "ironbird", "name": { "en": "Ironbird Forge", "cn": "铁鸟锻坊" }, "short": "Ironbird", "color": "#5B6770", "room": "101", "booth": "02", "tags": ["metal", "craft"] },
+    { "id": "lumen", "name": { "en": "Lumen Glassworks", "cn": "流明玻璃" }, "short": "Lumen", "color": "#17A2B8", "room": "201", "booth": "01", "tags": ["glass", "craft"] },
+    { "id": "mosswire", "name": { "en": "Moss & Wire", "cn": "苔与线" }, "short": "Moss & Wire", "color": "#5E8C31", "room": "201", "booth": "02", "tags": ["plants", "robotics"] },
+    { "id": "tinker", "name": { "en": "Tinker Tide Robotics", "cn": "潮玩机器人" }, "short": "Tinker", "color": "#C2185B", "room": "202", "booth": "01", "tags": ["robotics", "kids"] },
+    { "id": "saltair", "name": { "en": "Salt & Air Kites", "cn": "盐风风筝" }, "short": "Salt & Air", "color": "#3F51B5", "room": "203", "booth": "01", "tags": ["kites", "outdoor"] },
+    { "id": "echo", "name": { "en": "Echo Pottery", "cn": "回声陶艺" }, "short": "Echo", "color": "#A66A3F", "room": "203", "booth": "02", "tags": ["clay", "craft"] },
+    { "id": "starlight", "name": { "en": "Starlight Astronomy Club", "cn": "星光天文社" }, "short": "Starlight", "color": "#1B2A5C", "room": "204", "booth": "01", "tags": ["space", "science"] },
+    { "id": "sunbeam", "name": { "en": "Sunbeam Solar Lab", "cn": "日光太阳能实验室" }, "short": "Sunbeam", "color": "#FFD43B", "room": "301", "booth": "01", "tags": ["energy", "science"] },
+    { "id": "pixelreef", "name": { "en": "Pixel Reef Studio", "cn": "像素珊瑚工作室" }, "short": "Pixel Reef", "color": "#FF6F91", "room": "302", "booth": "01", "tags": ["digital", "art"] },
+    { "id": "inkwell", "name": { "en": "Inkwell Press", "cn": "墨池印社" }, "short": "Inkwell", "color": "#6A4CC8", "room": "WEST", "booth": "05", "tags": ["print", "craft"] },
+    { "id": "beacon", "name": { "en": "Beacon Signal Club", "cn": "灯塔信号社" }, "short": "Beacon", "color": "#9AA81B", "room": "WEST", "booth": "06", "tags": ["radio", "electronics"] },
+    { "id": "driftwood", "name": { "en": "Driftwood Joinery", "cn": "浮木木作" }, "short": "Driftwood", "color": "#0E7C86", "room": "WEST", "booth": "07", "tags": ["wood", "craft"] },
+    { "id": "lanterns", "name": { "en": "Atrium Lanterns", "cn": "中庭灯笼" }, "short": "Lanterns", "color": "#D97706", "room": "ATRIUM", "booth": "01", "at": [20.8, 13.4], "tags": ["light", "craft"] },
+    { "id": "driftmap", "name": { "en": "Driftmap Cartographers", "cn": "漂图制图社" }, "short": "Driftmap", "color": "#B5483A", "room": "GALLERY", "booth": "01", "at": [16.9, 12.5], "tags": ["maps", "craft"] },
+    { "id": "saltprint", "name": { "en": "Salt Print Studio", "cn": "盐印工作室" }, "short": "Salt Print", "color": "#2C6E91", "room": "GALLERY", "booth": "02", "at": [22.4, 15.4], "tags": ["print", "craft"] },
+    { "id": "tidaltextiles", "name": { "en": "Tidal Textiles", "cn": "潮纹织物" }, "short": "Tidal", "color": "#7A9A2E", "room": "GALLERY", "booth": "03", "tags": ["textile", "craft"] },
+    { "id": "tideradio", "name": { "en": "Tide Radio Kiosk", "cn": "潮声电台" }, "short": "Tide Radio", "color": "#6D4C41", "floor": "1F", "at": [3.5, 14], "booth": "K1", "tags": ["radio", "media"] }
+  ]
+}

@@ -1,0 +1,213 @@
+/* event-venue-kit · assets/starter/starter.css — layout glue for the starter pages
+   ----------------------------------------------------------------------------------------------
+   Load order: evk/tokens.css → evk/base.css → evk/recipe.css → this file. It places things: grids, gaps, sizes, the few type roles
+   the starter markup needs. It adds NO colour of its own and names no font: every value is a token (var(--…)), so the card's
+   recipe stays the look. Class names starting sp- belong to the starter; evk-… hooks are the kit's own, styled by base.css and the
+   recipe. Edit freely; scripts/starter.py only refuses to overwrite it without --force.
+   ---------------------------------------------------------------------------------------------- */
+
+/* ---------- furniture: the schematic banner, the bar's brand, the footer ---------- */
+.sp-banner {
+  display: flex; gap: 10px; align-items: baseline; margin: 0;
+  padding: 8px max(var(--gutter), env(safe-area-inset-right)) 8px max(var(--gutter), env(safe-area-inset-left));
+  background: var(--paper-2); border-bottom: var(--hair) dashed var(--sub);
+  font-size: var(--step--1); line-height: 1.5; color: var(--text);
+}
+.sp-banner > b { flex: none; padding: 0 .5em; box-shadow: inset 0 0 0 var(--hair) var(--b-text); color: var(--b-text); font-weight: var(--label-weight); letter-spacing: var(--label-track); }
+.evk-brand { flex: 0 1 auto; min-width: 0; }
+.evk-bar .evk-nav { flex: none; }                                 /* two short tabs: the name gives way (ellipsis), the tabs are never squeezed or clipped at 320 px */
+.sp-brand { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-foot { margin-top: calc(var(--gap) * 3); padding-top: var(--gap); border-top: var(--hair) solid var(--rule); font-size: var(--step--1); color: var(--sub); }
+.sp-foot p { margin: 0 0 .5em; }
+.sp-foot b { color: var(--text); font-weight: 600; }
+.sp-foot a { display: inline-flex; align-items: center; min-height: var(--hit); }
+.sp-2nd { color: var(--sub); }
+:where(p.sp-2nd, .evk-part p.sp-2nd) { font-size: .92em; }
+span.sp-2nd { display: block; }                                   /* the other language of a sentence sits under it */
+
+/* ---------- home: welcome ---------- */
+.sp-title { margin: .25em 0 0; overflow-wrap: anywhere; text-wrap: balance; }
+.sp-title-2 { margin: .35em 0 0; font-family: var(--f-text); font-size: var(--step-1); line-height: 1.3; color: var(--sub); overflow-wrap: anywhere; }
+.sp-facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--gap) calc(var(--gap) * 1.5);
+  margin: calc(var(--gap) * 1.4) 0 0; padding-top: var(--gap); border-top: var(--hair) solid var(--rule);
+}
+.sp-facts > div { min-width: 0; }
+.sp-facts dt { margin: 0 0 .3em; color: var(--sub); }
+.sp-facts dd { margin: 0; line-height: 1.45; overflow-wrap: anywhere; }
+.sp-facts dd > small { display: block; margin-top: .15em; }
+.sp-tba { color: var(--sub); padding-bottom: 1px; border-bottom: var(--hair) dotted currentColor; }          /* an unknown value is a fill-in line, never an invented one */
+.sp-note { margin: var(--gap) 0 0; color: var(--sub); font-size: var(--step--1); }
+.sp-note > span { display: block; }                               /* the two languages of a sentence are two lines, never run together */
+.sp-note > span + span { margin-top: .15em; font-size: .92em; }
+.evk-stats { margin-top: calc(var(--gap) * 1.6); }
+.sp-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: calc(var(--gap) * 1.4); }
+.sp-actions .evk-btn { flex: 1 1 9.5rem; }
+
+/* ---------- section headings: a label-voice pair at heading size, a count at the end ---------- */
+.sp-h2 { display: flex; align-items: baseline; gap: 12px; font-size: var(--step-2); }
+.sp-h2 .evk-k, .sp-group > h3 .evk-k, .sp-floor > h3 .evk-k { font-size: inherit; }
+.sp-h2 .evk-k > :last-child:not(:first-child), .sp-group > h3 .evk-k > :last-child:not(:first-child), .sp-floor > h3 .evk-k > :last-child:not(:first-child) { font-size: max(11px, .5em); }
+.sp-count { margin-inline-start: auto; font-family: var(--f-num); font-size: var(--step--1); font-weight: 400; letter-spacing: 0; color: var(--sub); white-space: nowrap; }
+.sp-count > span + span { margin-inline-start: .5em; }
+/* the preview grows with the stack: --sp-floors is the number of floors (set on the section by the build); 3 floors at 375 x 812 is ~400 px, 5 is ~540 px */
+.sp-preview .evk-map { height: clamp(260px, calc(22vh + var(--sp-floors, 1) * 9vh), 560px); height: clamp(260px, calc(22dvh + var(--sp-floors, 1) * 9dvh), 560px); }
+.sp-more { margin: var(--gap) 0 0; }
+
+/* ---------- home: find (search + floor control), the grouped grid ---------- */
+.sp-find { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: calc(var(--gap) * 1.2); }      /* minmax(0, …): a long control scrolls inside itself, it never widens the page */
+.sp-find .evk-seg, .sp-row .evk-seg { display: flex; width: 100%; }
+.sp-find .evk-seg > button, .sp-row .evk-seg > button { flex: 1 1 0; min-width: var(--hit); padding: 0 6px; white-space: nowrap; }
+#seg-group > button { flex: 1 0 auto; padding: 0 12px; }               /* group names are words (two languages): they keep their width and the control scrolls inside itself */
+#seg-group, #seg-floor { scrollbar-width: none; }
+#seg-group::-webkit-scrollbar, #seg-floor::-webkit-scrollbar { display: none; }
+.sp-group { margin-top: calc(var(--gap) * 1.6); }
+.sp-group > h3, .sp-floor > h3 { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; font-size: var(--step-1); }
+.sp-fid { font-family: var(--f-num); color: var(--a-text); }
+.evk-cell .evk-mark + * { overflow-wrap: anywhere; }
+
+/* ---------- a search box with a result list (the page search, the directions target) ---------- */
+.sp-search { position: relative; }
+.sp-results {
+  position: absolute; z-index: 25; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 0; list-style: none;
+  max-height: min(52vh, 420px); overflow: auto; overscroll-behavior: contain;
+  background: var(--paper); box-shadow: 0 0 0 var(--rule-2) var(--a), var(--evk-shadow);
+}
+.sp-results--inline { position: static; margin-top: 6px; max-height: min(34vh, 300px); box-shadow: 0 0 0 var(--hair) var(--rule); }
+.sp-results li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; border-bottom: var(--hair) solid var(--rule); cursor: pointer; }
+.sp-results li[aria-selected="true"] { background: var(--paper-2); box-shadow: inset 3px 0 0 var(--b); }
+.sp-results li.none { display: block; min-height: 0; padding: 12px; color: var(--sub); cursor: default; }
+.sp-results .nm { min-width: 0; display: flex; flex-direction: column; }
+.sp-results .nm b { font-family: var(--f-display); font-weight: var(--display-weight); color: var(--a-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-results .nm small { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- map page ---------- */
+.sp-pagehead { padding-top: calc(var(--gap) * 1.2); }
+.sp-h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: var(--step-3); }
+.sp-h1 small { font-family: var(--f-label); font-size: max(11px, .38em); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--sub); }
+.sp-pagehead p { margin: 6px 0 0; color: var(--sub); font-size: var(--step--1); line-height: 1.6; }
+.sp-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 14px 0 12px; }      /* minmax(0, …): up to six floor buttons + the route button never widen the page */
+.sp-row { display: flex; gap: 10px; min-width: 0; }
+.sp-row .evk-seg { flex: 1 1 auto; min-width: 0; }
+.sp-row .evk-seg > button { min-width: var(--hit); }                         /* a floor button stays 44 px wide; the control scrolls instead */
+.evk-nav a { min-width: var(--hit); }
+.sp-row > .evk-btn { flex: none; padding: 0 14px; }
+@media (max-width: 359px) { .sp-row { flex-wrap: wrap; } .sp-row > .evk-btn { flex: 1 1 100%; } }    /* 320 px: the floor buttons keep their 44 px */
+.sp-map { height: clamp(380px, 64dvh, 640px); }
+.sp-stamp { position: absolute; left: 10px; top: 10px; z-index: 2; margin: 0; padding: 2px 8px; pointer-events: none; background: var(--paper); box-shadow: inset 0 0 0 var(--hair) var(--b-text); color: var(--b-text); font-size: var(--step--1); letter-spacing: var(--label-track); }
+.evk-map-reset { position: absolute; right: 10px; top: 10px; z-index: 2; }
+
+/* the directory: a card per room or open area, listing what stands in it; the whole page when JavaScript is off */
+.sp-dir > h2 { margin-top: 0; }
+.sp-floor { margin-top: calc(var(--gap) * 1.5); }
+.sp-cards { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 760px) { .sp-cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); } }
+.sp-card { padding: 0 14px 6px; background: var(--paper); box-shadow: inset 0 0 0 var(--hair) var(--rule); border-radius: var(--radius); overflow: hidden; }
+.sp-card > header { margin: 0 -14px; padding: 0 14px; border-bottom: var(--hair) solid var(--rule); background: var(--paper-2); }
+.sp-room-link { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: var(--hit); padding: 8px 0; color: inherit; }
+.sp-rows { margin: 0; padding: 0; list-style: none; }
+.sp-rows > li { border-bottom: var(--hair) solid var(--rule); }
+.sp-rows > li:last-child { border-bottom: 0; }
+.sp-rows a { --mark: 28px; display: grid; grid-template-columns: 2.4em auto minmax(0, 1fr); align-items: center; gap: 10px; min-height: 48px; padding: 6px 0; color: var(--text); }
+.sp-rows a:active { background: var(--paper-2); }
+.sp-rows .no { font-family: var(--f-num); color: var(--b-text); font-variant-numeric: var(--num-variant, lining-nums tabular-nums); }
+.sp-rows .t { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
+.sp-rows .t small { color: var(--sub); }
+.sp-rows .evk-mark { font-size: .8rem; }
+@media (hover: hover) { .sp-rows a:hover .t > :first-child { color: var(--b-text); } }
+
+/* ---------- sheets: a room or an entity ---------- */
+#sheet-place { max-height: 56vh; max-height: 56dvh; }                   /* a phone keeps about 40 % of its height for the map */
+.sp-kick { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 4px; font-family: var(--f-text); font-size: var(--step--1); font-weight: 400; letter-spacing: 0; color: var(--sub); }
+.sp-pname { display: block; font-family: var(--f-display); font-weight: var(--display-weight); font-size: var(--step-2); line-height: 1.2; color: var(--e-ink, var(--a-text)); overflow-wrap: anywhere; }
+.sp-pname-2 { margin: 2px 0 0; font-size: var(--step--1); color: var(--sub); }
+.sp-sheet-body .evk-entity-rule { margin: 10px 0 12px; }
+.sp-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); margin: 0 0 14px; box-shadow: inset 0 0 0 var(--hair) var(--rule); }
+.sp-meta > div { display: flex; flex-direction: column-reverse; gap: 2px; min-width: 0; padding: 8px 10px; }
+.sp-meta > div + div { box-shadow: inset var(--hair) 0 0 var(--rule); }
+.sp-meta dt { margin: 0; font-size: max(11px, var(--step--1)); color: var(--sub); }
+.sp-meta dt > span + span { margin-inline-start: .4em; }
+.sp-meta dd { margin: 0; font-family: var(--f-num); font-size: var(--step-1); color: var(--a-text); overflow-wrap: anywhere; }     /* the recipe's own text ink: a sheet may be any fill, an entity colour is only checked against the paper */
+.sp-same { margin: 14px 0 0; }
+.sp-same > h3 { margin-bottom: 4px; font-family: var(--f-text); font-size: var(--step--1); font-weight: 500; letter-spacing: var(--label-track); color: var(--sub); }
+.sp-list { margin: 0; padding: 0; list-style: none; border-top: var(--hair) solid var(--rule); }
+.sp-list li { border-bottom: var(--hair) solid var(--rule); }
+.sp-list button { --mark: 28px; display: grid; grid-template-columns: 2.4em auto minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 2px; border: 0; background: transparent; color: var(--text); text-align: start; cursor: pointer; }
+.sp-list button .no { font-family: var(--f-num); color: var(--b-text); }
+.sp-list button .t { min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
+.sp-list button .evk-mark { font-size: .8rem; }
+.sp-list button[aria-current="true"] { box-shadow: inset 3px 0 0 var(--b); padding-inline-start: 10px; background: var(--paper-2); }
+.sp-list button[aria-current="true"] .t::after { content: " · " attr(data-current); color: var(--b-text); font-size: .85em; }
+.sp-list button:active { background: var(--paper-2); }
+
+/* ---------- sheets: directions ---------- */
+.sp-form { display: grid; gap: 12px; padding-bottom: 4px; }
+.sp-form label { display: block; margin-bottom: 4px; }
+.sp-form .evk-btn { width: 100%; }
+.sp-form .sp-check { display: flex; align-items: center; gap: 10px; min-height: var(--hit); margin: 0; cursor: pointer; }
+.sp-err { margin: 0; padding: 10px 12px; border-inline-start: var(--rule-3) solid var(--b); background: var(--paper-2); color: var(--text); font-size: var(--step--1); line-height: 1.5; }
+.sp-sum { margin: 0 0 8px; color: var(--text); }
+.evk-steps > li > button { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: start; cursor: pointer; }
+.evk-steps .h { font-family: var(--f-text); font-weight: 600; line-height: 1.4; color: var(--a-text); }
+.evk-steps .t { font-family: var(--f-text); font-size: var(--step--1); line-height: 1.65; color: var(--text); }
+.evk-steps .t2 { font-family: var(--f-text); font-size: max(11px, calc(var(--step--1) * .92)); line-height: 1.45; color: var(--sub); }
+.evk-steps > li.is-climb .h { color: var(--climb-text); }
+@media (max-width: 879px) { .evk-steps > li:not(.is-current) .t2 { display: none; } }   /* a narrow screen: the second language only on the step you are on */
+.sp-nav3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.sp-nav3 .evk-btn { padding: 0 6px; }
+.sp-nav3 .evk-k { justify-content: center; text-align: center; }          /* a label that wraps stays centred on its button */
+.sp-linkbtn { min-height: var(--hit); margin-top: 6px; padding: 0; border: 0; background: none; color: var(--a-text); font-family: var(--f-text); font-size: var(--step--1); text-decoration: underline; text-decoration-color: var(--b); text-underline-offset: .3em; cursor: pointer; }
+.sp-linkbtn > span + span { margin-inline-start: .5em; }
+.sp-fine { margin: 10px 0 0; font-size: var(--step--1); color: var(--sub); line-height: 1.6; }
+
+/* ---------- entity page ---------- */
+.evk-entity-head .evk-entity-name { overflow-wrap: anywhere; }
+.evk-entity-sub { font-family: var(--f-text); font-size: var(--step-1); line-height: 1.3; overflow-wrap: anywhere; }
+.evk-entity-blurb { max-width: var(--measure); font-family: var(--f-text); line-height: 1.7; }
+.evk-entity-code .evk-tag { font-size: var(--step-0); }
+.evk-entity .sp-actions { margin-top: var(--gap); }
+.evk-entity .evk-strip { margin-top: calc(var(--gap) * 1.4); }
+.evk-strip > .evk-num { display: flex; flex-direction: column-reverse; justify-content: flex-end; }      /* EP-4: the word comes first in the DOM, the figure sits on top of it */
+.evk-strip > .evk-num > b { overflow-wrap: anywhere; }
+.evk-strip > .evk-num > span { margin-top: .45em; }
+/* the data strip: up to three cells on ONE row at 375 px (a fixed 7.5rem base made three cells 2 + 1), four from 760 px; more wrap to the next row.
+   minmax(0, 1fr): a long figure wraps inside its cell, it never widens the page. The figure shrinks with the cell. */
+.evk-entity .evk-strip { display: grid; grid-template-columns: repeat(var(--cells, 3), minmax(0, 1fr)); }
+.evk-entity .evk-strip > .evk-num { flex: none; padding-inline: clamp(8px, 3vw, var(--gap)); }
+.evk-entity .evk-strip > .evk-num > b { font-size: min(var(--step-3), max(var(--step-1), 7vw)); }
+@media (min-width: 760px) { .evk-entity .evk-strip { grid-template-columns: repeat(var(--cells-w, 4), minmax(0, 1fr)); } .evk-entity .evk-strip > .evk-num > b { font-size: var(--step-3); } }
+.evk-part-head > h2 { margin: 0; }
+.sp-ph { margin: 0 0 var(--gap); }
+/* reading blocks (entity.blocks): base.css styles every evk-r-* class; these are only the starter's own additions (zero specificity: a recipe wins) */
+:where(.evk-r-title) { margin-block: 1.8em .6em; font-size: var(--step-1); }
+:where(.evk-part .evk-r-title:first-child) { margin-top: 0; }
+:where(.evk-r-qa dt .sp-2nd, .evk-r-steps .t .sp-2nd, .evk-r-timeline .t .sp-2nd, .evk-r-cards .t .sp-2nd) { font-weight: 400; }
+:where(.evk-r-cards > li p.sp-2nd, .evk-r-note p.sp-2nd, .evk-r-quote p.sp-2nd) { margin-top: .3em; }
+:where(.evk-r-numbers > li > b > small) { margin-inline-start: .25em; font-family: var(--f-text); font-size: var(--step--1); font-weight: 500; color: var(--sub); white-space: nowrap; }
+:where(.evk-r-numbers > li > span > span) { display: block; margin-top: .15em; }                 /* a bilingual label: one line per language */
+:where(.evk-r-table :is(td, th)) > .sp-2nd { font-size: .92em; }
+:where(.evk-r-timeline > li > div > .t) { display: block; }
+:where(.evk-r-fold > summary > .sp-2nd) { font-weight: 400; font-size: .92em; }
+/* "How to get here": the written route. A climb step takes the climb colour (DR-6: the second colour of the route, AND its words say "up to 3F") */
+.sp-route-more { margin: var(--gap) 0 0; }
+.sp-route-more + .evk-r-fold { margin-top: var(--gap); }
+.evk-r-fold > .sp-route { margin-top: .8em; }
+.evk-r-steps > li.is-climb::before { background: var(--climb-text); color: var(--paper); }       /* --climb-text is >= 4.5:1 on paper, so paper on it passes too */
+.evk-r-steps > li.is-climb > :is(strong, .t):first-child { color: var(--climb-text); }
+:where(.evk-r-numbers .note) { font-size: max(11px, calc(var(--step--1) * .92)); }
+.sp-where { line-height: 1.6; }
+.sp-where + .sp-where { font-size: .92em; }
+.sp-toc { margin-top: calc(var(--gap) * 1.4); }
+.sp-toc ol { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sp-toc a, .sp-pager a, .sp-foot a { text-decoration: none; }        /* the base link style: a link with a class has no underline */
+.sp-toc a { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 14px; box-shadow: inset 0 0 0 var(--hair) var(--rule); color: inherit; }
+/* the lines under the name take the head's own text colour unless the recipe says otherwise (zero specificity here, so the recipe always wins):
+   a head may be a fill (an entity colour, the ink), and --sub on a fill is unreadable */
+:where(.evk-entity-head) :is(.evk-entity-sub, .evk-entity-line, .sp-2nd) { color: inherit; }
+.sp-near { height: clamp(260px, 44dvh, 420px); margin-top: var(--gap); }
+.sp-pager { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); margin-top: calc(var(--gap) * 3); }
+.sp-pager a { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: var(--hit); padding: 10px 0; border-top: var(--rule-2) solid var(--e-fill, var(--a)); color: inherit; }
+.sp-pager a[rel="next"] { grid-column: 2; align-items: flex-end; text-align: end; }
+.sp-pager-name { font-family: var(--f-display); font-weight: var(--display-weight); color: var(--e-ink, var(--a-text)); overflow-wrap: anywhere; line-height: 1.25; }
+
+@media print { .sp-tools, .sp-preview, .sp-find, .sp-pager, .sp-toc { display: none !important; } }

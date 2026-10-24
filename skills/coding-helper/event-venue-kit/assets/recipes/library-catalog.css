@@ -1,0 +1,144 @@
+/* =========================================================================
+   library-catalog — 卡片目录 "Card Catalogue"
+   Idea: the event is a drawer of index cards. Typewriter headings, a red-line header row (the
+   spot ink), pale ruled lines, a rod hole at the bottom of the card, a stack of card edges as
+   the shadow, divider-card tabs as navigation and a tilted due-date stamp for every room number.
+   Cool lavender-white card stock, ribbon blue-black ink, ONE stamp-pad violet.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider = dotted-leader | double-rule | thick-thin
+     data-evk-nav     = tab-strip | lines-top-left
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-ruled  the pale ruled lines on the entity card                                        off: none
+     --prop-rod    the rod hole at the foot of the entity card                                    scale: 1 = on, off: 0  (a shorter card, no hole)
+     --prop-stack  the stack of card edges under cards and sheets                                 off: 0 0 0 0 transparent
+     --prop-tilt   the slight lean of the due-date stamp (room tag) and the empty-state stamp     scale: 1 = on, off: 0  (upright)
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  --blk: min(var(--radius), 3px);
+  --rd: var(--prop-rod, 1); --tl: var(--prop-tilt, 1);
+  --stack: var(--prop-stack, 0 1px 0 var(--rule), 0 4px 0 -1px var(--paper), 0 5px 0 -1px var(--rule), 0 8px 0 -2px var(--paper), 0 9px 0 -2px var(--rule));   /* the deck under a card (prop: stack) */
+  --ruled: var(--prop-ruled, repeating-linear-gradient(to bottom, transparent 0 calc(1.7em - 1px), color-mix(in srgb, var(--a) 12%, transparent) calc(1.7em - 1px) 1.7em));
+  --r-card-radius: 3px; --r-badge-r: 0; --r-node-r: 0; --r-node: 7px;
+}
+:is(h1, h2, .evk-entity-name, .evk-stat .n, .evk-part-head .no, .evk-num b) { font-synthesis-weight: none; }
+
+/* ---- bar: divider-card tabs sitting on a ruled line ---- */
+.evk-bar { background: var(--paper); box-shadow: inset 0 -1px 0 var(--a); }
+.evk-brand { color: var(--a-text); font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--track-tight, -.02em); }
+.evk-nav { gap: 3px; align-self: flex-end; }
+.evk-nav a { padding: 6px 12px 5px; border: 1px solid var(--rule); border-bottom: 0; border-radius: 7px 7px 0 0; background: var(--paper-2); }
+.evk-nav a[aria-current] { background: var(--paper); border-color: var(--a); box-shadow: 0 2px 0 var(--paper); }
+.evk-nav a[aria-current], .evk-nav a[aria-current] .evk-k { color: var(--b-text); }          /* the follower stays --sub: the pair's role layer sets it */
+
+/* ---- label voice: typewriter caps; the follower is lighter ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 400; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .06em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: period leaders (or a double rule / a thick–thin rule) ---- */
+.evk-divider { height: 6px; margin-block: 22px; border: 0; background: radial-gradient(circle 1.2px at 50% 50%, var(--sub) 98%, transparent) 0 0 / 7px 6px repeat-x; }
+:root[data-evk-divider="double-rule"] .evk-divider { height: 5px; background: linear-gradient(var(--a), var(--a)) 0 0 / 100% 1px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 1px no-repeat; }
+:root[data-evk-divider="thick-thin"] .evk-divider { height: 6px; background: linear-gradient(var(--b), var(--b)) 0 0 / 100% 3px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 1px no-repeat; }
+
+/* ---- buttons: plain typed labels on flat rectangles; the stamp-pad violet is the main action ---- */
+.evk-btn { padding: 0 20px; border-radius: var(--blk); background: var(--a); color: var(--on-a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); }
+.evk-btn--quiet { background: transparent; color: var(--a-text); box-shadow: inset 0 0 0 1.5px var(--a); }
+
+/* ---- tag: the due-date stamp — outlined, tilted, typed in the spot ink ---- */
+.evk-tag { display: inline-block; padding: .1em .5em; border: 1.5px solid var(--b-text); border-radius: 3px; color: var(--b-text); transform: rotate(calc(-2deg * var(--tl)));
+  font-family: var(--f-label); font-weight: 700; font-size: .78rem; line-height: 1.3; letter-spacing: .08em; font-variant-numeric: slashed-zero lining-nums tabular-nums; }
+
+/* ---- welcome: typed headline over the red header line, collation-style statistics ---- */
+.evk-welcome :is(h1, h2), .evk-display { padding-bottom: .3em; border-bottom: 2px solid var(--b); font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track);
+  line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: normal; color: var(--text); background: color-mix(in srgb, var(--b) 16%, transparent); }   /* the marker is a tint: --text reads on it in both schemes */
+.evk-stats { gap: 0; margin-top: 22px; }
+.evk-stat { padding: 2px 12px; }
+.evk-stat + .evk-stat { border-left: 1px solid var(--rule); }
+.evk-stat:first-child { padding-left: 0; }
+.evk-stat .n { font-family: var(--f-num); font-weight: 700; line-height: .9; color: var(--a-text); font-variant-numeric: slashed-zero lining-nums tabular-nums; }
+
+/* ---- grid: catalogue lines — a miniature card (colour tab on top, rod hole at the bottom), typed name, stamp ---- */
+.evk-grid { gap: 0 16px; border: 0; border-top: 1px solid var(--a); }
+.evk-grid > li { border-bottom: 1px solid var(--rule); }
+.evk-cell { border: 0; background: transparent; column-gap: 11px; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: 700; line-height: 1.15; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { width: 22px; height: 28px; justify-self: center; border: 0; border-top: 6px solid var(--e-fill); border-radius: 1px; font-size: 0; color: transparent;
+  background: radial-gradient(circle at 50% 78%, var(--paper-2) 2.2px, transparent 2.7px), var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+@media (hover: hover) { .evk-cell:hover > .evk-mark + * { text-decoration: underline; text-decoration-color: var(--b); text-decoration-thickness: 2px; text-underline-offset: .18em; } }
+
+/* ---- entity head = an index card on a deck: red header line, ruled body, rod hole ---- */
+.evk-entity-head { display: block; position: relative; margin: 14px 3px 16px; padding: 18px 20px calc(18px + 34px * var(--rd)); border: 1px solid var(--rule); border-radius: var(--blk);
+  background: var(--ruled) 0 2.6em / 100% calc(100% - 2.6em) no-repeat, var(--paper); box-shadow: var(--stack); }
+.evk-entity-head::after { content: ""; position: absolute; left: 50%; bottom: 14px; width: calc(15px * var(--rd)); height: calc(15px * var(--rd)); margin-left: calc(-7.5px * var(--rd)); border-radius: 50%; background: var(--paper-2); box-shadow: inset 0 1px 2px var(--rule); }
+.evk-entity-head .evk-eyebrow { padding-bottom: .5em; border-bottom: 2px solid var(--b); }
+.evk-entity-name { margin-top: 10px; font-weight: 700; --name-min: 2.1rem; --name-vw: 10.5vw; --name-max: 4.3rem; line-height: 1.05; overflow-wrap: anywhere; }
+.evk-entity-rule { width: 3.4rem; height: 6px; margin-top: 14px; border-radius: 1px; }
+.evk-entity-head > :is(.evk-entity-sub, .evk-entity-line) { color: var(--sub); }
+
+/* ---- number strip + parts ---- */
+.evk-strip { border-block: 0; border-top: 1px solid var(--a); }
+.evk-num { box-shadow: none; border-bottom: 1px solid var(--rule); }
+.evk-num b { font-family: var(--f-num); font-weight: 700; color: var(--e-ink); font-variant-numeric: slashed-zero lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part-head { border-top: 1px solid var(--a); }
+.evk-part-head .no { font-family: var(--f-num); font-weight: 700; line-height: .9; color: var(--b-text); font-variant-numeric: slashed-zero lining-nums tabular-nums; }
+.evk-part-head .no::after { content: "."; }
+
+/* ---- sheet: an index card slid over the drawer; steps typed as numbered entries, the current one under the red line ---- */
+.evk-sheet { border: 1px solid var(--rule); border-radius: var(--blk); box-shadow: var(--stack), 0 18px 30px -16px color-mix(in srgb, var(--a) 40%, transparent); }
+.evk-grabber::before { height: 4px; border-radius: 2px; }
+.evk-steps { border-top: 0; }
+.evk-steps > li { border-left: 0; padding-left: 38px; }
+.evk-steps > li::before { content: counter(evk-step) "."; left: 4px; top: 8px; width: 28px; height: auto; border: 0; justify-content: end; font: 700 .9rem/1.6 var(--f-num); color: var(--sub); }
+.evk-steps > li.is-current { box-shadow: inset 0 -2px 0 var(--b); }
+.evk-steps > li.is-current::before { background: none; color: var(--b-text); }
+.evk-steps > li.is-climb::before { border: 0; color: var(--climb-text); }
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: none; color: var(--climb-text); }
+
+/* ---- part navigator: a row of divider tabs (read = inked, now = tall stamp-violet) ---- */
+.evk-lines { flex-direction: row; align-items: flex-end; justify-content: flex-start; gap: 2px; width: auto; min-width: var(--hit); padding: 0 10px 11px; }
+.evk-lines i { width: 8px; height: 13px; border-radius: 3px 3px 0 0; background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--rule); opacity: 1; }
+.evk-lines i.is-done { background: var(--a); box-shadow: none; }
+.evk-lines i.is-on { width: 8px; height: 20px; background: var(--e-fill); box-shadow: none; }
+:root[data-evk-nav="lines-top-left"] .evk-lines { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; width: var(--hit); padding: 0 calc((var(--hit) - 26px) / 2); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i { width: 12px; height: var(--lh); border-radius: 0; background: var(--sub); box-shadow: none; opacity: .45; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-done { background: var(--a); opacity: 1; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-on { width: 26px; height: var(--lh); background: var(--e-fill); opacity: 1; }
+.evk-progress { height: 2px; }
+
+/* ---- map chrome, segmented control (divider tabs), search (typed) ---- */
+.evk-map { box-shadow: inset 0 0 0 1px var(--rule); }
+.evk-map-hint { background: var(--paper); color: var(--a-text); border: 1px dashed var(--a); border-radius: 2px; }
+.evk-seg { gap: 3px; border: 0; border-bottom: 1px solid var(--a); }
+.evk-seg > button { border: 1px solid var(--rule); border-bottom: 0; border-radius: 6px 6px 0 0; background: var(--paper-2); color: var(--a-text); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button:is([aria-selected="true"], [aria-pressed="true"]) { background: var(--paper); border-color: var(--a); box-shadow: 0 1px 0 var(--paper); color: var(--b-text); }
+.evk-search { border-bottom: 1px solid var(--a); font-family: var(--f-label);
+  background: linear-gradient(color-mix(in srgb, var(--a) 16%, transparent), color-mix(in srgb, var(--a) 16%, transparent)) 0 calc(50% + .72em) / 100% 1px no-repeat, var(--paper-2); }   /* one typed-on line under the baseline, never a ruled field behind the letters */
+.evk-search:focus { border-bottom: 2px solid var(--b); }
+
+/* ---- the small things: panel, chips, empty states (a stamp), selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { border: 1px solid var(--rule); border-radius: var(--blk); box-shadow: var(--stack); }
+.evk-partnav-panel li a { border-left-width: 0; }
+.evk-subnav a { border-radius: 6px 6px 0 0; background: var(--paper-2); }
+.evk-subnav a.is-on { background: var(--paper); border-color: var(--a); border-width: 1px; color: var(--b-text); }
+.evk-empty { border: 1.5px solid var(--b-text); border-radius: 3px; background: transparent; color: var(--b-text); transform: rotate(calc(-.6deg * var(--tl))); }     /* a "no entries" stamp */
+.evk-empty > :first-child { color: var(--b-text); }                                                              /* role: the primary line of the stamp */
+
+/* ---- reading blocks: index cards with a colour tab, typed numerals, a red header line on quotes, a stamp for notes ---- */
+.evk-r-cards > li { background: var(--paper); border: 1px solid var(--rule); border-top: 6px solid var(--e-fill); }
+.evk-r-steps > li { padding-left: 36px; }
+.evk-r-steps > li::before { content: counter(evk-rs) "."; width: 28px; height: auto; justify-content: end; background: none; color: var(--e-ink); font: 700 1rem/1.5 var(--f-num); }
+.evk-r-steps > li:not(:last-child)::after { content: none; }
+.evk-r-quote { padding: .6em 0 0; border: 0; border-top: 2px solid var(--b); }
+.evk-r-note { padding: .6em .9em; border: 1.5px solid var(--b-text); border-radius: 3px; color: var(--b-text); transform: rotate(calc(-.4deg * var(--tl))); }
+.evk-r-table thead th { border-bottom: 2px solid var(--b); }
+.evk-r-numbers > li { border-top-color: var(--b); }

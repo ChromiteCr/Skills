@@ -1,0 +1,134 @@
+/* =========================================================================
+   departures — 启程 "Departures"
+   Idea: the event is a departure hall. Night-blue board, warm-white characters, ONE amber for
+   "now / go here". Every big number is a row of split-flap tiles (one tile per digit, a seam through
+   the middle); the entity head is a boarding pass with a tear line, two notches and a barcode.
+   Dark ground in both colour schemes (paper itself is the night board).
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = dotted-leader | thick-thin | stripe-band
+     data-evk-nav      = side-ticks | lines-top-left
+     data-evk-numerals = split-flap | lining-tabular
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-flap     split-flap tiles behind the big figures (tile per digit, seam through the middle)   scale: 1 = on, off: 0  (plain figures)
+     --prop-barcode  the boarding-pass stub: tear line, two notches and a barcode under the entity head  off: none
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  --fl: var(--prop-flap, 1);                                           /* flap scale (prop: flap) */
+  /* the seam only crosses BIG figures (stats, part numbers); small text stays unstruck so it is legible */
+  --seam: linear-gradient(transparent calc(50% - 1px), color-mix(in srgb, var(--paper) calc(80% * var(--fl)), transparent) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+  /* one tile per tabular digit: tile = 1ch wide, gap = the letter-spacing (.14em) */
+  --flap: repeating-linear-gradient(to right, color-mix(in srgb, var(--paper-2) calc(100% * var(--fl)), transparent) 0 calc(1ch + .02em), transparent calc(1ch + .02em) calc(1ch + .14em));
+  --r-card-radius: 3px; --r-badge-r: 3px; --r-node-r: 2px;
+  --sheet-bg: var(--paper-2);                                          /* base.css knob: sheet + grabber + sheet head */
+}
+
+/* ---- bar: a raised board, an amber line under the current page ---- */
+.evk-bar { background: var(--paper-2); box-shadow: inset 0 -2px 0 var(--paper); }
+.evk-brand { color: var(--a); font-family: var(--f-display); font-weight: var(--display-weight); font-stretch: 112%; text-transform: uppercase; letter-spacing: .04em; }
+.evk-nav a { color: var(--a); }
+.evk-nav a[aria-current] { border-bottom-color: var(--b); }
+.evk-nav a[aria-current], .evk-nav a[aria-current] .evk-k { color: var(--b-text); }
+
+/* ---- label voice: mono caps, a status dot in front of eyebrows ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 500; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .08em; }
+.evk-eyebrow { color: var(--b-text); }
+.evk-eyebrow::before { content: ""; align-self: center; width: .6em; height: .6em; margin-right: .2em; border-radius: 50%; background: var(--b); }
+
+/* ---- divider: dotted leader line (or thick/thin, or a chevron band) ---- */
+.evk-divider { height: 6px; border: 0; background: radial-gradient(circle 1.5px at 50% 50%, var(--sub) 98%, transparent) 0 0 / 8px 6px repeat-x; }
+:root[data-evk-divider="thick-thin"] .evk-divider { background: linear-gradient(var(--b), var(--b)) 0 0 / 100% 3px no-repeat, linear-gradient(var(--rule), var(--rule)) 0 100% / 100% 1px no-repeat; }
+:root[data-evk-divider="stripe-band"] .evk-divider { height: 10px; background: repeating-linear-gradient(135deg, var(--b) 0 7px, transparent 7px 14px); }
+
+/* ---- buttons: flap tiles; primary is the amber tile (focus ring: base.css, drawn inside) ---- */
+.evk-btn { background: var(--paper-2); color: var(--a); box-shadow: inset 0 0 0 1px var(--rule); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); box-shadow: none; }
+.evk-btn--quiet { background: transparent; box-shadow: inset 0 0 0 1px var(--sub); color: var(--a-text); }
+
+/* ---- tag: the gate tile ---- */
+.evk-tag { padding: .3em .55em; border: 0; border-radius: calc(var(--radius) * .5); background: var(--paper-2); color: var(--b-text);
+  font-family: var(--f-num); font-weight: 700; font-size: .8rem; line-height: 1; letter-spacing: .08em; }
+
+/* ---- welcome: statistics as split-flap tiles ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight); font-stretch: 112%;
+  letter-spacing: var(--display-track); line-height: var(--display-leading); color: var(--a); }
+.evk-welcome :is(h1, h2) em { font-style: normal; color: var(--b-text); }
+.evk-stats { gap: 18px 22px; }
+.evk-stat .n { display: inline-block; align-self: flex-start; padding: .1em 0; font-family: var(--f-num); font-weight: 700; line-height: 1.05; letter-spacing: calc(.14em * var(--fl)); color: var(--a);
+  font-variant-numeric: lining-nums tabular-nums; background: var(--seam) 0 0 / 100% 100% no-repeat, var(--flap); border-radius: calc(var(--radius) * .5); }
+:root[data-evk-numerals="lining-tabular"] .evk-stat .n { background: none; letter-spacing: -.01em; color: var(--b); }
+
+/* ---- grid: timetable rows — colour bar, name in caps, gate tile ---- */
+.evk-grid { gap: 0 14px; border: 0; border-top: 1px solid var(--rule); }
+.evk-grid > li { border-bottom: 1px solid var(--rule); }
+.evk-cell { border: 0; background: transparent; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); font-size: .86rem; font-stretch: 105%; text-transform: uppercase; letter-spacing: .02em; line-height: 1.15; color: var(--a); }   /* role: the primary line, either script */
+.evk-mark { width: 6px; height: 34px; justify-self: center; border: 0; border-radius: 2px; background: var(--e-fill); font-size: 0; color: transparent; }
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+
+/* ---- entity head = boarding pass: entity-colour top band, caps name, tear line + notches, barcode ---- */
+.evk-entity-head { display: flex; flex-direction: column; position: relative; margin-top: 12px; padding: 20px 18px 14px; border-top: 10px solid var(--e-fill); border-radius: var(--radius); background: var(--paper-2); color: var(--a); }
+.evk-entity-name { --name-min: 2rem; --name-vw: 10.5vw; --name-max: 4.4rem; font-stretch: 112%; text-transform: uppercase; line-height: var(--lead-tight, .96); letter-spacing: var(--track-tight, -.01em); color: var(--a); overflow-wrap: anywhere; }
+.evk-entity-rule { display: var(--prop-barcode, block); order: 9; position: relative; max-width: none; height: 64px; margin: 22px -18px -14px; padding: 12px 18px 14px; border-top: 2px dashed var(--rule); opacity: .9;
+  background: repeating-linear-gradient(90deg, var(--a) 0 2px, transparent 2px 4px, var(--a) 4px 5px, transparent 5px 9px, var(--a) 9px 12px, transparent 12px 14px) content-box; }
+.evk-entity-rule::before, .evk-entity-rule::after { content: ""; position: absolute; top: -10px; width: 18px; height: 18px; border-radius: 50%; background: var(--paper); }
+.evk-entity-rule::before { left: -9px; }
+.evk-entity-rule::after { right: -9px; }
+
+/* ---- number strip + part numbers: flaps again ---- */
+.evk-strip { border-block: 0; gap: 0 10px; }
+.evk-num { box-shadow: none; border-bottom: 1px solid var(--rule); }
+.evk-num b { font-family: var(--f-num); font-weight: 700; color: var(--a); font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part-head { border-top: 1px solid var(--rule); }
+.evk-part-head .no { display: inline-block; align-self: center; padding: .1em 0; font-family: var(--f-num); font-weight: 700; font-size: 1.7rem; line-height: 1.05; letter-spacing: calc(.14em * var(--fl)); color: var(--b);
+  font-variant-numeric: lining-nums tabular-nums; background: var(--seam) 0 0 / 100% 100% no-repeat, var(--flap); border-radius: calc(var(--radius) * .5); }
+
+/* ---- sheet: a lighter board slid up, amber top edge; step numbers are tiles, the status in amber ---- */
+.evk-sheet { border-top: 3px solid var(--b); box-shadow: 0 0 0 1px var(--rule); }
+.evk-grabber::before { height: 4px; border-radius: 2px; }
+.evk-steps { border-top: 0; }
+.evk-steps > li { border-left: 0; padding-left: 44px; }
+.evk-steps > li::before { left: 8px; top: 7px; width: 22px; height: 28px; border: 0; border-radius: 3px; background: var(--paper); color: var(--a); font-weight: 700; }
+.evk-steps > li.is-current { background: color-mix(in srgb, var(--b) 8%, transparent); }
+.evk-steps > li.is-current::before { background: var(--b); color: var(--on-b); }
+.evk-steps > li.is-climb::before { background: var(--climb-text); color: var(--paper); }
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); color: var(--paper); }
+
+/* ---- part navigator: a gauge of vertical ticks (done = white, now = tall amber) ---- */
+.evk-lines { flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+.evk-lines i { width: 2px; height: 12px; border-radius: 1px; }
+.evk-lines i.is-on { width: 3px; height: 22px; background: var(--e-fill); }
+:root[data-evk-nav="lines-top-left"] .evk-lines { flex-direction: column; width: var(--hit); padding-inline: calc((var(--hit) - 26px) / 2); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i { width: 12px; height: var(--lh); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-on { width: 26px; height: var(--lh); }
+.evk-progress { height: 3px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map-hint { background: var(--paper-2); color: var(--b-text); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--rule); }
+.evk-seg { gap: 3px; border: 0; }
+.evk-seg > button { border-inline-end: 0; border-radius: var(--radius); background: var(--paper-2); color: var(--a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button:is([aria-selected="true"], [aria-pressed="true"]) { background: var(--b); color: var(--on-b); }
+.evk-search { border: 1px solid var(--rule); border-radius: var(--radius); }
+.evk-search:focus { border-color: var(--b); }
+
+/* ---- the small things: panel, chips, folds, empty states, selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { border-top: 3px solid var(--b); }
+.evk-partnav-panel .no { font-family: var(--f-num); font-weight: 700; color: var(--b-text); letter-spacing: .1em; }
+.evk-subnav a { border: 0; border-radius: calc(var(--radius) * .5); background: var(--paper-2); text-transform: uppercase; letter-spacing: .08em; }   /* chips are flap tiles */
+.evk-subnav a.is-on { background: var(--b); color: var(--on-b); border: 0; }
+.evk-empty { border-left-color: var(--b); font-family: var(--f-label); }
+/* ---- reading blocks: board rows — flap-seamed number squares, amber-free rules, tile-cornered cards ---- */
+.evk-r-steps > li::before { background-image: var(--seam); background-size: 100% 100%; background-repeat: no-repeat; }
+.evk-r-cards > li { border-top-width: 3px; }
+.evk-r-timeline > li > :first-child { font-weight: 700; letter-spacing: .06em; }
+.evk-r-table thead th { border-bottom-color: var(--b); }
+.evk-r-numbers > li > :first-child { font-weight: 700; letter-spacing: .02em; }
+@media print { .evk-entity-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+@media (hover: hover) { .evk-cell:hover { background: var(--paper-2); } .evk-cell:hover .evk-tag { color: var(--a); } .evk-nav a:hover { background: var(--paper); } }   /* a hovered timetable row lights its tile; the bar IS --paper-2, so a hovered tab drops to --paper (base.css would paint --paper-2 on --paper-2) */

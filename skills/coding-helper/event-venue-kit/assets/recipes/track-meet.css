@@ -1,0 +1,145 @@
+/* =========================================================================
+   track-meet — 田径场 "Track & Field"
+   Idea: the event is an athletics meet. A deep tartan-brick ground, white lane lines as dividers,
+   a bib (four pin holes, sponsor stripe in the entity colour) for every entity head, results-sheet
+   rows, stencil numerals, parallelogram cuts for everything that MOVES (buttons, current tab).
+   Infield-grass green is a fill only; text on it is always the dark brick.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = stripe-band | thick-thin | dotted-leader
+     data-evk-nav      = lines-top-left | chapter-rail
+     data-evk-numerals = stencil | lining-tabular
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values). All three are scales: 1 = on, 0 = off.
+     --prop-bib    the pin holes of the bib (entity head corners, room tag plate)                 off: 0  (a plain white board)
+     --prop-lanes  the white lane lines (bar edge, divider, entity rule)                          off: 0  (one plain rule)
+     --prop-slant  the forward lean of everything that moves (buttons, current tab, chips, hint)  off: 0  (rectangles)
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  --bb: var(--prop-bib, 1); --ln: var(--prop-lanes, 1); --sl: var(--prop-slant, 1);
+  --r-card-radius: 2px; --r-badge-r: 1px; --r-node-r: 0; --r-node: 10px;
+  --wall: var(--paper); --lane: var(--a); --climb-wall: var(--climb); --climb-text-wall: var(--climb-text);   /* the wall's own climb colours, kept under other names: a token cannot be re-declared from itself */
+  --slant: polygon(calc(10px * var(--sl)) 0, 100% 0, calc(100% - 10px * var(--sl)) 100%, 0 100%);      /* the forward lean (prop: slant) */
+  --hole: color-mix(in srgb, var(--wall) calc(100% * var(--bb)), transparent);      /* pin holes: the wall shows through */
+  --hole-p: color-mix(in srgb, var(--paper) calc(100% * var(--bb)), transparent);
+  --hole-l: color-mix(in srgb, var(--lane) calc(100% * var(--bb)), transparent);
+  --btn-clip: var(--slant);
+  --lanes: repeating-linear-gradient(to bottom, var(--a) 0 calc(2px * var(--ln)), transparent calc(2px * var(--ln)) 6px);
+}
+:is(h1, h2, .evk-entity-name, .evk-stat .n, .evk-part-head .no, .evk-num b) { font-synthesis-weight: none; }
+
+/* ---- bib / sheet / hint: lane-white cards. Tokens are re-declared on the container so children keep working ---- */
+.evk-entity-head, .evk-sheet, .evk-map-hint, .evk-r-cards > li {
+  --paper: var(--lane); --a: var(--wall); --a-text: var(--wall); --on-a: var(--lane); --text: var(--wall);
+  --sub: color-mix(in srgb, var(--wall) 82%, var(--lane)); --rule: color-mix(in srgb, var(--wall) 22%, var(--lane));
+  --paper-2: color-mix(in srgb, var(--wall) 9%, var(--lane)); --b-text: var(--wall); --focus: var(--wall);
+  --climb: color-mix(in oklab, var(--climb-wall) 46%, black); --climb-text: color-mix(in oklab, var(--climb-text-wall) 46%, black);   /* climb colours, darkened for the white card: toward black in OKLab keeps the hue (toward the brick wall it turns brown-grey) */
+  --e-ink: var(--wall); --e-ink-t: var(--wall); --e-tint: color-mix(in srgb, var(--e-fill) 16%, var(--lane));   /* entity tones were computed against the brick ground: re-derive them for white */
+  background-color: var(--lane); color: var(--wall);
+}
+
+/* ---- bar: three lane lines along the lower edge; the current tab is a slanted lime block ---- */
+.evk-bar { background: var(--wall); background-image: var(--lanes), linear-gradient(var(--a), var(--a)); background-size: 100% 10px, 100% calc(2px * (1 - var(--ln))); background-position: 0 100%, 0 100%; background-repeat: no-repeat; padding-bottom: calc(4px + 8px * var(--ln)); }
+.evk-brand { color: var(--a); font-family: var(--f-display); font-weight: var(--display-weight); text-transform: uppercase; letter-spacing: .02em; }
+.evk-nav a { padding-inline: 14px; }
+.evk-nav a[aria-current] { background: var(--b); color: var(--on-b); border-bottom-color: transparent; clip-path: var(--slant); }
+.evk-nav a[aria-current], .evk-nav a[aria-current] .evk-k { color: var(--on-b); --k-2-ink: currentColor; }   /* the lime block: both lines in its text colour */
+
+/* ---- label voice: condensed caps; the follower is regular weight ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 500; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .06em; }
+.evk-eyebrow { color: var(--b); }
+
+/* ---- divider: three white lane lines (or thick–thin, or start-block dashes) ---- */
+.evk-divider { height: 14px; margin-block: 22px; border: 0; background: var(--lanes) 0 0 / 100% 6px repeat-y, linear-gradient(var(--a), var(--a)) 0 50% / 100% calc(3px * (1 - var(--ln))) no-repeat; }
+:root[data-evk-divider="thick-thin"] .evk-divider { height: 7px; background: linear-gradient(var(--a), var(--a)) 0 0 / 100% 4px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 1px no-repeat; }
+:root[data-evk-divider="dotted-leader"] .evk-divider { height: 4px; background: repeating-linear-gradient(90deg, var(--a) 0 10px, transparent 10px 18px); }
+
+/* ---- buttons: parallelograms (--btn-clip); lime fill with brick type is the main action; base.css draws the focus ring inside ---- */
+.evk-btn { padding: 0 26px; background: var(--a); color: var(--on-a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); }
+.evk-btn--quiet { background: var(--paper-2); color: var(--a); box-shadow: inset 0 0 0 2px var(--a); }
+
+/* ---- tag: a small bib — white plate, two pin holes ---- */
+.evk-tag { display: inline-block; padding: .1em 1em; border: 0; border-radius: 2px; color: var(--paper); white-space: nowrap;
+  background: radial-gradient(circle 1.8px at 5px 50%, var(--hole-p) 98%, transparent), radial-gradient(circle 1.8px at calc(100% - 5px) 50%, var(--hole-p) 98%, transparent), var(--a);
+  font-family: var(--f-num); font-weight: 800; font-size: .84rem; line-height: 1.3; letter-spacing: .05em; --k-2-ink: currentColor; }   /* a filled plate: its small text and pair follow its text colour */
+
+/* ---- welcome: huge condensed headline, stencil figures in lime ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track); text-transform: uppercase;
+  line-height: var(--display-leading); color: var(--a); }
+.evk-welcome :is(h1, h2) em { font-style: normal; color: var(--b); }
+.evk-stats { gap: 16px 30px; }
+.evk-stat .n { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .85; color: var(--b); font-variant-numeric: lining-nums tabular-nums; }
+:root[data-evk-numerals="lining-tabular"] .evk-stat .n { font-family: var(--f-display); }
+
+/* ---- grid: results-sheet rows — colour chip, caps name, bib tag ---- */
+.evk-grid { gap: 0 16px; border: 0; border-top: 3px solid var(--a); }
+.evk-grid > li { border-bottom: 2px solid var(--rule); }
+.evk-cell { border: 0; background: transparent; column-gap: 11px; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: .02em; text-transform: uppercase; line-height: 1.1; color: var(--a); }   /* role: the primary line, either script */
+.evk-mark { width: 22px; height: 22px; justify-self: center; border: 0; border-radius: 1px; background: var(--e-fill); font-size: 0; color: transparent; box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--a); }
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+
+/* ---- entity head = race bib: white board, pin holes in the corners, entity-colour sponsor stripe, huge condensed name ---- */
+.evk-entity-head { display: block; position: relative; margin-top: 16px; padding: 38px 22px 22px; border-radius: 2px; border-top: 12px solid var(--e-fill);
+  background-image: radial-gradient(circle 5px at 16px 8px, var(--hole) 98%, transparent), radial-gradient(circle 5px at calc(100% - 16px) 8px, var(--hole) 98%, transparent),
+    radial-gradient(circle 5px at 16px calc(100% - 16px), var(--hole) 98%, transparent), radial-gradient(circle 5px at calc(100% - 16px) calc(100% - 16px), var(--hole) 98%, transparent); }
+.evk-entity-head .evk-eyebrow { color: var(--a-text); }
+.evk-entity-name { --name-min: 3rem; --name-vw: 17vw; --name-max: 7.5rem; line-height: var(--lead-tight, .84); text-transform: uppercase; color: var(--a-text); overflow-wrap: anywhere; }
+.evk-entity-rule { max-width: none; height: calc(3px + 11px * var(--ln)); margin-top: 14px; border-top: calc(3px * (1 - var(--ln))) solid var(--a); background: repeating-linear-gradient(to bottom, var(--a) 0 calc(2px * var(--ln)), transparent calc(2px * var(--ln)) 6px); }   /* --a here is the wall colour (the bib re-declares it): not the root's --lanes */
+.evk-entity-head > :is(.evk-entity-sub, .evk-entity-line) { color: var(--text); }
+.evk-entity-head .evk-tag { background: radial-gradient(circle 1.8px at 5px 50%, var(--hole-l) 98%, transparent), radial-gradient(circle 1.8px at calc(100% - 5px) 50%, var(--hole-l) 98%, transparent), var(--wall); color: var(--lane); }
+
+/* ---- number strip + parts ---- */
+.evk-strip { border-block: 0; border-top: 3px solid var(--a); }
+.evk-num { box-shadow: none; border-bottom: 2px solid var(--rule); }
+.evk-num b { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .95; color: var(--a); font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part-head { border-top: 3px solid var(--a); }
+.evk-part-head .no { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .85; color: var(--b); font-size: 2.8rem; }
+
+/* ---- sheet: a bib slid over the track; steps are square number plates ---- */
+.evk-sheet { border-top: 8px solid var(--b); border-radius: 2px; box-shadow: 0 16px 34px -14px color-mix(in srgb, var(--wall) 70%, transparent); }
+.evk-grabber::before { height: 3px; border-radius: 0; }
+.evk-steps { border-top: 0; }
+.evk-steps > li { border-left: 0; padding-left: 42px; border-bottom: 2px solid var(--rule); }
+.evk-steps > li::before { left: 7px; top: 8px; width: 24px; height: 24px; border: 0; border-radius: 1px; background: var(--wall); color: var(--lane); font-weight: 800; }
+.evk-steps > li.is-current::before { background: var(--b); color: var(--on-b); }
+.evk-steps > li.is-climb::before { background: var(--climb-text); color: var(--lane); }
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); color: var(--lane); }
+
+/* ---- part navigator: slanted bars (done = white, now = long lime) ---- */
+.evk-lines i { height: 3px; transform: skewX(calc(-35deg * var(--sl))); }
+:root[data-evk-nav="chapter-rail"] .evk-lines { flex-direction: row; align-items: center; justify-content: flex-start; gap: 4px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+:root[data-evk-nav="chapter-rail"] .evk-lines i { width: 8px; height: 14px; }
+:root[data-evk-nav="chapter-rail"] .evk-lines i.is-on { width: 14px; height: 14px; }
+.evk-progress { height: 4px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map-hint { clip-path: var(--slant); padding-inline: 20px; }
+.evk-seg { gap: 4px; border: 0; }
+.evk-seg > button { clip-path: var(--slant); padding-inline: 20px; border-inline-end: 0; background: var(--paper-2); color: var(--a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button:is([aria-selected="true"], [aria-pressed="true"]) { background: var(--b); color: var(--on-b); }
+.evk-search { border-bottom: 3px solid var(--a); }
+
+/* ---- the small things: the chapter list is another bib, chips lean, empty states, selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { --paper: var(--lane); --a: var(--wall); --a-text: var(--wall); --on-a: var(--lane); --text: var(--wall); --sub: color-mix(in srgb, var(--wall) 82%, var(--lane));
+  --rule: color-mix(in srgb, var(--wall) 22%, var(--lane)); --paper-2: color-mix(in srgb, var(--wall) 9%, var(--lane)); --b-text: var(--wall); --e-ink: var(--wall); --e-ink-t: var(--wall); --e-tint: color-mix(in srgb, var(--e-fill) 16%, var(--lane)); --focus: var(--wall);
+  background-color: var(--lane); color: var(--wall); border-top: 8px solid var(--b); border-radius: 2px; }
+.evk-subnav a { clip-path: var(--slant); border: 0; background: var(--paper-2); padding-inline: 18px; }
+.evk-subnav a.is-on { background: var(--b); color: var(--on-b); border: 0; }
+.evk-empty { border-left: 6px solid var(--b); }
+/* ---- reading blocks: cards are white bibs with a sponsor stripe (tokens inverted above), plate numbers, slanted nodes ---- */
+.evk-r-cards > li { border-top: 8px solid var(--e-fill); }
+.evk-r-steps > li::before { font-weight: 800; box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--a); }
+.evk-r-timeline > li::before { transform: skewX(calc(-20deg * var(--sl))); }
+.evk-r-quote { --r-quote-bar: 6px; }
+.evk-r-table thead th { border-bottom: 3px solid var(--a); }
+.evk-r-note { border-inline-start: 6px solid var(--b); }
+.evk-r-numbers > li { border-top-width: 3px; border-top-color: var(--a); }
+@media print { .evk-entity-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
