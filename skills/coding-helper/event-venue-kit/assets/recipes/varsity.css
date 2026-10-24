@@ -1,0 +1,112 @@
+/* =========================================================================
+   varsity — 校队二八 "Varsity '28"            原站取值 / source value (canonical direction)
+   Idea: the class year worn like a letterman patch. Chalk paper, two inks, hairline grids
+   instead of boxes, ONE container shape (45° chamfer), ONE signature band
+   (ink · paper · accent · paper · ink = 3:1:2:1:3), rule weight = rank, flat everywhere.
+   base.css already encodes most of the source's UI behaviour; this file adds the look.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = stripe-band | thick-thin
+     data-evk-nav      = lines-top-left | tab-strip
+     data-evk-numerals = lining-tabular | outlined
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-stripe        the class stripe (ink · paper · accent · paper · ink) as the divider             off: none  (a plain ink rule)
+     --prop-numeral-edge  the letterman edge of the big stat numerals (a ring of ink shadows)               off: none  (flat accent figures)
+   Tokens only (no colour literals, no font names). Loaded after base.css.
+   ========================================================================= */
+
+:root {
+  --r-card-radius: 0; --r-badge-r: 0; --r-node-r: 0;
+  --cut: var(--chamfer, 8px);
+  /* chamfered octagon: the only container shape (base.css reads --btn-clip for buttons) */
+  --shape: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+  --btn-clip: var(--shape);
+  /* the class stripe — accent and ink never touch, paper sits between */
+  --stripe: var(--prop-stripe, linear-gradient(var(--a) 0 30%, var(--paper) 0 40%, var(--b) 0 60%, var(--paper) 0 70%, var(--a) 0));
+}
+
+/* ---- bar: seamless at rest; once content slides under it, a hairline with a short accent tip ---- */
+.evk-bar::after { background: linear-gradient(to right, var(--a) 0 calc(100% - 96px), var(--b) 0); }
+.evk-brand { color: var(--a-text); font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--track-tight, -.01em); }
+.evk-nav a[aria-current] { border-bottom-color: var(--b); }
+
+/* ---- label voice: wide caps in the structure ink; the second line of a pair follows on the same baseline, muted ----
+   ROLE (hierarchy, whichever language leads): the container colour is the primary line; the last child is the follower.
+   SCRIPT (typesetting): the Latin label face comes from the tokens; a Chinese line only needs its tracking. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 500; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .12em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: the scarf stripe (or the thick rule with a short accent cap) ---- */
+.evk-divider { height: 18px; border: 0; background: var(--stripe), linear-gradient(var(--a), var(--a)) 0 50% / 100% var(--rule-2) no-repeat; }   /* the stripe is opaque; with the prop off the plain rule shows */
+:root[data-evk-divider="thick-thin"] .evk-divider { height: var(--rule-cap); background: linear-gradient(to right, var(--a) calc(100% - 64px), var(--b) 0); }
+
+/* ---- buttons: flat chamfered octagons (the clip is base.css's --btn-clip; its focus ring is drawn inside) ---- */
+.evk-btn { letter-spacing: var(--label-track); }
+.evk-btn--quiet { background: var(--paper-2); color: var(--a-text); }
+
+/* ---- room·booth tag: a bold slab figure in the accent ink, no box ---- */
+.evk-tag { padding: 0; border: 0; color: var(--b-text); font-family: var(--f-num); font-weight: 700; letter-spacing: 0; font-size: var(--step-0); }
+
+/* ---- welcome (the entrance screen) ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight);
+  letter-spacing: var(--display-track); line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: normal; color: var(--b-text); }       /* one word of the headline in the accent */
+.evk-stat .n { font-family: var(--f-num); font-weight: 700; line-height: .85; color: var(--b); font-variant-numeric: lining-nums tabular-nums; letter-spacing: .1em;
+  /* the signature three-layer numeral (原站取值): accent face · paper keyline (3u) · ink edge (7.4u), built from a stroke + a ring of shadows; digits stay separate patches */
+  -webkit-text-stroke: .06em var(--paper); paint-order: stroke fill;
+  text-shadow: var(--prop-numeral-edge, .104em 0 var(--a), -.104em 0 var(--a), 0 .104em var(--a), 0 -.104em var(--a), .074em .074em var(--a), -.074em .074em var(--a), .074em -.074em var(--a), -.074em -.074em var(--a),
+    .056em 0 var(--a), -.056em 0 var(--a), 0 .056em var(--a), 0 -.056em var(--a), .04em .04em var(--a), -.04em .04em var(--a), .04em -.04em var(--a), -.04em -.04em var(--a)); }
+:root[data-evk-numerals="lining-tabular"] .evk-stat .n { -webkit-text-stroke: 0; text-shadow: none; letter-spacing: -.01em; line-height: .8; }   /* the flat web figure */
+.evk-stat .n { margin-left: .12em; }                          /* the ink edge hangs outside the glyph: keep it on the gutter */
+
+/* ---- grid: ruled cells, no cards (the door-sign idiom): heavy head rule, 1px hairlines, a crest disc ---- */
+.evk-grid { border-top: var(--rule-2) solid var(--a); border-left: 0; overflow: hidden; }
+.evk-grid > li { margin-right: -1px; }                         /* the last column's right hairline slides out of view */
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: 600; color: var(--a-text); }     /* role: the primary line, either script */
+.evk-cell :is(.cn, [lang|="zh"]) { letter-spacing: .02em; }                                          /* script */
+.evk-mark { border: 0; border-radius: 50%; background: var(--e-tint); }   /* the only circle in the system */
+
+/* ---- entity head = the booth table tent: giant tight name, long rule + short accent cap ---- */
+.evk-entity-name { --name-min: 3.2rem; --name-vw: 17vw; --name-max: 9rem; line-height: var(--lead-tight, .86); letter-spacing: var(--track-tight, -.025em); overflow-wrap: anywhere; }
+.evk-entity-rule { background: linear-gradient(to right, var(--e-fill) calc(100% - 64px), var(--b) 0); }
+
+/* ---- the red band (原站取值): the room·booth line becomes a full-bleed accent band at the foot of the table tent ---- */
+.evk-entity-head .evk-eyebrow { order: 9; margin: 22px calc(var(--gutter) * -1) 0; padding: 22px var(--gutter); background: var(--b); color: var(--on-b); font-size: var(--step-0); }
+.evk-entity-head .evk-eyebrow { --k-2-ink: currentColor; }               /* the band is on-accent: both lines wear its text colour */
+@media (min-width: 760px) { .evk-entity-head .evk-eyebrow { margin-inline: 0; padding-inline: 32px; } }
+
+/* ---- number strip + parts: hairline cells (base.css), lining figures, a hairline above each part ---- */
+.evk-num b { font-weight: 700; letter-spacing: -.01em; line-height: 1.05; font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-num small { margin-left: .25em; letter-spacing: .04em; }
+.evk-part-head { border-top: 1px solid var(--rule); }
+.evk-part-head .no { font-weight: 700; color: var(--b-text); }
+
+/* ---- bottom sheet: inset floating square card, accent cap, ink-tinted shadow (base.css), square step numerals ---- */
+.evk-sheet { border-top-color: var(--b); }
+.evk-steps > li.is-current::before { background: var(--b); border-color: var(--b); }
+
+/* ---- part navigator: a column of short lines; read = inked, current = long + entity colour (base.css) ---- */
+:root[data-evk-nav="tab-strip"] .evk-lines { flex-direction: row; align-items: flex-end; gap: 3px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+:root[data-evk-nav="tab-strip"] .evk-lines i { width: 6px; height: 12px; }
+:root[data-evk-nav="tab-strip"] .evk-lines i.is-on { width: 6px; height: 22px; }
+
+/* ---- map hint: frosted square (base.css); floor control and search keep the 2px ink frame ---- */
+.evk-map-hint { text-transform: var(--label-case); }
+.evk-seg > button { font-stretch: var(--label-stretch); }
+.evk-search { border-radius: 0; }
+
+@media (prefers-reduced-motion: reduce) { .evk-bar::after { transition: none; } }
+
+/* ---- the small things (原站取值 / source values) ---- */
+:root { --sel-bg: var(--a); --sel-fg: var(--on-a); }              /* base.css ::selection: ink fill, paper text */
+.evk-partnav-panel { border-top-width: 4px; border-radius: 0; }  /* the chapter list: a square card under a 4px entity-colour cap */
+.evk-subnav a { border-radius: 0; }
+.evk-empty { border-left-width: 4px; }                             /* designed blanks: a 4px accent edge, a bold English line, the Chinese beneath */
+/* ---- reading blocks: chamfered cards (the one container shape), a heavy ink bar on quotes, an accent edge on notes ---- */
+.evk-r-cards > li { clip-path: var(--shape); }
+.evk-r-quote { --r-quote-bar: 6px; }
+.evk-r-note { border-inline-start: 4px solid var(--b); }
+.evk-r-numbers > li { border-top-color: var(--a); }
+@media print { .evk-divider { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }   /* the stripe is the signature: it prints */

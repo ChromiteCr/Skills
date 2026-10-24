@@ -1,0 +1,335 @@
+{
+  "kit": "event-venue-kit",
+  "kind": "reference-fingerprint",
+  "schema": 1,
+  "direction": "varsity",
+  "name": {
+    "en": "Varsity '28",
+    "cn": "校队二八"
+  },
+  "canonical": true,
+  "note": "原站 / the source site (SDSZ College Fair). 规范出口：只在使用者明说要原站外观时才对它求相似度以外的用途。similarity.py 以 axes 里的 12 个键为准（flat 或 nested 都可读）；其余字段给人和 grep 用。/ similarity.py reads only the 12 keys under `axes`; everything else is for humans and greps.",
+  "axes": {
+    "palette_family": "two-inks-paper|a240|b0",
+    "ground": "light",
+    "display_class": "slab-serif",
+    "label_style": "uppercase|wide|prop",
+    "shape.language": "chamfer",
+    "divider": "stripe-band",
+    "entity_header": "table-tent",
+    "entity_token": "badge",
+    "numerals": "outlined",
+    "map.projection": "orbit",
+    "map.material": "paper",
+    "motion_bucket": "firm"
+  },
+  "axes_read_as": {
+    "palette_family": "BUILD-SPEC §5: `<palette.structure>|a<bucket>|b<bucket>`, hue bucket = int(OKLCH h // 30) * 30 of the light-scheme --a / --b ('n' when chroma < 0.03). a = navy #13294B (h 258.9 -> 240), b = red #C8102E (h 22.3 -> 0).",
+    "ground": "light | dark — the native page ground.",
+    "display_class": "the `class` of the display font in the direction library (Zilla Slab = slab-serif). Must equal library/directions.json varsity.type.display[0].class; if the library spells it differently, change both together.",
+    "label_style": "`<label_case>|<stretch class>|<mono|prop>` — uppercase, Archivo pinned at width 125 = wide, proportional.",
+    "numerals": "outlined = the signature chamfered three-layer numerals (logo and room numbers); data figures are lining-tabular as a secondary rule, not the fingerprint value.",
+    "motion_bucket": "kit.motion_bucket(dur, bounce): still = bounce <= 0.04 and dur >= 0.45; lively = bounce >= 0.18; firm = between. Source UI springs: dur 0.30-0.35, bounce 0 -> firm (camera 0.45-0.55 is only used inside the map)."
+  },
+  "reference": {
+    "colors": {
+      "raw": {
+        "chalk": "#F7F5F0",
+        "paper-2": "#ECE8DF",
+        "stone": "#D8D3C8",
+        "ink": "#14171D",
+        "muted": "#5B6270",
+        "navy": "#13294B",
+        "red": "#C8102E"
+      },
+      "oklch": {
+        "paper": [
+          0.97,
+          0.007,
+          88.6
+        ],
+        "paper-2": [
+          0.932,
+          0.013,
+          86.8
+        ],
+        "rule": [
+          0.868,
+          0.016,
+          86.4
+        ],
+        "text": [
+          0.204,
+          0.013,
+          264.2
+        ],
+        "sub": [
+          0.495,
+          0.024,
+          264.3
+        ],
+        "a": [
+          0.283,
+          0.069,
+          258.9
+        ],
+        "b": [
+          0.53,
+          0.207,
+          22.3
+        ],
+        "night": [
+          0.232,
+          0.053,
+          259.0
+        ]
+      },
+      "kit_light": {
+        "paper": "#F7F5F0",
+        "paper-2": "#ECE8DF",
+        "rule": "#D8D3C8",
+        "text": "#14171D",
+        "sub": "#5B6270",
+        "a": "#13294B",
+        "a-text": "#13294B",
+        "on-a": "#F7F5F0",
+        "b": "#C8102E",
+        "b-text": "#C8102E",
+        "on-b": "#F7F5F0",
+        "climb": "#8D671D",
+        "climb-text": "#866114",
+        "focus": "#C8102E"
+      },
+      "kit_dark": {
+        "paper": "#0D1D36",
+        "paper-2": "#13294B",
+        "rule": "rgba(247,245,240,.16)",
+        "text": "#EEEAE1",
+        "sub": "#AEB6C6",
+        "a": "#F7F5F0",
+        "a-text": "#F7F5F0",
+        "on-a": "#13294B",
+        "b": "#C8102E",
+        "b-text": "#FF7084",
+        "on-b": "#F7F5F0",
+        "climb": "#FBBF24",
+        "climb-text": "#FBBF24",
+        "focus": "#FF4D63"
+      },
+      "source_values_not_used_in_kit": {
+        "climb-light": "#B45309",
+        "focus-dark": "#C8102E",
+        "why": "climb-light is only 26.7 deg from --b in OKLCH (kit floor: >= 50); dark focus ring is 2.86:1 on #0D1D36 (floor: >= 3)"
+      },
+      "extras": {
+        "red-text-dark": "#FF7084",
+        "red-label-on-navy": "#FF8A99",
+        "gold": "#A98B5F",
+        "gold-dark": "#CDB38A",
+        "night-sheet-tint": "#1E3A66",
+        "climb-graphic": "#D97706",
+        "climb-dark": "#FBBF24"
+      },
+      "area_ratio": {
+        "chalk": 46,
+        "navy": 30,
+        "red": 18,
+        "stone+ink": 6
+      }
+    },
+    "map_colors": {
+      "light": {
+        "slab": "#ECE8DF",
+        "slab-side": "#13294B",
+        "room": "#FFFFFF",
+        "room-sel": "#FBE3E7",
+        "wall-cap": "#13294B",
+        "wall-face": "#F4F1EA",
+        "block": "#D8D3C8",
+        "icon": "#13294B",
+        "icon-bg": "#F7F5F0",
+        "route": "#C8102E",
+        "ring": "#13294B",
+        "halo": "#F7F5F0",
+        "climb": "#D97706"
+      },
+      "dark": {
+        "slab": "#182F55",
+        "slab-side": "#060F1C",
+        "room": "#1E3A66",
+        "room-sel": "#4A2340",
+        "wall-cap": "#F7F5F0",
+        "wall-face": "#2C4A78",
+        "block": "#2A426B",
+        "icon": "#F7F5F0",
+        "icon-bg": "#13294B",
+        "route": "#FF4D63",
+        "ring": "#F7F5F0",
+        "halo": "#13294B",
+        "climb": "#FBBF24"
+      }
+    },
+    "type": {
+      "display": {
+        "name": "Zilla Slab",
+        "stack": "'Zilla Slab', Rockwell, Georgia, serif",
+        "class": "slab-serif",
+        "weights": [
+          600,
+          700
+        ],
+        "google": "Zilla Slab"
+      },
+      "label": {
+        "name": "Archivo Expanded",
+        "stack": "'Archivo Expanded', 'Helvetica Neue', Arial, sans-serif",
+        "class": "sans-wide",
+        "weights": [
+          500,
+          800
+        ],
+        "google": "Archivo",
+        "note": "Archivo variable, width axis pinned at 125"
+      },
+      "text": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, <cjk-sans>",
+      "cjk": "'PingFang SC', 'Noto Sans SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+      "cjk_display": "same as cjk (sans); serif 'Songti SC', 'STSong', 'Noto Serif SC' only for report chapter titles and quotes",
+      "label_case": "uppercase",
+      "label_track": 0.2,
+      "label_stretch": "125%",
+      "label_weight": 700,
+      "display_weight": 700,
+      "display_track": [
+        -0.012,
+        -0.025
+      ],
+      "display_leading": [
+        1.0,
+        0.86
+      ],
+      "scale": "hand-tuned, not a ratio: .74 / 1 / 1.12 / 1.65 rem, then clamp(2.5rem,7.6vw,4.7rem) and clamp(3.6rem,19vw,9rem)"
+    },
+    "shape": {
+      "language": "chamfer",
+      "radius": 0,
+      "chamfer": 8,
+      "hair": 1,
+      "rule_2": 2,
+      "rule_3": 3,
+      "rule_cap": 6,
+      "stripe_ratio": [
+        3,
+        1,
+        2,
+        1,
+        3
+      ],
+      "stripe_colors": [
+        "navy",
+        "chalk",
+        "red",
+        "chalk",
+        "navy"
+      ],
+      "crest_circle_px": [
+        30,
+        52,
+        76
+      ]
+    },
+    "motion": {
+      "spring_dur": 0.35,
+      "spring_bounce": 0,
+      "press_scale": 0.97,
+      "fade_dur": 0.2,
+      "snap_back": {
+        "dur": 0.3,
+        "bounce": 0.2
+      },
+      "camera_response": [
+        0.45,
+        0.55
+      ]
+    },
+    "map": {
+      "projection": "orbit",
+      "material": "paper",
+      "token": "badge",
+      "pitch": 30,
+      "yaw": 32,
+      "wall_h": 1.0,
+      "light": "left",
+      "dim": 0.26,
+      "label_case": "upper",
+      "stack_gap_m": 22
+    },
+    "layout": {
+      "gutter": 20,
+      "gap": 14,
+      "row_pad": 10,
+      "measure": "40em",
+      "shell_max": 1120,
+      "bar_height": 56,
+      "breakpoints": [
+        700,
+        760,
+        880,
+        980,
+        1000,
+        1100
+      ],
+      "grid_columns": [
+        2,
+        3,
+        4
+      ],
+      "density": "airy",
+      "texture": "none",
+      "nav": "lines-top-left"
+    }
+  },
+  "tells": {
+    "hex": [
+      "#F7F5F0",
+      "#ECE8DF",
+      "#D8D3C8",
+      "#14171D",
+      "#5B6270",
+      "#13294B",
+      "#C8102E",
+      "#0D1D36",
+      "#FF7084"
+    ],
+    "fonts": [
+      "Zilla Slab",
+      "Archivo Expanded"
+    ],
+    "css": [
+      "linear-gradient(var(--navy) 0 30%, var(--chalk) 0 40%, var(--red) 0 60%",
+      "clip-path: polygon(var(--cut) 0",
+      "letter-spacing: .2em",
+      "scale(.97)"
+    ],
+    "copy": [
+      "Class of 2028, meet your colleges.",
+      "03 Floors / 10 Rooms / 52 Universities"
+    ],
+    "note": "命中其中三类以上，而使用者没要原站外观，就是在复制原站。/ three or more categories hit, with no request for the source look = copying the source."
+  },
+  "signature": [
+    "warm chalk page #F7F5F0, never white; navy headings, ink body, one red for where / now / act",
+    "slab-serif entity name set huge (line-height .86, tracking -.025em) over a 6px rule with a 64px accent tip",
+    "uppercase wide label (.2em) followed by a small muted second-language gloss on the same baseline",
+    "8px chamfered flat buttons in three fills; chamfer only on interactive things; the only circle is the crest",
+    "navy-chalk-red-chalk-navy 3:1:2:1:3 stripe as divider, footer cap and photo stand-in",
+    "2px navy top rule + 1px stone row rules (door-sign lists); crest cell grid 2/3/4 columns, no cards",
+    "full-bleed red room band with outlined room numeral and booth number on a 3px underline",
+    "translucent 56px bar that melts into the page; 2px hairline with a 96px red tip appears on scroll",
+    "navy welcome panel with logo; on phones a 112px navy strip, then a two-line hand-broken headline",
+    "red solid numerals 03 / 10 / 52 with tiny wide-caps captions",
+    "dark mode = deep navy #0D1D36 (not black), red lightened to #FF7084 for text only",
+    "inset floating bottom sheet with a 6px red cap on a critically damped spring",
+    "orbit canvas map: hollow white rooms + navy-capped 1m walls on paper-coloured floor, crest badges on 2.1m pins",
+    "route line = chalk halo + red + marching white dashes; stairs in amber"
+  ]
+}

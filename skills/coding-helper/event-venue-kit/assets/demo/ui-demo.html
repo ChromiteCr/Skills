@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en" data-evk-lead="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EVK UI Demo</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="event-venue-kit: springs, a non-modal sheet, the reading navigator, entity tones and the lead-language switch on a minimal token block.">
+<!-- A minimal token block (BUILD-SPEC §2), light + dark declared twice. This palette is the demo's own, not a recommendation. -->
+<style id="tokens">
+:root {
+  --paper: #F2F4EF; --paper-2: #E4E9E1; --rule: #C3CCC0; --text: #16201C; --sub: #4A5750;
+  --a: #1F4D4A; --a-text: #1F4D4A; --on-a: #F2F4EF; --b: #B8341F; --b-text: #B8341F; --on-b: #FFFFFF;
+  --climb: #6D28D9; --climb-text: #5B21B6; --focus: #2B50D6; --m-slab: #E4E9E1; --m-ground: #E4E9E1;
+  --f-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Songti SC", "Noto Serif SC", SimSun, serif;
+  --f-label: "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --f-text: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --f-num: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Songti SC", "Noto Serif SC", SimSun, serif;
+  --f-cjk: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --label-case: uppercase; --label-track: .14em; --label-stretch: normal; --label-weight: 600;
+  --display-weight: 600; --display-track: -.01em; --display-leading: 1.05;
+  --step--1: clamp(.74rem, .72rem + .1vw, .8rem); --step-0: 1rem; --step-1: 1.25rem; --step-2: 1.6rem;
+  --step-3: clamp(1.9rem, 1.6rem + 1.4vw, 2.6rem); --step-4: clamp(2.4rem, 1.9rem + 2.4vw, 3.6rem); --step-5: clamp(2.8rem, 2rem + 4vw, 5rem);
+  --radius: 3px; --chamfer: 0px; --hair: 1px; --rule-2: 2px; --rule-3: 3px; --rule-cap: 5px;
+  --spring-dur: .42s; --spring-bounce: 0; --press-scale: .97; --fade-dur: .2s;
+  --gutter: 20px; --gap: 16px; --row-pad: 12px; --measure: 62ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0F1A19; --paper-2: #172625; --rule: #2D4240; --text: #E6EEEA; --sub: #A7B8B2;
+    --a: #7FD1C7; --a-text: #7FD1C7; --on-a: #0F1A19; --b: #FF8A6B; --b-text: #FF8A6B; --on-b: #1A0E0A;
+    --climb: #C4B5FD; --climb-text: #C4B5FD; --focus: #8FB1FF; --m-slab: #172625; --m-ground: #172625;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0F1A19; --paper-2: #172625; --rule: #2D4240; --text: #E6EEEA; --sub: #A7B8B2;
+  --a: #7FD1C7; --a-text: #7FD1C7; --on-a: #0F1A19; --b: #FF8A6B; --b-text: #FF8A6B; --on-b: #1A0E0A;
+  --climb: #C4B5FD; --climb-text: #C4B5FD; --focus: #8FB1FF; --m-slab: #172625; --m-ground: #172625;
+}
+</style>
+<link rel="stylesheet" href="../floor/base.css">
+<style>
+  /* demo furniture only */
+  .demo-h { margin-top: calc(var(--gap) * 3); }
+  .demo-h h2 { font-size: var(--step-3); }
+  .demo-lede { max-width: var(--measure); color: var(--sub); }
+  .demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-block: var(--gap); }
+  .demo-row label { display: inline-flex; align-items: center; gap: .6em; font-size: var(--step--1); }
+  .demo-row input[type=range] { width: 9rem; min-height: var(--hit); padding: 0; background: none; border: 0; }
+  .demo-out { font-family: var(--f-num); font-variant-numeric: tabular-nums; min-width: 3.4em; }
+  .demo-pad { margin: 0; font-family: var(--f-num); font-size: var(--step--1); color: var(--sub); }
+  .tone-table { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+  .tone-table th, .tone-table td { padding: 6px 8px; text-align: left; border-bottom: var(--hair) solid var(--rule); }
+  .chip { display: inline-grid; place-items: center; min-width: 5.6em; height: 2.2em; padding: 0 .4em; font-family: var(--f-num); font-size: .78rem; }
+  .scroll-x { overflow-x: auto; }
+  .demo-selftest { font-family: var(--f-num); font-size: var(--step--1); }
+  .demo-selftest.ok { color: var(--a-text); }
+  .demo-selftest.bad { color: var(--b-text); }
+  .evk-sheet .evk-steps { margin-top: 6px; }
+  /* a climb step: the numeral ring is the graphic colour, the words that say "up" are text and use --climb-text (4.5:1) */
+  .evk-steps > li.is-climb .evk-k > :first-child { color: var(--climb-text); }
+  .demo-lead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: calc(var(--gap) * 1.5); }
+  .evk-sheet p { margin-block: .4em .8em; }
+</style>
+</head>
+<body>
+<a class="evk-skip" href="#main">Skip to content</a>
+<header class="evk-bar" lang="en">
+  <a class="evk-brand" href="#top"><span class="evk-k"><span class="en" lang="en">EVK</span><span class="cn" lang="zh-CN">演示</span></span></a>
+  <nav class="evk-nav" aria-label="Sections">
+    <a href="#sheet" aria-current="page"><span class="evk-k"><span class="en" lang="en">Sheet</span><span class="cn" lang="zh-CN">面板</span></span></a>
+    <a href="#report"><span class="evk-k"><span class="en" lang="en">Report</span><span class="cn" lang="zh-CN">报告</span></span></a>
+    <a href="#tones"><span class="evk-k"><span class="en" lang="en">Tones</span><span class="cn" lang="zh-CN">色调</span></span></a>
+  </nav>
+</header>
+
+<main id="main" lang="en">
+  <section class="evk-welcome" id="top">
+    <p class="evk-eyebrow evk-k"><span class="en" lang="en">Event venue kit</span><span class="cn" lang="zh-CN">活动场馆套件</span></p>
+    <h1 style="font-size: var(--step-5)">Springs, a sheet, a navigator</h1>
+    <p class="demo-lede">Open the sheet and drag it down: pulling up resists, a flick dismisses, a short pull springs back. The marker on the map stays in the part the sheet does not cover. Everything honours <em>prefers-reduced-motion</em>.</p>
+    <div class="evk-stats">
+      <div class="evk-stat"><b class="n">03</b><span class="evk-k"><span class="en" lang="en">Floors</span><span class="cn" lang="zh-CN">层楼</span></span></div>
+      <div class="evk-stat"><b class="n">14</b><span class="evk-k"><span class="en" lang="en">Entities</span><span class="cn" lang="zh-CN">参展方</span></span></div>
+      <div class="evk-stat"><b class="n">08</b><span class="evk-k"><span class="en" lang="en">Rooms</span><span class="cn" lang="zh-CN">教室</span></span></div>
+    </div>
+    <!-- the lead language: the PRIMARY line is the first child of every pair; the toggle moves the .cn line and flips data-evk-lead -->
+    <div class="demo-lead">
+      <span class="evk-k"><span class="en" lang="en">Lead language</span><span class="cn" lang="zh-CN">主语言</span></span>
+      <div class="evk-seg" role="tablist" aria-label="Lead language" id="lead">
+        <button aria-selected="true" data-lead-set="en"><span lang="en">English</span><span class="cn" lang="zh-CN">英文</span></button>
+        <button aria-selected="false" data-lead-set="zh"><span lang="en">Chinese</span><span class="cn" lang="zh-CN">中文</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. sheet + springs + fitAbove -->
+  <section class="demo-h" id="sheet" aria-labelledby="h-sheet">
+    <h2 id="h-sheet"><span class="evk-k"><span class="en" lang="en">Sheet</span><span class="cn" lang="zh-CN">底部面板</span></span></h2>
+    <div class="demo-row">
+      <button class="evk-btn evk-btn--primary" id="open-sheet" type="button"><span lang="en">Open sheet</span><span class="cn" lang="zh-CN">打开</span></button>
+      <button class="evk-btn" id="toggle-steps" type="button" aria-pressed="false"><span lang="en">All steps</span><span class="cn" lang="zh-CN">全部步骤</span></button>
+      <label>duration <input id="dur" type="range" min="0.2" max="0.8" step="0.01" value="0.42" aria-label="spring duration"><output class="demo-out" id="dur-o">0.42s</output></label>
+      <label>bounce <input id="bnc" type="range" min="0" max="0.35" step="0.01" value="0" aria-label="spring bounce"><output class="demo-out" id="bnc-o">0.00</output></label>
+    </div>
+    <div class="evk-map" id="map" role="img" aria-label="A stand-in map: the marker stays in the free part of the map when the sheet is open. The same information is in the text below.">
+      <canvas></canvas>
+      <p class="evk-map-hint evk-k"><span class="en" lang="en">Open the sheet</span><span class="cn" lang="zh-CN">打开面板</span></p>
+    </div>
+    <p class="demo-pad" id="pad-out" aria-live="off">pad: top 0 · right 0 · bottom 0 · left 0</p>
+  </section>
+
+  <div class="evk-sheet is-running" id="sheet-el" lang="en" role="dialog" aria-modal="false" aria-labelledby="sheet-t" hidden>
+    <div class="evk-grabber"></div>
+    <div class="evk-sheet-head">
+      <h3 id="sheet-t" tabindex="-1"><span class="evk-k evk-k--stack"><span class="en" lang="en">Room 203 · 2F</span><span class="cn" lang="zh-CN">二层 · 203 展区</span></span></h3>
+      <button class="evk-btn evk-btn--quiet evk-btn--sm" id="close-sheet" type="button"><span lang="en">Close</span><span class="cn" lang="zh-CN">关闭</span></button>
+    </div>
+    <p>Drag the grabber or this title row. Presses on buttons and links are left alone, and the list below scrolls normally.</p>
+    <ol class="evk-steps" id="steps">
+      <li class="is-current"><span class="evk-k"><span class="en" lang="en">Walk to the stairs</span><span class="cn" lang="zh-CN">走到楼梯，约 12 米</span></span></li>
+      <li class="is-climb"><span class="evk-k"><span class="en" lang="en">Up to 2F</span><span class="cn" lang="zh-CN">走楼梯上到 2 层</span></span></li>
+      <li><span class="evk-k"><span class="en" lang="en">Walk to Room 203</span><span class="cn" lang="zh-CN">出楼梯后左转，走到 203 门口</span></span></li>
+      <li><span class="evk-k"><span class="en" lang="en">Booth 01 · Salt &amp; Air</span><span class="cn" lang="zh-CN">进入 203，盐风风筝在 01 号展位</span></span></li>
+    </ol>
+  </div>
+
+  <!-- 2. the reading navigator -->
+  <section class="demo-h" id="report-intro" aria-labelledby="h-report">
+    <h2 id="h-report"><span class="evk-k"><span class="en" lang="en">Reading navigator</span><span class="cn" lang="zh-CN">阅读导航</span></span></h2>
+    <p class="demo-lede">Scroll: the lines in the bar top-left are one per part. The long line is the part being read, ink is read, and the line under the bar fills as you go. Click it for the contents.</p>
+  </section>
+
+  <article data-report class="evk-entity" data-entity-color="#E4572E">
+    <header class="evk-entity-head">
+      <p class="evk-eyebrow evk-k"><span class="en" lang="en">Exhibitor · Hall 02</span><span class="cn" lang="zh-CN">展商 · 大厅 02</span></p>
+      <h2 class="evk-entity-name" data-fit="4">Orbital Kitchen</h2>
+      <div class="evk-entity-rule"></div>
+      <p class="evk-entity-sub" lang="zh-CN">轨道厨房</p>
+    </header>
+    <div class="evk-strip">
+      <div class="evk-num"><b>140<small>m²</small></b><span>Kitchen floor</span></div>
+      <div class="evk-num"><b>2019</b><span>Founded</span></div>
+      <div class="evk-num"><b>3<small>min</small></b><span>Per plate</span></div>
+    </div>
+
+    <section class="evk-part" data-part id="p-stall">
+      <header class="evk-part-head"><span class="no">01</span><span class="evk-k"><span class="en" lang="en">The stall</span><span class="cn" lang="zh-CN">展位</span></span></header>
+      <p>The first part begins with a plain paragraph. The navigator decides which part you are reading with a reading line placed a little above a third of the way down the window, below the bar. A part is current when its top has passed that line, not when it touches the top edge.</p>
+      <p>Citations such as <a href="#src-1">this one<sup class="evk-cite">1</sup></a> open the folded source list before the page jumps, so a link never lands on a closed box.</p>
+      <p>Rows of prose keep the measure of the page, and the head of each part becomes a sticky left column on a wide screen. Orbital Kitchen cooks with a solar oven on the quay: every plate at the stall in Pier Nine Hall is ready in the time the sun takes to cross one window.</p>
+      <p>The queue stays short because each plate takes three minutes. Tasting plates are free until noon; after that a plate costs one token from the fair desk.</p>
+    </section>
+
+    <section class="evk-part" data-part id="p-kitchen">
+      <header class="evk-part-head"><span class="no">02</span><span class="evk-k"><span class="en" lang="en">The kitchen</span><span class="cn" lang="zh-CN">厨房</span></span>
+        <nav class="evk-subnav" aria-label="In this part"><a href="#k-1">Pantry</a><a href="#k-2">Test stove</a><a href="#k-3">Tasting counter</a></nav>
+      </header>
+      <h3 id="k-1">Pantry</h3>
+      <p>Salt, oats and dried seaweed come from the harbour market two streets away. The shelves are labelled in two languages, so a visitor can read what is in each jar without asking.</p>
+      <p>Nothing is bought in plastic; the jars go back to the market every Friday and come home full.</p>
+      <h3 id="k-2">Test stove</h3>
+      <p>The test stove is where new recipes are tried before the fair. Visitors may watch from the rope line while the cook explains each step aloud.</p>
+      <p>A recipe that fails twice is retired, and the two failed plates are pinned to the wall next to the stove.</p>
+      <h3 id="k-3">Tasting counter</h3>
+      <p>The counter seats six. Each seat has a card with the dish name, the cook's name and the minutes the plate took.</p>
+      <p>The card asks one question at the bottom: would you cook this at home? The answers are counted at closing time.</p>
+    </section>
+
+    <section class="evk-part" data-part id="p-visit">
+      <header class="evk-part-head"><span class="no">03</span><span class="evk-k"><span class="en" lang="en">Visit</span><span class="cn" lang="zh-CN">到访</span></span></header>
+      <p>Orbital Kitchen is in Pier Nine Hall, Hall 02. From the main door it is about forty metres: pass the Kelp &amp; Co. stall and keep straight on.</p>
+      <p>The hall is step-free, and a lift stands beside the stairs at the west end.</p>
+      <p>Doors open at ten and the last plate is served at four.</p>
+    </section>
+
+    <section class="evk-part" data-part id="p-sources">
+      <header class="evk-part-head"><span class="no">04</span><span class="evk-k"><span class="en" lang="en">Sources</span><span class="cn" lang="zh-CN">来源</span></span></header>
+      <p>The last part is short on purpose: at the very end of the page it still counts as the one being read.</p>
+      <details>
+        <summary><span class="evk-k"><span class="en" lang="en">Source list</span><span class="cn" lang="zh-CN">来源列表</span></span></summary>
+        <ol>
+          <li id="src-1">Fictional source one. Retrieved 2026-10-01.</li>
+          <li id="src-2">Fictional source two. Retrieved 2026-10-02.</li>
+        </ol>
+      </details>
+    </section>
+  </article>
+
+  <!-- 3. entity tones -->
+  <section class="demo-h" id="tones" aria-labelledby="h-tones">
+    <h2 id="h-tones"><span class="evk-k"><span class="en" lang="en">Entity colour</span><span class="cn" lang="zh-CN">实体色调</span></span></h2>
+    <p class="demo-lede">One colour per entity becomes seven roles that are readable on this page's paper and on its dark ground. Toggle the theme and watch the marks and names follow.</p>
+    <div class="demo-row">
+      <div class="evk-seg" role="tablist" aria-label="Theme" id="theme">
+        <button aria-selected="true" data-theme-set="auto"><span lang="en">Auto</span><span class="cn" lang="zh-CN">跟随</span></button>
+        <button aria-selected="false" data-theme-set="light"><span lang="en">Light</span><span class="cn" lang="zh-CN">浅色</span></button>
+        <button aria-selected="false" data-theme-set="dark"><span lang="en">Dark</span><span class="cn" lang="zh-CN">深色</span></button>
+      </div>
+      <span class="demo-selftest" id="selftest"></span>
+    </div>
+    <ul class="evk-grid" id="cells">
+      <li><a class="evk-cell" href="#tones" data-entity-color="#8C1515"><span class="evk-mark">M</span><span class="name" lang="en">Maroon Mill</span><span class="cn" lang="zh-CN">酒红磨坊</span><span class="evk-tag">203<small>·01</small></span></a></li>
+      <li><a class="evk-cell" href="#tones" data-entity-color="#FF6C0C"><span class="evk-mark">O</span><span class="name" lang="en">Orange Orbit</span><span class="cn" lang="zh-CN">橙色轨道</span><span class="evk-tag">204<small>·02</small></span></a></li>
+      <li><a class="evk-cell" href="#tones" data-entity-color="#7BAFD4"><span class="evk-mark">P</span><span class="name" lang="en">Powder Pier Kite Club</span><span class="cn" lang="zh-CN">浅蓝码头风筝社</span><span class="evk-tag">301<small>·03</small></span></a></li>
+      <li><a class="evk-cell" href="#tones" data-entity-color="#370404"><span class="evk-mark">N</span><span class="name" lang="en">Night Nook</span><span class="cn" lang="zh-CN">深夜小屋</span><span class="evk-tag">302<small>·01</small></span></a></li>
+      <li><a class="evk-cell" href="#tones" data-entity-color="#09A7C8"><span class="evk-mark">T</span><span class="name" lang="en">Teal Tide</span><span class="cn" lang="zh-CN">青碧潮汐</span><span class="evk-tag">305<small>·04</small></span></a></li>
+      <li><a class="evk-cell" href="#tones" data-entity-color="#7F7F7F"><span class="evk-mark">G</span><span class="name" lang="en">Mid grey</span><span class="cn" lang="zh-CN">中灰</span><span class="evk-tag">101<small>·05</small></span></a></li>
+    </ul>
+    <div class="scroll-x" style="margin-top: var(--gap)">
+      <table class="tone-table" id="tone-table">
+        <caption class="evk-vh">Computed roles for each entity colour</caption>
+        <thead><tr><th scope="col">input</th><th scope="col">e</th><th scope="col">eText</th><th scope="col">eOn</th><th scope="col">eSoft</th><th scope="col">eLine</th><th scope="col">eDk</th><th scope="col">eSoftDk</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="../engine/tones.js"></script>
+<script src="../engine/spring.js"></script>
+<script src="../engine/sheet.js"></script>
+<script src="../engine/part-nav.js"></script>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+
+  /* ---- a stand-in map: a canvas with one marker that springs into the free part of the box ---- */
+  var mapEl = document.getElementById("map"), cvs = mapEl.querySelector("canvas"), ctx = cvs.getContext("2d");
+  var pad = { top: 0, right: 0, bottom: 0, left: 0 }, W = 0, H = 0, dpr = 1;
+  var px = new EVK.Spring(0, { duration: 0.45, bounce: 0, epsilon: 0.1, onUpdate: draw });
+  var py = new EVK.Spring(0, { duration: 0.45, bounce: 0, epsilon: 0.1, onUpdate: draw });
+  function css(n) { return getComputedStyle(mapEl).getPropertyValue(n).trim(); }
+  function size() {
+    var r = mapEl.getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
+    W = r.width; H = r.height; cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr);
+    px.snap((pad.left + W - pad.right) / 2); py.snap((pad.top + H - pad.bottom) / 2);
+  }
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1;
+    for (var x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, H); ctx.stroke(); }
+    for (var y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(W, y + .5); ctx.stroke(); }
+    ctx.strokeStyle = css("--a"); ctx.lineWidth = 2;   // the free rectangle
+    ctx.strokeRect(pad.left + 6, pad.top + 6, W - pad.left - pad.right - 12, H - pad.top - pad.bottom - 12);
+    ctx.fillStyle = css("--b"); ctx.beginPath(); ctx.arc(px.value, py.value, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = css("--on-b"); ctx.font = "700 13px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("203", px.value, py.value + 0.5);
+  }
+  var map = {
+    canvas: cvs,
+    setPad: function (p) {
+      pad = p;
+      px.to((pad.left + W - pad.right) / 2); py.to((pad.top + H - pad.bottom) / 2);
+      document.getElementById("pad-out").textContent = "pad: top " + Math.round(p.top) + " · right " + Math.round(p.right) + " · bottom " + Math.round(p.bottom) + " · left " + Math.round(p.left);
+    }
+  };
+  size(); draw();
+  window.addEventListener("resize", function () { size(); draw(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---- the sheet ---- */
+  var hint = mapEl.querySelector(".evk-map-hint");
+  var sheet = new EVK.Sheet(document.getElementById("sheet-el"), {
+    onClose: function () { hint.classList.remove("is-gone"); },
+    onOpen: function () { hint.classList.add("is-gone"); },
+    onSettle: function (state) { window.__sheetState = state; }
+  });
+  EVK.fitAbove.watch(map, [sheet]);
+  document.getElementById("open-sheet").addEventListener("click", function (e) { sheet.open({ launcher: e.currentTarget }); });
+  document.getElementById("close-sheet").addEventListener("click", function () { sheet.close(); });
+  var ts = document.getElementById("toggle-steps");
+  ts.addEventListener("click", function () {
+    var all = ts.getAttribute("aria-pressed") !== "true";
+    ts.setAttribute("aria-pressed", all ? "true" : "false");
+    document.getElementById("steps").classList.toggle("is-all", all);
+    sheet.el.classList.toggle("is-running", !all);
+  });
+
+  /* the tempo sliders write the tokens; EVK.motion reads them on every open */
+  [["dur", "--spring-dur", function (v) { return v + "s"; }, function (v) { return (+v).toFixed(2) + "s"; }],
+   ["bnc", "--spring-bounce", function (v) { return v; }, function (v) { return (+v).toFixed(2); }]].forEach(function (c) {
+    var i = document.getElementById(c[0]), o = document.getElementById(c[0] + "-o");
+    i.addEventListener("input", function () { root.style.setProperty(c[1], c[2](i.value)); o.textContent = c[3](i.value); });
+  });
+
+  /* ---- the reading navigator: markup-driven (it starts by itself on [data-report]); calling it is the same ---- */
+  var report = document.querySelector("[data-report]");
+  EVK.partNav(report);
+
+  /* ---- the lead language ----
+     Contract: every bilingual pair is written primary-first, so "Chinese first" is the same markup with the .cn line moved
+     to the front of its pair (a cell: right after the mark). base.css reads the roles from the position and the script from
+     .en / .cn / lang, and <html data-evk-lead> tunes the two sizes. A generator (specimen.py, a build script) writes the
+     order once; this function only exists so the demo can show both. */
+  function orderPairs(lead) {
+    [].forEach.call(document.querySelectorAll(".evk-k, .evk-btn, .evk-seg > button, .evk-cell"), function (box) {
+      var cn = [].filter.call(box.children, function (c) { return c.classList.contains("cn"); })[0];
+      if (!cn) return;
+      if (box.classList.contains("evk-cell")) {
+        var mark = box.querySelector(":scope > .evk-mark"), tag = box.querySelector(":scope > .evk-tag");
+        if (lead === "zh") box.insertBefore(cn, mark ? mark.nextSibling : box.firstChild);
+        else box.insertBefore(cn, tag);
+      } else if (lead === "zh") box.insertBefore(cn, box.firstChild);
+      else box.appendChild(cn);
+    });
+  }
+  function setLead(lead) {
+    root.setAttribute("data-evk-lead", lead);
+    root.lang = lead === "zh" ? "zh-CN" : "en";             // UI strings the engine writes (the contents panel) follow <html lang>
+    orderPairs(lead);
+    var nav = report.__evkPartNav;
+    if (nav) { nav.destroy(); EVK.partNav(report); }         // rebuild the contents list so it reads in the same order
+    var seg = document.getElementById("lead");
+    [].forEach.call(seg.querySelectorAll("button"), function (x) { x.setAttribute("aria-selected", x.getAttribute("data-lead-set") === lead ? "true" : "false"); });
+  }
+  document.getElementById("lead").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (b) setLead(b.getAttribute("data-lead-set"));
+  });
+  if (/[?&]lead=zh\b/.test(location.search)) setLead("zh");      // ?lead=zh opens the page Chinese-first
+
+  /* ---- theme switch (a role=tablist segmented control; EVK.seg gives it arrow keys) ---- */
+  var theme = document.getElementById("theme");
+  theme.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var v = b.getAttribute("data-theme-set");
+    if (v === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", v);
+    [].forEach.call(theme.querySelectorAll("button"), function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+  });
+
+  /* ---- tones table ---- */
+  var P = EVK.tones.palette(), C = EVK.color, tbody = document.querySelector("#tone-table tbody");
+  document.querySelectorAll("#cells [data-entity-color]").forEach(function (n) {
+    var hex = n.getAttribute("data-entity-color"), t = EVK.tones(hex), tr = document.createElement("tr");
+    var th = document.createElement("th"); th.scope = "row"; th.textContent = hex; tr.appendChild(th);
+    [["e", t.e, t.eOn], ["eText", P.paper, t.eText], ["eOn", t.e, t.eOn], ["eSoft", t.eSoft, P.ink], ["eLine", t.eLine, P.ink], ["eDk", P.night, t.eDk], ["eSoftDk", t.eSoftDk, P.paper]].forEach(function (c) {
+      var td = document.createElement("td"), chip = document.createElement("span");
+      chip.className = "chip"; chip.style.background = c[1]; chip.style.color = c[2];
+      chip.textContent = c[0] === "eOn" ? t.eOn : t[c[0]]; td.appendChild(chip); tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  var bad = EVK.tones.selfTest(), st = document.getElementById("selftest");
+  st.textContent = bad.length ? "tones self-test: " + bad.length + " mismatches" : "tones self-test: " + EVK.tones.table.length + " rows match";
+  st.className = "demo-selftest " + (bad.length ? "bad" : "ok");
+  st.setAttribute("role", "status");
+})();
+</script>
+</body>
+</html>

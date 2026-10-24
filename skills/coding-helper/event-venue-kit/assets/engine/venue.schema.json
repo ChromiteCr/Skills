@@ -1,0 +1,338 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://event-venue-kit.local/venue.schema.json",
+  "title": "event-venue-kit venue",
+  "description": "A venue in metres on one shared plan grid (x east, y south). Read by assets/engine/wayfind.js (EVK.venueModel, EVK.wayfind) and venue-map.js (EVK.VenueMap). Walls are not authored: they are derived from the outline, the rooms, the blocks, the doors and the entrance. Open zones without walls are `floors[].areas` (a corridor, a concourse); an opening to the floor below is a block of kind `void`. Floors share one grid, so stairs and lifts that stack line up by construction. Extra keys are allowed only with an x- prefix (entities may carry anything: the page's own data). Names are {en, cn}; a bare string is accepted and used for both languages. Words in the walking directions are assembled from these names, so mind the grammar rules on `terms`, `block.label`, `area.name`, `floor.short` and `entity.booth`. English names (`name.en`) are written as they are on the sign, in Title Case ('South Entrance', 'Grand Hall') and without a leading 'the': the directions add 'the' where the sentence needs one and strip a 'The' that is there. The starter pages (scripts/starter.py) also read the optional `event {name, date, time, place, note, group_by}`, `terms.tags`, `floor.short`, `entity.blurb`, `entity.facts`, `entity.parts`, `entity.blocks`, `entity.group` and the x- keys `x-schematic` and `x-groups`. A place is written one way everywhere, as a location code '<floor short>·<booth>' ('2F·L02', '2 层·L02'); room and area `label`s are display names (map plates, headings) and never enter a code. `entity.mono` sets the characters on a map token; without it they are derived and made unique in the venue. 中文：单位为米，所有楼层共用一套坐标（x 向东，y 向南）；墙由轮廓、房间、实心块、门和入口自动推出，不手写；没有墙的开放区用 areas（环形回廊用 holes 挖掉中间的空洞），通往下一层的开口用 kind 为 void 的块；英文名按门牌上的写法（首字母大写、不带 the）；楼层有 name（标题）和 short（句子里用，如 4F / 4 层）；位置码一律写成「楼层 short·展位号」（2F·L02、2 层·L02），房间和区域的 label 只是显示名（地图牌、标题），不进位置码；entity.mono 指定地图标记上的字符，不写则自动推出并保证全场唯一。",
+  "type": "object",
+  "required": ["unit", "name", "floors", "entities"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "unit": { "const": "m", "description": "Metres. Everything (door widths, booth spacing, wall clearance) assumes it." },
+    "name": { "$ref": "#/$defs/text", "description": "The building or site." },
+    "event": {
+      "description": "Optional: the event that is held in the venue. Either just its name (a `text`: a string, or {en, cn}), or an object {name, date, time, place, note} that the starter pages (scripts/starter.py) print on the home page: a missing date or time is shown as 'To be announced / 待定', never invented; `place` defaults to the venue's `name`.",
+      "oneOf": [{ "$ref": "#/$defs/text" }, { "$ref": "#/$defs/event" }]
+    },
+    "terms": {
+      "type": "object",
+      "description": "Words the directions use for the things people look for. Defaults: booth = {en: booth, cn: 展位}, room = {en: Room, cn: ''} (a numeric room label is then spoken as 'Room 204' / '204'). A museum might say gallery / 展厅, a conference session / 场次. Grammar: `booth.cn` is a SUFFIX template: the router writes the number, ' 号', then this word, so booth 07 is '07 号' + '展位' = '07 号展位' (give '展位', not '号展位' and not a whole phrase). `booth.en` is a lower-case noun placed before the number: 'booth 07' (the sign form capitalises it: 'Booth 07'). `room.en` is placed before a numeric label ('Room 204'); `room.cn` is usually empty, because '204 门口' reads better than '展室 204 门口'.",
+      "properties": {
+        "booth": { "$ref": "#/$defs/text" },
+        "room": { "$ref": "#/$defs/text" },
+        "tags": { "type": "object", "additionalProperties": { "$ref": "#/$defs/text" }, "description": "The words people read for the tag ids in `entity.tags`: {craft: {en: 'Craft', cn: '手作'}}. The starter prints these (group headings, chips, the search box's example) and the search finds an entity by them (EVK.search `tags`). A tag without an entry is shown as its id with the first letter upper-cased, which is the last resort: give every tag that appears on a page a bilingual word." }
+      },
+      "additionalProperties": false
+    },
+    "floors": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Floors in any order; they are sorted by level.",
+      "items": { "$ref": "#/$defs/floor" }
+    },
+    "x-schematic": { "description": "Starter pages: set it (true, or a sentence as a `text`) when the plan or the entities are placeholders. The pages then carry a 'Schematic / 示意' banner with that sentence, and `noindex`. A venue drawn without a real floor plan must say so (SKILL.md, Boundaries)." },
+    "x-groups": { "type": "array", "description": "Starter pages: groups for the list and group words for the search (EVK.search `groups`: [{id: 'craft', name: {en: 'Craft', cn: '手作'}, words: ['craft', '手作'], tags: ['craft']}, …] with ids / tags / rooms / floors). `entity.group` names an `id` here; `words` are the only way a group's words reach the search (they never bleed in by themselves). Tags and room numbers already work without it.", "items": { "type": "object" } },
+    "entities": {
+      "type": "array",
+      "description": "Exhibitors / sessions / stands: anything that stands in a room and can be found.",
+      "items": { "$ref": "#/$defs/entity" }
+    }
+  },
+  "patternProperties": { "^x-": {} },
+  "additionalProperties": false,
+
+  "$defs": {
+    "text": {
+      "description": "A name in both languages. A string is used for both. An English name is written as on the sign: Title Case for names ('South Entrance', 'Grand Hall'), no leading 'the' (the directions add it where the sentence needs one and strip a 'The' that is there), no trailing full stop.",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "properties": { "en": { "type": "string" }, "cn": { "type": "string" } },
+          "anyOf": [{ "required": ["en"] }, { "required": ["cn"] }],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "description": "The event, as the starter's home page shows it. Every field is optional; `name` is the heading.",
+      "properties": {
+        "name": { "$ref": "#/$defs/text", "description": "The event's name (the heading of the home page)." },
+        "date": { "$ref": "#/$defs/text", "description": "When, as people read it: 'Sat 24 Oct 2026' / '2026 年 10 月 24 日（周六）'. A plain ISO date string ('2026-10-24') is written out in both languages by the starter. Leave it out until it is known: the page then says 'To be announced / 待定'." },
+        "time": { "$ref": "#/$defs/text", "description": "Opening hours: '10:00–17:00'. Leave it out until it is known." },
+        "place": { "$ref": "#/$defs/text", "description": "Where, in words ('Pier Nine, east gate'). Default: the venue's `name`." },
+        "note": { "$ref": "#/$defs/text", "description": "One line under the facts: entry, tickets, what to bring." },
+        "group_by": { "enum": ["floor", "tag", "room"], "description": "Starter pages: how the home page's list is grouped. floor (default): one group per floor, headed by the floor's `name` and `short`. tag: one group per tag (`x-groups`, else the entities' `tags`), headed by the bilingual word from `terms.tags` (a tag with no word falls back to its id with the first letter upper-cased); the floor filter stays. room: one group per room or area. The list is filtered by the same key (`?g=`)." }
+      },
+      "additionalProperties": false
+    },
+    "fact": {
+      "type": "object",
+      "required": ["n", "label"],
+      "description": "One figure of an entity's data strip (the entity page's `.evk-strip`): a number or short value, an optional unit, and what it counts.",
+      "properties": {
+        "n": { "type": ["string", "number"], "description": "The figure as it is printed: 46, '2019', 'A+'. It stays on one line." },
+        "unit": { "$ref": "#/$defs/text", "description": "Optional small unit after the figure: {en: 'people', cn: '人'}." },
+        "label": { "$ref": "#/$defs/text", "description": "What the figure counts: {en: 'Team', cn: '团队规模'}." }
+      },
+      "additionalProperties": false
+    },
+    "part": {
+      "type": "object",
+      "required": ["title"],
+      "anyOf": [{ "required": ["text"] }, { "required": ["blocks"] }],
+      "description": "One section of an entity's page (a `.evk-part`, listed by the reading navigator). The simple form is a title and paragraphs (`text`); a section that needs more than paragraphs lists `blocks` (the closed reading vocabulary), printed after `text` when both are given.",
+      "properties": {
+        "title": { "$ref": "#/$defs/text", "description": "The section's heading: {en: 'On the floor', cn: '现场'}." },
+        "text": {
+          "description": "The body: one `text`, or a list of them, one per paragraph.",
+          "oneOf": [{ "$ref": "#/$defs/text" }, { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } }]
+        },
+        "blocks": { "$ref": "#/$defs/readBlocks" }
+      },
+      "additionalProperties": false
+    },
+    "readBlocks": {
+      "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/readBlock" },
+      "description": "Reading blocks in order. The vocabulary is closed (references/reading.md): p, note, quote, list, facts, cards, steps, table, timeline, numbers, qa, fold. Every block is {type, ...}; its items are `text` values ({en, cn} or a string). A fold is a collapsible group of blocks (one level of folds inside a fold at most). Each type is drawn by the class evk-r-<type> (references/reading.md §3.2). Example: [{type: 'timeline', items: [{at: '10:30', text: {en: 'Kite launch', cn: '风筝放飞'}}]}, {type: 'qa', items: [{q: {en: 'Do I need a ticket?', cn: '需要票吗？'}, a: {en: 'No.', cn: '不需要。'}}]}]."
+    },
+    "readBlock": { "oneOf": [{ "$ref": "#/$defs/readLeaf" }, { "$ref": "#/$defs/readFold" }] },
+    "readLeaf": {
+      "oneOf": [
+        { "$ref": "#/$defs/readP" }, { "$ref": "#/$defs/readNote" }, { "$ref": "#/$defs/readQuote" }, { "$ref": "#/$defs/readList" },
+        { "$ref": "#/$defs/readFacts" }, { "$ref": "#/$defs/readCards" }, { "$ref": "#/$defs/readSteps" }, { "$ref": "#/$defs/readTable" },
+        { "$ref": "#/$defs/readTimeline" }, { "$ref": "#/$defs/readNumbers" }, { "$ref": "#/$defs/readQa" }
+      ]
+    },
+    "paras": { "oneOf": [{ "$ref": "#/$defs/text" }, { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } }], "description": "One `text`, or a list of them, one per paragraph." },
+    "readP": {
+      "type": "object", "required": ["type", "text"],
+      "description": "Paragraph(s) of running text.",
+      "properties": { "type": { "const": "p" }, "text": { "$ref": "#/$defs/paras" } },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readNote": {
+      "type": "object", "required": ["type", "text"],
+      "description": "A quiet aside (a caveat, a source, a verification date). `title` is an optional lead-in.",
+      "properties": { "type": { "const": "note" }, "text": { "$ref": "#/$defs/paras" }, "title": { "$ref": "#/$defs/text" } },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readQuote": {
+      "type": "object", "required": ["type", "text"],
+      "description": "A pull quote; `by` says who.",
+      "properties": { "type": { "const": "quote" }, "text": { "$ref": "#/$defs/text" }, "by": { "$ref": "#/$defs/text" } },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readList": {
+      "type": "object", "required": ["type", "items"],
+      "description": "A bulleted list (numbered when `ordered`; for a sequence of actions use `steps`).",
+      "properties": { "type": { "const": "list" }, "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } }, "ordered": { "type": "boolean" } },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readFacts": {
+      "type": "object", "required": ["type", "items"],
+      "description": "Key / value rows (a definition list): where, who, how long. Not to be confused with `entity.facts`, the figures of the data strip.",
+      "properties": {
+        "type": { "const": "facts" },
+        "items": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["k", "v"], "properties": { "k": { "$ref": "#/$defs/text" }, "v": { "$ref": "#/$defs/text" } }, "additionalProperties": false } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readCards": {
+      "type": "object", "required": ["type", "items"],
+      "description": "A grid of small cards: a title, an optional meta line (a date, a place) and a short text.",
+      "properties": {
+        "type": { "const": "cards" },
+        "items": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["title"], "properties": { "title": { "$ref": "#/$defs/text" }, "meta": { "$ref": "#/$defs/text" }, "text": { "$ref": "#/$defs/text" } }, "additionalProperties": false } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readSteps": {
+      "type": "object", "required": ["type", "items"],
+      "description": "Numbered steps in order (how to join, what happens next). An item is a `text`, or {title?, text}.",
+      "properties": {
+        "type": { "const": "steps" },
+        "items": { "type": "array", "minItems": 1, "items": { "oneOf": [{ "$ref": "#/$defs/text" }, { "type": "object", "required": ["text"], "properties": { "title": { "$ref": "#/$defs/text" }, "text": { "$ref": "#/$defs/text" } }, "additionalProperties": false }] } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "cell": { "oneOf": [{ "$ref": "#/$defs/text" }, { "type": "number" }], "description": "A table cell: a `text` or a number." },
+    "readTable": {
+      "type": "object", "required": ["type", "head", "rows"],
+      "description": "A table. Every row has as many cells as `head` (the page build checks it). `caption` names the table and its year or source.",
+      "properties": {
+        "type": { "const": "table" }, "caption": { "$ref": "#/$defs/text" },
+        "head": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } },
+        "rows": { "type": "array", "minItems": 1, "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/cell" } } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readTimeline": {
+      "type": "object", "required": ["type", "items"],
+      "description": "Things in time order: a day's programme ('10:30'), a history (2019). `at` is printed as it stands ('10:30', '2019', or a `text` such as {en: 'every 15 min', cn: '每 15 分钟'}).",
+      "properties": {
+        "type": { "const": "timeline" },
+        "items": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["at", "text"], "properties": { "at": { "oneOf": [{ "$ref": "#/$defs/text" }, { "type": "number" }] }, "text": { "$ref": "#/$defs/text" }, "title": { "$ref": "#/$defs/text" } }, "additionalProperties": false } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readNumbers": {
+      "type": "object", "required": ["type", "items"],
+      "description": "Big figures inside the text (2 to 6). `value` is free text ('31st', '1,510–1,560'); the qualifier (year, 'about', source) goes in `note`.",
+      "properties": {
+        "type": { "const": "numbers" },
+        "items": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["value", "label"], "properties": { "value": { "type": ["string", "number"] }, "label": { "$ref": "#/$defs/text" }, "note": { "$ref": "#/$defs/text" } }, "additionalProperties": false } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readQa": {
+      "type": "object", "required": ["type", "items"],
+      "description": "Questions and answers. `a` is a `text` or a list of them, one per paragraph.",
+      "properties": {
+        "type": { "const": "qa" },
+        "items": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["q", "a"], "properties": { "q": { "$ref": "#/$defs/text" }, "a": { "$ref": "#/$defs/paras" } }, "additionalProperties": false } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readFold": {
+      "type": "object", "required": ["type", "title", "blocks"],
+      "description": "A collapsible group (a <details>) for long or secondary material; `open` starts it open. May hold one more level of folds.",
+      "properties": {
+        "type": { "const": "fold" }, "title": { "$ref": "#/$defs/text" }, "open": { "type": "boolean" },
+        "blocks": { "type": "array", "minItems": 1, "items": { "oneOf": [{ "$ref": "#/$defs/readLeaf" }, { "$ref": "#/$defs/readInnerFold" }] } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "readInnerFold": {
+      "type": "object", "required": ["type", "title", "blocks"],
+      "description": "A fold inside a fold: the last level; it holds plain blocks only.",
+      "properties": {
+        "type": { "const": "fold" }, "title": { "$ref": "#/$defs/text" }, "open": { "type": "boolean" },
+        "blocks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/readLeaf" } }
+      },
+      "patternProperties": { "^x-": {} }, "additionalProperties": false
+    },
+    "point": {
+      "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }], "items": false, "minItems": 2, "maxItems": 2,
+      "description": "[x, y] in metres."
+    },
+    "poly": {
+      "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/point" },
+      "description": "A closed polygon, vertices in order, either winding. Edges that are exactly horizontal or vertical are merged where rooms share a wall; other edges work but are kept whole."
+    },
+    "rect": {
+      "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number", "exclusiveMinimum": 0 }, { "type": "number", "exclusiveMinimum": 0 }], "items": false, "minItems": 4, "maxItems": 4,
+      "description": "Shorthand for an axis-aligned polygon: [x, y, width, height]."
+    },
+    "door": {
+      "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number", "exclusiveMinimum": 0 }], "items": false, "minItems": 2, "maxItems": 3,
+      "description": "[x, y, width?]: a point on the room's boundary, and the gap cut in the wall there (default 1.2 m; 0.9 is the least a route can use, because cells within 0.2 m of a wall are blocked). A point up to 0.3 m off the wall is moved onto it; further off, the door is ignored and the model warns. The spot 0.4 m outside the door must be open floor: a door drawn on a wall that two rooms share opens into the other room (warning 'door 101@[x,y] opens into 104', and the room cannot be reached), and one that faces a block, a void or the outside is warned about too."
+    },
+    "floor": {
+      "type": "object",
+      "required": ["id", "level", "outline"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "description": "Shown as the floor label on the map ('1F', 'G', 'B1'): keep it short." },
+        "level": { "type": "integer", "description": "Order in the stack. Need not be consecutive; stairs link floors that are neighbours in level order." },
+        "name": { "$ref": "#/$defs/text", "description": "The floor's name for headings: {en: 'Fourth Floor', cn: '四层'}. Default: the id." },
+        "short": { "$ref": "#/$defs/text", "description": "The floor's short name for sentences, chips and tags: {en: '4F', cn: '4 层'}. The route sentences ('Take the stairs up to 4F.', '走楼梯上到 4 层。'), the map's climb labels and a location line ('Room 204 · 4F') all use this one, so they always agree. Default: {en: the id, cn: '<level> 层' for a level of 1 or more, else the floor's cn name}. Never print the same string twice ('1F 1F'): where `name` and `short` are equal in a language, a heading prints it once. Write cn without a space between Chinese characters ('四层') and with one before a digit ('4 层')." },
+        "outline": { "$ref": "#/$defs/poly", "description": "The footprint. Using the same outline on every floor makes the stack read as one building; a different one per floor is allowed." },
+        "lobby": {
+          "type": "object", "required": ["at"],
+          "description": "A place to start a route from: the open space where people arrive on this floor. Must lie in walkable space (not inside a block).",
+          "properties": { "at": { "$ref": "#/$defs/point" }, "name": { "$ref": "#/$defs/text" } },
+          "additionalProperties": false
+        },
+        "entrance": {
+          "type": "object", "required": ["at"],
+          "description": "A gap in the outline where people come in. `at` is on (or within 1.5 m of) the outline; the arrow on the map points inward and a route can start 'at the entrance'.",
+          "properties": { "at": { "$ref": "#/$defs/point" }, "width": { "type": "number", "exclusiveMinimum": 0, "description": "Width of the gap, m (default 2.4)." }, "name": { "$ref": "#/$defs/text" } },
+          "additionalProperties": false
+        },
+        "rooms": { "type": "array", "items": { "$ref": "#/$defs/room" }, "description": "Spaces people may enter: drawn hollow, with low walls and door gaps; routes enter them only through their doors." },
+        "areas": { "type": "array", "items": { "$ref": "#/$defs/area" }, "description": "Open zones with no walls and no doors: a corridor, a concourse, an atrium floor. Plain walkable floor to the router, a dashed patch and a name on the map. Entities may stand in them (`room` = the area's id) and the directions name them ('Follow the west corridor to booth 07'). Areas must not overlap rooms. Area ids share one id space with room ids." },
+        "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" }, "description": "Spaces people may not enter, drawn as solid masses: stairs, lifts, toilets, offices; and voids (kind `void`), which are not masses but openings to the floor below." }
+      },
+      "patternProperties": { "^x-": {} },
+      "additionalProperties": false
+    },
+    "room": {
+      "type": "object",
+      "required": ["id", "label"],
+      "oneOf": [{ "required": ["poly"] }, { "required": ["rect"] }],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "description": "Unique across the whole venue (entities refer to it)." },
+        "label": { "type": "string", "minLength": 1, "description": "What the plate on the door says. All digits (201) are spoken as 'Room 201' / '201'; anything else is spoken by its name. A display name: it appears on the map's door plate and in headings and directions, never in a location code (see entity.booth)." },
+        "name": { "$ref": "#/$defs/text" },
+        "poly": { "$ref": "#/$defs/poly" },
+        "rect": { "$ref": "#/$defs/rect" },
+        "doors": { "type": "array", "items": { "$ref": "#/$defs/door" }, "description": "The first door is where the room's plate stands (0.9 m outside it)." },
+        "layout": { "type": "object", "properties": { "cols": { "type": "integer", "minimum": 1 } }, "additionalProperties": false, "description": "Booths are laid on a grid inside the room (1 m in from the walls); cols fixes the number of columns." },
+        "slots": { "type": "array", "items": { "$ref": "#/$defs/point" }, "description": "Explicit booth positions, taken in entity order, instead of the grid." },
+        "through": { "type": "boolean", "description": "People may walk through this room on the way elsewhere (an atrium or open hall). Default false: routes enter a room only when it is the start or the target." }
+      },
+      "patternProperties": { "^x-": {} },
+      "additionalProperties": false
+    },
+    "area": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "oneOf": [{ "required": ["poly"] }, { "required": ["rect"] }],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "description": "Unique across the whole venue, rooms included (entities refer to it in `room`)." },
+        "kind": { "enum": ["open", "corridor"], "description": "corridor: a long way between places, 'followed' in the directions (沿西走廊走到…, 'Follow the west corridor to…'). open: a wide floor, 'crossed' (穿过中庭走到…, 'Cross the atrium to…')." },
+        "name": { "$ref": "#/$defs/text", "description": "A noun that reads after 'the' in English and after 沿 / 穿过 in Chinese: {en: 'west corridor', cn: '西走廊'}. Written as on the sign without a leading 'the' (the directions add it); a lower-case common noun and a Title Case sign name both work, the sentence uses it as written ('Follow the West Corridor to booth 07') and the map capitalises the first letter. Never ends in 'door' or 门口: a booth in an area has no door." },
+        "label": { "type": "string", "minLength": 1, "description": "Optional, a display name only. If given, a plate with this text stands in the area on the map (like a room's door plate) and the text may head a section. It is not part of any location code: an entity in the area is placed as '<floor short>·<booth>' ('2F·L02'), whether or not the area has a label. Without it the area is shown by its name only." },
+        "poly": { "$ref": "#/$defs/poly" },
+        "rect": { "$ref": "#/$defs/rect" },
+        "holes": {
+          "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/poly" }, { "$ref": "#/$defs/rect" }] },
+          "description": "Rings cut out of the area: the gap in the middle of a ring gallery (a void, a core, an island of rooms), as polygons or [x, y, w, h]. A hole must lie inside the outer ring. Nothing that is a hole belongs to the area: a point in a hole is not 'in' the area (booths, the router's wording, a tap on the map), the area's name and plate go on its widest band, booths laid out by the model keep to the ring and off doors, and the map outlines both rings. The hole does not block anyone by itself: say what it is (a `void` block at the same coordinates, a solid block, a room) or it stays plain floor. Example, a gallery round the 2F void: {id: 'GALLERY', kind: 'corridor', name: {en: 'atrium gallery', cn: '中庭回廊'}, poly: [[16, 8.4], [26, 8.4], [26, 16.4], [16, 16.4]], holes: [[[17.8, 10.6], [24, 10.6], [24, 14.4], [17.8, 14.4]]]} beside the block {kind: 'void', id: 'ATR', poly: [[17.8, 10.6], [24, 10.6], [24, 14.4], [17.8, 14.4]]}."
+        },
+        "layout": { "type": "object", "properties": { "cols": { "type": "integer", "minimum": 1 } }, "additionalProperties": false, "description": "Booths without `at` are laid on a grid inside the area (inset from its edge); cols fixes the number of columns. An area with `holes` has no grid: its booths are spread round the ring instead." },
+        "slots": { "type": "array", "items": { "$ref": "#/$defs/point" }, "description": "Explicit booth positions, taken in entity order, instead of the grid." }
+      },
+      "patternProperties": { "^x-": {} },
+      "additionalProperties": false
+    },
+    "block": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [{ "required": ["poly"] }, { "required": ["rect"] }],
+      "properties": {
+        "kind": { "enum": ["stairs", "lift", "wc", "office", "solid", "void"], "description": "stairs, lift and wc get an icon on the map; stairs and lift (with `links`) join floors; office and solid are plain masses. void is an opening to the floor below (an atrium, a light well): not walkable, drawn as a cut-out in the slab with a rail round it, and in a stacked view the floor below shows through. A void belongs on the upper floor; nothing else may stand in it (rooms, blocks, booths)." },
+        "id": { "type": "string" },
+        "poly": { "$ref": "#/$defs/poly" },
+        "rect": { "$ref": "#/$defs/rect" },
+        "label": { "$ref": "#/$defs/text", "description": "Shown on the map when zoomed in. For stairs and lifts it also names them in directions ('the stairs at the east end'); without it a stairwell is named by what stands next to it. Grammar: the directions put 'the' in front of `label.en` themselves, so `label.en` must not start with 'the' ('stairs at the east end', not 'the stairs ...'); `label.cn` is used as it stands ('东侧楼梯')." },
+        "doors": { "type": "array", "items": { "$ref": "#/$defs/point" }, "description": "Stairs and lifts: where they are entered (points on the block's edge). Without one, the whole edge is a landing." },
+        "links": { "type": "string", "description": "Blocks of the same kind on different floors with the same value are one stairwell / lift shaft. Without it, stairs on neighbouring levels whose centres are within 2.5 m are linked." }
+      },
+      "patternProperties": { "^x-": {} },
+      "additionalProperties": false
+    },
+    "entity": {
+      "type": "object",
+      "required": ["id", "name"],
+      "anyOf": [{ "required": ["room"] }, { "required": ["at", "floor"] }],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "$ref": "#/$defs/text" },
+        "short": { "type": "string", "description": "A short name for labels, monograms and the English head of a route's last step (default: the English name). It should be in the Latin script: a Chinese `short` is not used in English text, `name.en` is. English names are written as on the sign, Title Case, without a leading 'the' (the directions add the article themselves)." },
+        "mono": { "type": "string", "minLength": 1, "maxLength": 4, "description": "The characters on this entity's map token (badge, pin, flag, stamp), 1 to 4, used exactly as written. Without it the model derives one from `short`: the first two letters of one word ('Ke'), the initials of the first two words ('PR'), the first two Chinese characters. Monograms are unique in the venue: when two entities would get the same one ('Lux Lab' and 'Lantern Lab' are both 'LL') all of them take their booth numbers, if those differ, else a 3-letter (then 4-letter) form, the same way every time ('LUL' / 'LAL'). Set `mono` to choose, e.g. when you want a logo-like pair. EVK.venueModel(...).entities[i].mono and EVK.monograms(list) give the result. The token STYLE is not set here: it follows the card's `entity_token` parameter (`--m-token`); to change it, adjust key `entity_token=…` with draw.py." },
+        "group": { "type": "string", "description": "Starter pages: the group this entity is listed under, an id from `x-groups[].id` or a key of `terms.tags`. It wins over everything else. Without it the entity goes to the group of its first tag, but only when that tag matches exactly one group; an entity that matches several groups is listed under the first and the build prints a warning naming them. Group words do not become search aliases unless `x-groups[].words` says so." },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "The entity's own colour, #RRGGBB: token fill, swatches. The page derives readable text and tint tones from it (EVK.tones)." },
+        "room": { "type": "string", "description": "A room id, or an area id, from this venue. Optional when `at` and `floor` say where it stands." },
+        "floor": { "type": "string", "description": "A floor id. Needed with `at` when there is no `room`: the booth then stands on the open floor, and belongs to the room or area whose polygon holds that point, if any." },
+        "booth": { "type": "string", "description": "The number on the booth ('01'). Default: its order in the room (or area), two digits. Spoken as '<booth> 号' + terms.booth.cn and 'booth <booth>', so keep it short: '07', 'K1'. It is also the second half of the entity's location code, the one format used everywhere (cards, headings, chips, search results): '<floor short>·<booth>', with the floor's `short` in the page's lead language: '2F·L02' (English first), '2 层·L02' (Chinese first). Room labels and area labels are not part of it. Booth numbers need not be unique across the venue (the code is: floor + booth), but two booths with the same code on one floor are confusing." },
+        "at": { "$ref": "#/$defs/point", "description": "Explicit position (inside the room or area, if it has one); otherwise the room's grid / slots place it." },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Category words. They are search keys (EVK.search), so 'craft' finds every entity tagged craft." },
+        "blurb": { "$ref": "#/$defs/text", "description": "One line about the entity, written by its owner or the organiser. The starter prints it under the name on the entity page. Without it (and without `parts`) the page says, marked as a placeholder, that the description is still to come." },
+        "facts": { "type": "array", "items": { "$ref": "#/$defs/fact" }, "description": "Figures for the entity page's data strip (2 to 5 read best). Without them there is no strip: nothing is invented." },
+        "parts": { "type": "array", "items": { "$ref": "#/$defs/part" }, "description": "Sections of the entity page, in order; the reading navigator lists them. Without them (and without `blocks`) the page has a single placeholder section marked 'Placeholder / 示意'. The simple form is a title and paragraphs; a part may also carry `blocks`." },
+        "blocks": { "$ref": "#/$defs/readBlocks", "description": "Reading blocks for the page itself, in order: {type: 'timeline' | 'qa' | 'cards' | 'steps' | 'table' | 'numbers' | 'facts' | 'list' | 'quote' | 'note' | 'p' | 'fold', ...} (see $defs.readBlocks). The starter prints them as one section after the data strip and before the first of `parts`, each as evk-r-<type>; they are not listed by the reading navigator, so put a block inside a part (`parts[].blocks`) to have it listed. Without any of blurb, parts and blocks the page says it is a placeholder." }
+      },
+      "additionalProperties": true
+    }
+  }
+}

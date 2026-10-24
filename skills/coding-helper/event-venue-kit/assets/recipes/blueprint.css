@@ -1,0 +1,153 @@
+/* =========================================================================
+   blueprint — 图纸 "Drawing Sheet"
+   Idea: the event is a set of drawings. Indigo ground with a faint two-level grid, pale ruled lines,
+   dimension lines as dividers, a title block for every entity, survey points for markers,
+   revision-pen orange for "now / go". Dark ground in both colour schemes (paper IS the sheet).
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider = dimension-line | thick-thin
+     data-evk-nav     = side-ticks | lines-top-left
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-grid          the two-level drafting grid behind the whole page                          off: none
+     --prop-dim           the dimension line (slash ticks) as divider and above each part            off: linear-gradient(var(--a), var(--a)) 0 50% / 100% 1px no-repeat  (a hairline)
+     --prop-registration  the corner registration marks around the title block                       off: none
+     --prop-survey        crosshair survey points as entity marks                                    scale: 1 = on, off: 0  (a solid dot)
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  --sv: var(--prop-survey, 1);
+  --r-card-radius: 0; --r-badge-r: 0; --r-node-r: 0; --r-node: 7px;
+  --cut: 8px;                                       /* one clipped corner: the drafting triangle */
+  --corner: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+  --btn-clip: var(--corner);
+  --fine: color-mix(in srgb, var(--a) 4%, transparent);
+  --major: color-mix(in srgb, var(--a) 8%, transparent);
+  /* dimension line: a rule with a slash tick at each end */
+  --dim: var(--prop-dim, linear-gradient(var(--a), var(--a)) 0 50% / 100% 1px no-repeat,
+    linear-gradient(var(--a), var(--a)) 0 50% / 1px 11px no-repeat, linear-gradient(var(--a), var(--a)) 100% 50% / 1px 11px no-repeat,
+    linear-gradient(135deg, transparent 45%, var(--a) 45% 55%, transparent 55%) 0 50% / 10px 10px no-repeat,
+    linear-gradient(135deg, transparent 45%, var(--a) 45% 55%, transparent 55%) 100% 50% / 10px 10px no-repeat);
+}
+/* the sheet: two grid levels painted with gradients (not an image) */
+body { background-image: var(--prop-grid, linear-gradient(var(--major) 1px, transparent 1px), linear-gradient(90deg, var(--major) 1px, transparent 1px),
+  linear-gradient(var(--fine) 1px, transparent 1px), linear-gradient(90deg, var(--fine) 1px, transparent 1px));
+  background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px; }
+
+/* ---- bar: a solid strip with a ruled bottom edge ---- */
+.evk-bar { background: var(--paper); box-shadow: inset 0 -1px 0 var(--a); }
+.evk-brand { color: var(--a); font-family: var(--f-display); font-weight: var(--display-weight); text-transform: uppercase; letter-spacing: .08em; }
+.evk-nav a[aria-current] { border-bottom-width: 2px; }
+.evk-nav a[aria-current], .evk-nav a[aria-current] .evk-k { color: var(--b-text); }
+
+/* ---- label voice: condensed engineering caps; the follower is the quiet line ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 500; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .06em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: dimension line ---- */
+.evk-divider { height: 14px; border: 0; background: var(--dim); }
+:root[data-evk-divider="thick-thin"] .evk-divider { height: 7px; background: linear-gradient(var(--a), var(--a)) 0 0 / 100% 3px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 1px no-repeat; }
+
+/* ---- buttons: outlined boxes with one clipped corner (base.css draws the focus ring inside the clip) ---- */
+.evk-btn { padding: 0 20px; background: var(--paper-2); color: var(--a-text); box-shadow: inset 0 0 0 1px var(--a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); box-shadow: none; }
+.evk-btn--quiet { background: transparent; }
+@media (hover: hover) { .evk-btn:not(.evk-btn--primary):not(:disabled):hover { background: var(--a); color: var(--on-a); opacity: 1; } }
+
+/* ---- tag: bracketed, monospaced, slashed zero ---- */
+.evk-tag { padding: 0; border: 0; color: var(--b-text); font-family: var(--f-num); font-weight: 400; font-size: .84rem; letter-spacing: .04em; font-variant-numeric: slashed-zero lining-nums tabular-nums; }
+.evk-tag::before { content: "["; color: var(--sub); margin-right: .15em; }          /* the brackets are punctuation, not decoration: --sub, never an alpha */
+.evk-tag::after { content: "]"; color: var(--sub); margin-left: .15em; }
+
+/* ---- welcome: big condensed caps; statistics as ruled callout boxes ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track);
+  line-height: var(--display-leading); text-transform: uppercase; color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: normal; color: var(--b-text); }
+.evk-stats { gap: 10px; }
+.evk-stat { padding: 10px 12px 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--a); }
+.evk-stat .n { font-family: var(--f-num); font-weight: 400; line-height: .95; color: var(--b-text); font-variant-numeric: slashed-zero lining-nums tabular-nums; }
+
+/* ---- grid: ruled boxes; the marker is a survey point (circle + crosshair) ---- */
+.evk-grid { border: 0; box-shadow: inset 1px 1px 0 var(--rule); }
+.evk-grid > li { background: var(--paper); box-shadow: inset -1px -1px 0 var(--rule); }
+.evk-cell { border: 0; background: transparent; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: .04em; text-transform: uppercase; line-height: 1.15; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { --pt: var(--e-fill); --pv: color-mix(in srgb, var(--pt) calc(100% * var(--sv)), transparent); width: 22px; height: 22px; justify-self: center; border: 1.5px solid var(--pt); border-radius: 50%; font-size: 0; color: transparent;
+  background: linear-gradient(var(--pv), var(--pv)) 50% 50% / 1.5px 100% no-repeat, linear-gradient(var(--pv), var(--pv)) 50% 50% / 100% 1.5px no-repeat, color-mix(in srgb, var(--pt) calc(100% * (1 - var(--sv))), transparent); }
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+@media (hover: hover) { .evk-cell:hover { background: var(--paper-2); } }
+
+/* ---- entity head = title block: boxed header cell, big caps name, dimension rule, footer cell; registration marks outside ---- */
+.evk-entity-head { display: block; position: relative; margin-top: 20px; padding: 0 16px; background: var(--paper); box-shadow: inset 0 0 0 2px var(--a); }
+.evk-entity-head::before { content: var(--prop-registration, ""); position: absolute; inset: -8px; pointer-events: none; background:
+  linear-gradient(var(--b), var(--b)) 0 0 / 14px 1px no-repeat, linear-gradient(var(--b), var(--b)) 0 0 / 1px 14px no-repeat,
+  linear-gradient(var(--b), var(--b)) 100% 0 / 14px 1px no-repeat, linear-gradient(var(--b), var(--b)) 100% 0 / 1px 14px no-repeat,
+  linear-gradient(var(--b), var(--b)) 0 100% / 14px 1px no-repeat, linear-gradient(var(--b), var(--b)) 0 100% / 1px 14px no-repeat,
+  linear-gradient(var(--b), var(--b)) 100% 100% / 14px 1px no-repeat, linear-gradient(var(--b), var(--b)) 100% 100% / 1px 14px no-repeat; }
+.evk-entity-head .evk-eyebrow { display: flex; margin: 0 -16px 14px; padding: 7px 16px; border-bottom: 1px solid var(--a); background: color-mix(in srgb, var(--a) 5%, transparent); --k-2-ink: color-mix(in srgb, var(--sub), var(--text) 40%); }   /* the band is a tint: the follower one notch above --sub */
+.evk-entity-name { --name-min: 2.3rem; --name-vw: 12vw; --name-max: 5rem; line-height: var(--lead-tight, .98); letter-spacing: .03em; text-transform: uppercase; color: var(--a-text); overflow-wrap: anywhere; }
+.evk-entity-rule { max-width: none; height: 14px; margin-top: 12px; background: linear-gradient(var(--e-fill), var(--e-fill)) 0 50% / 100% 1px no-repeat,
+  linear-gradient(var(--e-fill), var(--e-fill)) 0 50% / 1px 11px no-repeat, linear-gradient(var(--e-fill), var(--e-fill)) 100% 50% / 1px 11px no-repeat,
+  linear-gradient(135deg, transparent 45%, var(--e-fill) 45% 55%, transparent 55%) 0 50% / 10px 10px no-repeat,
+  linear-gradient(135deg, transparent 45%, var(--e-fill) 45% 55%, transparent 55%) 100% 50% / 10px 10px no-repeat; }
+.evk-entity-head > :is(.evk-entity-sub, .evk-entity-line) { margin: 14px -16px 0; padding: 9px 16px 10px; border-top: 1px solid var(--a); color: var(--sub); }
+
+/* ---- number strip (ruled cells from base.css) + parts: each part opens with a dimension line ---- */
+.evk-strip { background: var(--paper); }
+.evk-num b { font-family: var(--f-num); font-weight: 400; color: var(--a-text); font-variant-numeric: slashed-zero lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part-head { border-top: 0; padding-top: 0; }
+.evk-part-head::before { content: ""; flex: 0 0 100%; height: 14px; margin-bottom: 4px; background: var(--dim); }
+.evk-part-head .no { align-self: center; padding: .12em .45em .08em; box-shadow: inset 0 0 0 1px var(--b); font-family: var(--f-num); font-weight: 400; font-size: 1.5rem; line-height: 1;
+  color: var(--b-text); font-variant-numeric: slashed-zero lining-nums tabular-nums; }
+
+/* ---- sheet: a framed drawing slid over the plan; steps numbered in boxes ---- */
+.evk-sheet { border-top: 0; border-radius: 0; box-shadow: 0 0 0 1px var(--a), 0 0 0 5px var(--paper), 0 0 0 6px var(--a); }
+.evk-grabber::before { height: 4px; border-radius: 0; }
+.evk-steps > li { border-left: 0; padding-left: 42px; }
+.evk-steps > li::before { left: 8px; top: 9px; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px var(--sub); color: var(--sub); font-family: var(--f-num); font-weight: 400; }
+.evk-steps > li.is-current::before { background: var(--b); box-shadow: none; color: var(--on-b); }
+.evk-steps > li.is-climb::before { box-shadow: inset 0 0 0 1.5px var(--climb); color: var(--climb-text); }     /* ring = graphic (--climb), numeral = text (--climb-text) */
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); color: var(--paper); }
+
+/* ---- part navigator: a ruler — every fifth tick is long, read ticks are inked, the current one is an orange pen mark ---- */
+.evk-lines { flex-direction: row; align-items: flex-end; justify-content: flex-start; gap: 4px; width: auto; min-width: var(--hit); padding: 0 10px 14px; }
+.evk-lines i { width: 1px; height: 8px; }
+.evk-lines i:nth-child(5n+1) { height: 14px; }
+.evk-lines i.is-on { width: 2px; height: 20px; background: var(--e-fill); }
+:root[data-evk-nav="lines-top-left"] .evk-lines { flex-direction: column; align-items: flex-start; justify-content: center; width: var(--hit); padding: 0 calc((var(--hit) - 26px) / 2); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i, :root[data-evk-nav="lines-top-left"] .evk-lines i:nth-child(5n+1) { width: 12px; height: var(--lh); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-on { width: 26px; height: var(--lh); }
+.evk-progress { height: 2px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map { box-shadow: inset 0 0 0 1px var(--a); }
+.evk-map-hint { clip-path: var(--corner); background: var(--paper); color: var(--a-text); box-shadow: inset 0 0 0 1px var(--a); }
+.evk-seg { border: 1px solid var(--a); }
+.evk-seg > button { border-inline-end: 0; font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button + button { border-left: 1px solid var(--a); }
+.evk-search { border-bottom: 1px solid var(--a); }
+.evk-search:focus { box-shadow: 0 1px 0 var(--b); }
+
+/* ---- the small things: panel, chips, folds (+ / −), empty states, selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { border-top: 0; border-radius: 0; box-shadow: 0 0 0 1px var(--a), 0 0 0 5px var(--paper), 0 0 0 6px var(--a); }
+.evk-partnav-panel .no { font-family: var(--f-num); font-weight: 400; color: var(--b-text); }
+.evk-subnav a { border-radius: 0; box-shadow: inset 0 0 0 1px var(--rule); border: 0; }
+.evk-subnav a.is-on { box-shadow: inset 0 0 0 1px var(--b); border: 0; color: var(--b-text); background: transparent; }
+.evk-part details > summary::after, details.evk-fold > summary::after, details.evk-r-fold > summary::after { content: "+"; width: auto; height: auto; border: 0; transform: none; font: 400 1.2rem/1 var(--f-num); }
+.evk-part details[open] > summary::after, details.evk-fold[open] > summary::after, details.evk-r-fold[open] > summary::after { content: "\2212"; transform: none; }
+.evk-empty { border: 1px dashed var(--a); border-left: 1px dashed var(--a); background: transparent; }
+
+/* ---- reading blocks: ruled boxes with the drafting corner cut, outlined number boxes, ruler-thin lines ---- */
+.evk-r-cards > li { border-top: 0; background: var(--paper); box-shadow: inset 0 0 0 1px var(--a), inset 0 3px 0 0 var(--e-fill); clip-path: var(--corner); }
+.evk-r-steps > li::before { background: none; box-shadow: inset 0 0 0 1px var(--e-fill); color: var(--e-ink); font-weight: 400; }
+.evk-r-timeline > li::before { background: var(--paper); box-shadow: inset 0 0 0 1px var(--b); }
+.evk-r-numbers > li { padding: 8px 10px 10px; border-top: 0; box-shadow: inset 0 0 0 1px var(--a); background: var(--paper); }
+.evk-r-quote { --r-quote-bar: 1px; }
+.evk-r-table thead th { border-bottom: 1px solid var(--a); text-transform: uppercase; letter-spacing: .06em; }
+.evk-r-note { padding: .6em .9em; border: 1px dashed var(--a); }
+.evk-r-fold { border-block-color: var(--a); }

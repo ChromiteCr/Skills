@@ -1,0 +1,139 @@
+/* =========================================================================
+   museum-placard — 展签 "Wall Label"
+   Idea: the page is a painted gallery wall; things on it are ivory object labels. Text sits
+   straight on the wall in ivory serif, entities are label lines with a dot, and the entity head,
+   the sheet and the map hint are ivory cards whose tokens are INVERTED inside (--paper <-> --a),
+   so every child rule keeps working. One red dot = "you are here / now".
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = thick-thin | none
+     data-evk-nav      = lines-top-left | side-ticks
+     data-evk-numerals = oldstyle | roman
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values). Both are scales: 1 = on, 0 = off.
+     --prop-keyline  the inner keyline of every ivory label (entity head, sheet, chapter list, cards, empty state)   off: 0  (plain ivory cards)
+     --prop-dot      the red "you are here" dot (current nav page) and the entity dot before the room line         off: 0  (an underline marks the page)
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root { --kl: var(--prop-keyline, 1); --dt: var(--prop-dot, 1); --r-card-radius: 0; --r-badge-r: 50%; --r-node-r: 50%; --r-node: 9px; }
+:root { --wall: var(--paper); --ivory: var(--a); --climb-wall: var(--climb); --climb-text-wall: var(--climb-text); }   /* the wall's own climb colours, kept under other names: a token cannot be re-declared from itself */
+body { counter-reset: evk-part; }
+
+/* ---- ivory cards: re-declare the roles on the container (never per component) ---- */
+.evk-entity-head, .evk-sheet, .evk-map-hint, .evk-r-cards > li {
+  --paper: var(--ivory); --a: var(--wall); --a-text: var(--wall); --on-a: var(--ivory);
+  --text: var(--wall); --sub: color-mix(in srgb, var(--wall) 78%, var(--ivory));
+  --rule: color-mix(in srgb, var(--wall) 24%, var(--ivory)); --paper-2: color-mix(in srgb, var(--wall) 8%, var(--ivory));
+  --b-text: color-mix(in srgb, var(--b) 40%, var(--wall)); --focus: var(--wall);
+  --climb: color-mix(in oklab, var(--climb-wall) 46%, black); --climb-text: color-mix(in oklab, var(--climb-text-wall) 46%, black);   /* climb colours, darkened for ivory: toward black in OKLab keeps the hue (toward the wall it would turn muddy) */
+  --e-ink: var(--wall); --e-ink-t: var(--wall); --e-tint: color-mix(in srgb, var(--e-fill) 14%, var(--ivory));   /* entity tones were computed against the wall: re-derive them for ivory */
+  background: var(--ivory); color: var(--wall);
+}
+
+/* ---- bar: the wall itself; a red dot marks the current page ---- */
+.evk-bar { background: var(--wall); box-shadow: inset 0 -1px 0 var(--rule); }
+.evk-brand { color: var(--a-text); font-family: var(--f-display); font-style: italic; font-weight: var(--display-weight); }
+.evk-nav a[aria-current] { border-bottom-color: color-mix(in srgb, var(--b) calc(100% * (1 - var(--dt))), transparent); }   /* dot off: the underline comes back */
+.evk-nav a[aria-current]::before { content: ""; flex: 0 0 calc(7px * var(--dt)); width: calc(7px * var(--dt)); height: calc(7px * var(--dt)); margin-bottom: calc(1px * var(--dt)); border-radius: 50%; background: var(--b); }
+
+/* ---- label voice: small franklin caps; the follower is lighter ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here
+   (base.css keeps any Chinese line upright, so the italic brand and titles never slant it). */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 400; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .08em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: a hairline with a short thick tick (or nothing at all) ---- */
+.evk-divider { height: 3px; border: 0; background: linear-gradient(var(--b), var(--b)) 0 0 / 44px 3px no-repeat, linear-gradient(var(--rule), var(--rule)) 0 1px / 100% 1px no-repeat; }
+:root[data-evk-divider="none"] .evk-divider { height: 1px; background: none; margin-block: 28px; }
+
+/* ---- buttons: ivory fill with wall-coloured type; the red dot colour only for the main action ---- */
+.evk-btn { padding: 0 22px; background: var(--a); color: var(--on-a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); }
+.evk-btn--quiet { background: transparent; color: var(--a-text); box-shadow: inset 0 0 0 1px var(--a); }
+
+/* ---- tag: an accession number — small franklin caps, old-style figures ---- */
+.evk-tag { padding: 0; border: 0; border-radius: 0; font-family: var(--f-label); font-weight: var(--label-weight); font-size: .78rem; letter-spacing: .12em; color: var(--b-text); font-variant-numeric: oldstyle-nums tabular-nums; }
+
+/* ---- welcome: wall text — large serif straight on the wall ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track);
+  line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: italic; }
+.evk-stats { gap: 22px 32px; }
+.evk-stat { padding-top: 10px; border-top: 1px solid var(--rule); }
+.evk-stat .n { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .9; color: var(--a-text); font-variant-numeric: oldstyle-nums proportional-nums; }
+:root[data-evk-numerals="roman"] .evk-stat .n { font-variant-numeric: lining-nums; }
+
+/* ---- grid: label lines on the wall — a dot sticker, serif name, accession number ---- */
+.evk-grid { gap: 0 18px; border: 0; border-top: 1px solid var(--rule); }
+.evk-grid > li { border-bottom: 1px solid var(--rule); }
+.evk-cell { padding-block: 12px; border: 0; background: transparent; column-gap: 12px; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); line-height: 1.15; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { width: 12px; height: 12px; justify-self: center; border: 0; border-radius: 50%; background: var(--e-fill); font-size: 0; color: transparent; box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--rule); }
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+@media (hover: hover) { .evk-cell:hover > .evk-mark + * { font-style: italic; } }
+
+/* ---- entity head = a wall label: ivory card, inner keyline, caps accession line, serif title, red tick ---- */
+.evk-entity-head { display: block; position: relative; margin-top: 14px; padding: 26px 24px 24px; border-radius: 0; outline: calc(1px * var(--kl)) solid var(--rule); outline-offset: -9px; }
+.evk-entity-head .evk-eyebrow { display: inline-flex; align-items: center; }
+.evk-entity-head .evk-eyebrow::before { content: ""; width: calc(.62em * var(--dt)); height: calc(.62em * var(--dt)); margin-right: calc(.6em * var(--dt)); border-radius: 50%; background: var(--e-fill); }
+.evk-entity-name { --name-min: 2.3rem; --name-vw: 10vw; --name-max: 4.4rem; line-height: var(--lead-tight, 1.02); color: var(--a-text); overflow-wrap: anywhere; }
+.evk-entity-rule { width: 3rem; height: 3px; margin-top: 18px; background: var(--b); }
+.evk-entity-head > :is(.evk-entity-sub, .evk-entity-line) { color: var(--text); }
+.evk-entity-head .evk-tag { color: var(--b-text); }
+
+/* ---- number strip + parts ---- */
+.evk-strip { border-block: 0; gap: 0 20px; }
+.evk-num { box-shadow: none; border-top: 1px solid var(--rule); }
+.evk-num b { font-family: var(--f-num); font-weight: var(--display-weight); color: var(--a-text); font-variant-numeric: oldstyle-nums proportional-nums; overflow-wrap: anywhere; }
+.evk-part { counter-increment: evk-part; }
+.evk-part-head { border-top: 1px solid var(--rule); }
+.evk-part-head .no { font-family: var(--f-num); font-style: italic; font-weight: var(--display-weight); color: var(--b-text); font-variant-numeric: oldstyle-nums; }
+:root[data-evk-numerals="roman"] .evk-part-head .no { font-size: 0; }
+:root[data-evk-numerals="roman"] .evk-part-head .no::before { content: counter(evk-part, upper-roman); font-size: var(--step-3); font-style: normal; }
+
+/* ---- sheet: an ivory label slid up over the wall; steps numbered like exhibits ---- */
+.evk-sheet { border-top: 0; border-radius: 0; outline: calc(1px * var(--kl)) solid var(--rule); outline-offset: -7px; box-shadow: 0 -1px 0 var(--wall); }
+.evk-grabber::before { height: 3px; border-radius: 0; }
+.evk-steps { border-top: 1px solid var(--rule); }
+.evk-steps > li { border-left: 0; padding-left: 42px; }
+.evk-steps > li::before { left: 8px; top: 8px; width: 22px; height: 22px; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--sub); color: var(--sub); font-weight: 500; }
+.evk-steps > li.is-current::before { background: var(--b); box-shadow: none; color: var(--on-b); }
+.evk-steps > li.is-climb::before { box-shadow: inset 0 0 0 1.5px var(--climb); color: var(--climb-text); }     /* ring = graphic (--climb), numeral = text (--climb-text) */
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); color: var(--ivory); }
+
+/* ---- part navigator: hairlines on the wall; the current one becomes the red dot ---- */
+.evk-lines i { width: 14px; }
+.evk-lines i.is-on { width: 14px; height: 6px; margin-block: -2px; border-radius: 3px; background: var(--e-fill); }
+:root[data-evk-nav="side-ticks"] .evk-lines { flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+:root[data-evk-nav="side-ticks"] .evk-lines i { width: 1px; height: 14px; margin: 0; }
+:root[data-evk-nav="side-ticks"] .evk-lines i.is-on { width: 7px; height: 7px; border-radius: 50%; }
+.evk-progress { height: 2px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map-hint { padding: 7px 14px; border-radius: 0; }
+.evk-seg { border: 0; }
+.evk-seg > button { border-inline-end: 0; border-bottom: 2px solid transparent; color: var(--sub); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button:is([aria-selected="true"], [aria-pressed="true"]) { background: transparent; color: var(--a-text); border-bottom-color: var(--b); }
+.evk-search { border-bottom: 1px solid var(--a); }
+
+/* ---- the small things: the chapter list is one more ivory label; chips are underlined text; selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { --paper: var(--ivory); --a: var(--wall); --a-text: var(--wall); --on-a: var(--ivory); --text: var(--wall); --sub: color-mix(in srgb, var(--wall) 78%, var(--ivory));
+  --rule: color-mix(in srgb, var(--wall) 24%, var(--ivory)); --paper-2: color-mix(in srgb, var(--wall) 8%, var(--ivory)); --b-text: color-mix(in srgb, var(--b) 40%, var(--wall)); --e-ink: var(--wall); --e-ink-t: var(--wall); --e-tint: color-mix(in srgb, var(--e-fill) 14%, var(--ivory)); --focus: var(--wall);
+  background: var(--ivory); color: var(--wall); border-top: 0; border-radius: 0; outline: calc(1px * var(--kl)) solid var(--rule); outline-offset: -6px; }
+.evk-subnav a { border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding-inline: 4px; }
+.evk-subnav a.is-on { border-bottom: 2px solid var(--b); background: transparent; color: var(--a-text); }
+.evk-empty { border-left: 0; outline: calc(1px * var(--kl)) solid var(--rule); outline-offset: -6px; background: transparent; }
+/* ---- reading blocks: cards are ivory labels (tokens inverted above), numbered like exhibits, the quote a wall text ---- */
+.evk-r-cards > li { padding: 18px 18px 16px; border-top: 3px solid var(--e-fill); outline: calc(1px * var(--kl)) solid var(--rule); outline-offset: -6px; }
+.evk-r-steps > li::before { background: none; box-shadow: inset 0 0 0 1px var(--e-fill); color: var(--e-ink); font-weight: 500; }
+.evk-r-timeline > li::before { box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--rule); }
+.evk-r-quote { --r-quote-bar: 1px; }
+.evk-r-quote:lang(en) { font-style: italic; }
+.evk-r-note { border-inline-start: 0; border-top: 1px solid var(--rule); padding: .6em 0 0; }
+.evk-r-table thead th { border-bottom: 1px solid var(--a-text); }
+.evk-r-numbers > li { border-top-width: 1px; }
+@media print { body { color-scheme: light; } }

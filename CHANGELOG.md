@@ -5,6 +5,17 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.25.0 — 2026-10-23
+
+新增 `event-venue-kit` 0.1.0（draft），Library 按新增 skill 记 MINOR，技能数 63 → 64。
+
+- 有真实场地的活动网站（展会、开放日、校园导览、博物馆、市集）：入口首页、实体列表与长页、可拖动的伪 3D 场地图、跨楼层分步路线、主题路线、印刷物同源。
+- 方法与细节总结自 SDSZ College Fair 网站，但外观靠抽牌：先按 `references/derive.md` 盘点活动实物、打标签，`draw.py` 用种子从方向池（`library/directions.json`）抽三套完整方向，`specimen.py` 每张牌出一页可看的样张，选定后写入历史，下次给用过的方向降权；有品牌时 `--keep` 冻结，原站外观（`varsity`）权重 0.15，只在使用者明说时用 `--canon`。
+- 三层：地板（`references/floor.md`、`assets/floor/base.css`，`lint_floor.py` 机检）、表面（方向 + recipe CSS）、引擎（`assets/engine/` 无框架脚本：场地图、寻路与中英分步文字、弹簧、底部弹层、阅读导航、实体色计算，外观全部读 token）。
+- 起步页：`install.py --starter --venue` 按场地数据生成首页、地图页（路线弹层、搜索、URL 状态、无 JS 名录）和每个实体一页（阅读块、静态"怎么走"）。
+- 经过五轮由独立 agent 按 brief 实做的测试（科学节、书市、开放日、博物馆之夜、设计周），同一份 brief 两次抽到不同方向，成页都过地板检查。
+- 不编造场地几何；不随包分发校徽、照片、字体；默认不放个人信息。
+
 ## 0.24.1 — 2026-10-11
 
 `keynote-deck-builder` 升到 0.9.0。Library 层只动了索引与 README 的描述，按规则记 PATCH；skill 本身的改动记在它自己的 `CHANGELOG.md`。要点：

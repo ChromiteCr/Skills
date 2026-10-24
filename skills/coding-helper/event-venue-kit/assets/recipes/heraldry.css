@@ -1,0 +1,165 @@
+/* =========================================================================
+   heraldry — 纹章 "Arms of the Day"
+   Idea: every entity bears arms. The shield field is the entity colour, ordinaries (pale, fess,
+   bend, chief, chevron, gyronny) rotate as zone codes, a paper "fimbriation" always separates
+   the two inks, parts are numbered in Roman, layouts are centred and symmetric.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider  = frieze | double-rule | thick-thin
+     data-evk-nav      = chapter-rail | lines-top-left
+     data-evk-numerals = roman | lining-tabular
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-shield      the shield silhouette (entity head, stat shields, marks): pointed bottom   scale: 1 = on, off: 0  (square-cornered plaques)
+     --prop-ordinaries  the pale / fess / bend / chief / chevron / gyronny charges on the marks   scale: 1 = on, off: 0  (plain colour fields)
+     --prop-frieze      the lattice chief band (welcome, entity head, frieze divider)              off: linear-gradient(var(--b), var(--b))  (a plain accent bar)
+     --prop-lozenge     lozenge bullets (tag, current nav page, step badges, nav rail)             scale: 1 = on, off: 0  (squares)
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  --sh: var(--prop-shield, 1); --or: var(--prop-ordinaries, 1); --lz: var(--prop-lozenge, 1);
+  --pt-a: max(2px, calc(50% * var(--sh))); --pt-b: max(2px, calc(34% * var(--sh)));       /* the point of a small shield: horizontal / vertical radius */
+  --lozenge: polygon(calc(50% * var(--lz)) 0, 100% calc(50% * var(--lz)), calc(100% - 50% * var(--lz)) 100%, 0 calc(100% - 50% * var(--lz)));   /* lozenge -> square as --lz goes 1 -> 0 */
+  /* chief frieze: accent field cut by paper saltires (a lattice of diamonds); prop: frieze */
+  --frieze: var(--prop-frieze, linear-gradient(45deg, transparent 45%, var(--paper) 45% 55%, transparent 55%) 0 0 / 14px 14px,
+            linear-gradient(-45deg, transparent 45%, var(--paper) 45% 55%, transparent 55%) 0 0 / 14px 14px, var(--b));
+  --r-card-radius: 2px; --r-badge-r: 0; --r-node-r: 0; --r-node: 11px;
+}
+body { counter-reset: evk-part; }
+
+/* ---- bar: paper, a double rule underneath, a lozenge under the current page ---- */
+.evk-bar { background: var(--paper); border-bottom: 3px double var(--rule); }
+.evk-brand { color: var(--a-text); font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: .02em; }
+.evk-nav a[aria-current] { border-bottom-color: color-mix(in srgb, var(--b) calc(100% * (1 - var(--lz))), transparent); }   /* lozenge off: the underline comes back */
+.evk-nav a[aria-current]::after { content: ""; flex: 0 0 calc(5px * var(--lz)); width: calc(5px * var(--lz)); height: calc(5px * var(--lz)); margin: calc(3px * var(--lz)) auto 0; background: var(--b); transform: rotate(45deg); }
+
+/* ---- label voice: small-caps serif; the follower is lighter and muted ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 400; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .1em; }
+.evk-eyebrow { color: var(--b-text); }
+
+/* ---- divider: the frieze, or the fimbriated double rule (accent · paper · ink) ---- */
+.evk-divider { height: 16px; border: 0; background: var(--frieze); }
+:root[data-evk-divider="double-rule"] .evk-divider { height: 13px;
+  background: linear-gradient(var(--b), var(--b)) 0 0 / 100% 5px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 5px no-repeat; }
+:root[data-evk-divider="thick-thin"] .evk-divider { height: 7px;
+  background: linear-gradient(var(--a), var(--a)) 0 0 / 100% 5px no-repeat, linear-gradient(var(--a), var(--a)) 0 100% / 100% 1px no-repeat; }
+
+/* ---- buttons: ink fill with a paper keyline inside it (the argent rule) ---- */
+.evk-btn { padding: 0 22px; background: var(--a); color: var(--on-a); box-shadow: inset 0 0 0 3px var(--a), inset 0 0 0 4px var(--paper);
+  font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); box-shadow: inset 0 0 0 3px var(--b), inset 0 0 0 4px var(--paper); }
+.evk-btn--quiet { background: transparent; color: var(--a-text); box-shadow: inset 0 0 0 1px var(--a), inset 0 0 0 3px var(--paper), inset 0 0 0 4px var(--a); }
+
+/* ---- tag: a label with a lozenge bullet ---- */
+.evk-tag { padding: 0; border: 0; color: var(--b-text); font-family: var(--f-num); font-weight: var(--display-weight); letter-spacing: .04em; font-size: var(--step-0); }
+.evk-tag::before { content: ""; display: inline-block; width: calc(.38em * var(--lz)); height: calc(.38em * var(--lz)); margin-right: calc(.55em * var(--lz)); background: currentColor; transform: rotate(45deg); align-self: center; }
+
+/* ---- welcome: centred and symmetric; the frieze above; stats borne on three small shields ---- */
+.evk-welcome { text-align: center; padding-top: 0; }
+.evk-welcome::before { content: ""; display: block; height: 22px; margin-bottom: 22px; background: var(--frieze); }
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track);
+  line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: normal; color: var(--b-text); }
+.evk-welcome p { margin-inline: auto; max-width: 32em; }
+.evk-welcome .evk-eyebrow { justify-content: center; }
+.evk-stats { gap: 12px; }
+.evk-stat { align-items: center; text-align: center; padding: 14px 10px calc(14px + 14px * var(--sh)); border: 1.5px solid var(--a);
+  border-radius: 3px 3px var(--pt-a) var(--pt-a) / 3px 3px var(--pt-b) var(--pt-b); background: var(--paper-2); box-shadow: inset 0 0 0 3px var(--paper-2), inset 0 0 0 4px var(--rule); }
+.evk-stat .n { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .9; color: var(--b-text); font-variant-numeric: lining-nums tabular-nums; }
+.evk-stat .evk-k { justify-content: center; }
+
+/* ---- grid: a roll of arms — a small shield (the ordinary rotates per row), name, bullet tag ---- */
+.evk-grid { gap: 0 16px; border: 0; border-top: 3px double var(--a); }
+.evk-grid > li { border-bottom: 1px solid var(--rule); }
+.evk-cell { border: 0; background: transparent; column-gap: 12px; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); line-height: 1.1; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { --fld: var(--e-fill); --chg: color-mix(in srgb, var(--paper) calc(100% * var(--or)), transparent); width: 28px; height: 34px; border: 0; background: var(--fld); font-size: 0; color: transparent;
+  border-radius: 2px 2px var(--pt-a) var(--pt-a) / 2px 2px max(2px, calc(38% * var(--sh))) max(2px, calc(38% * var(--sh))); box-shadow: 0 0 0 1px var(--fld), 0 0 0 2px var(--paper), 0 0 0 3px var(--rule); }
+.evk-grid > li:nth-child(6n+1) .evk-mark { background: linear-gradient(90deg, transparent 34%, var(--chg) 34% 66%, transparent 66%), var(--fld); }                 /* pale */
+.evk-grid > li:nth-child(6n+2) .evk-mark { background: linear-gradient(transparent 36%, var(--chg) 36% 60%, transparent 60%), var(--fld); }                         /* fess */
+.evk-grid > li:nth-child(6n+3) .evk-mark { background: linear-gradient(135deg, transparent 38%, var(--chg) 38% 62%, transparent 62%), var(--fld); }                /* bend */
+.evk-grid > li:nth-child(6n+4) .evk-mark { background: linear-gradient(var(--chg) 0 32%, transparent 32%), var(--fld); }                                            /* chief */
+.evk-grid > li:nth-child(6n+5) .evk-mark { background: linear-gradient(to top right, transparent 41%, var(--chg) 41% 57%, transparent 57%) 0 0 / 50% 100% no-repeat,
+  linear-gradient(to top left, transparent 41%, var(--chg) 41% 57%, transparent 57%) 100% 0 / 50% 100% no-repeat, var(--fld); }                                      /* chevron */
+.evk-grid > li:nth-child(6n) .evk-mark { background: conic-gradient(var(--fld) 0 12.5%, var(--chg) 0 25%, var(--fld) 0 37.5%, var(--chg) 0 50%,
+  var(--fld) 0 62.5%, var(--chg) 0 75%, var(--fld) 0 87.5%, var(--chg) 0), var(--fld); }                                                                                          /* gyronny */
+
+/* ---- entity head = the whole shield: entity-colour field, paper fimbriation, chief frieze, motto rule ---- */
+.evk-entity-head { --fld: var(--e-fill); display: block; position: relative; max-width: 30rem; margin: 18px auto 0; padding: 66px 26px calc(30px + 34px * var(--sh)); text-align: center;
+  border: 2px solid var(--fld); border-radius: 6px 6px max(6px, calc(50% * var(--sh))) max(6px, calc(50% * var(--sh))) / 6px 6px max(6px, calc(32% * var(--sh))) max(6px, calc(32% * var(--sh))); background: var(--fld); color: var(--e-fill-on);
+  box-shadow: inset 0 0 0 6px var(--paper); }
+.evk-entity-head::before { content: ""; position: absolute; top: 8px; left: 8px; right: 8px; height: 40px; border-radius: 2px 2px 0 0; background: var(--frieze);
+  box-shadow: 0 5px 0 var(--paper); }                                                                                    /* chief + the argent line under it */
+.evk-entity-head > * { position: relative; }
+.evk-entity-head .evk-eyebrow { color: inherit; --k-2-ink: currentColor; }       /* the field is the entity colour: both lines wear the on-colour */
+.evk-entity-name { --name-min: 2.2rem; --name-vw: 10.5vw; --name-max: 4.2rem; line-height: var(--lead-tight, 1); color: inherit; overflow-wrap: anywhere; }
+.evk-entity-rule { position: relative; height: 12px; max-width: none; margin: 14px 14% 8px; background: linear-gradient(currentColor, currentColor) 0 50% / 100% 1px no-repeat; opacity: .7; }
+.evk-entity-rule::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; background: currentColor; box-shadow: 0 0 0 5px var(--fld);
+  transform: translate(-50%, -50%) rotate(45deg); }
+.evk-entity-head :is(.evk-entity-sub, .evk-entity-line) { color: inherit; }
+.evk-entity-head :is(.evk-entity-sub, .evk-entity-line), .evk-entity-head .evk-k { color: inherit; --k-2-ink: currentColor; }   /* every line on the field wears the field's text colour (no alpha: it would take the contrast under 4.5:1) */
+.evk-entity-head .evk-tag { color: inherit; }
+
+/* ---- number strip + Roman part numbers ---- */
+.evk-strip { border-block: 0; border-top: 3px double var(--a); text-align: center; }
+.evk-num { box-shadow: none; border-bottom: 1px solid var(--rule); }
+.evk-num + .evk-num { border-left: 1px solid var(--rule); }
+.evk-num b { font-family: var(--f-num); font-weight: var(--display-weight); color: var(--a-text); font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part { counter-increment: evk-part; }
+.evk-part-head { border-top: 3px double var(--a); }
+.evk-part-head .no { font-family: var(--f-num); font-weight: var(--display-weight); line-height: .9; color: var(--b-text); font-size: 0; }
+.evk-part-head .no::before { content: counter(evk-part, upper-roman); font-size: 2.2rem; }
+:root[data-evk-numerals="lining-tabular"] .evk-part-head .no { font-size: 2.2rem; }
+:root[data-evk-numerals="lining-tabular"] .evk-part-head .no::before { content: none; }
+
+/* ---- sheet: a double accent rule along its top edge; steps are lozenges ---- */
+.evk-sheet { border-top: 8px double var(--b); box-shadow: 0 0 0 1px var(--rule), var(--evk-shadow); }
+.evk-steps { border-top: 0; }
+.evk-steps > li { border-left: 0; padding-left: 44px; }
+.evk-steps > li::before { left: 6px; top: 6px; width: 28px; height: 28px; border: 0; border-radius: 0; background: var(--paper-2); color: var(--a-text);
+  clip-path: var(--lozenge); }
+.evk-steps > li.is-current::before { background: var(--b); color: var(--on-b); }
+.evk-steps > li.is-climb::before { background: var(--climb-text); color: var(--paper); }
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); color: var(--paper); }
+
+/* ---- part navigator: a rail of lozenges (done = ink, now = large accent) ---- */
+.evk-lines { position: relative; flex-direction: row; align-items: center; gap: 8px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+.evk-lines::before { content: ""; position: absolute; left: 14px; right: 14px; top: 50%; height: 1px; background: var(--rule); }
+.evk-lines i { position: relative; width: 7px; height: 7px; background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--sub); transform: rotate(calc(45deg * var(--lz))); opacity: 1; }
+.evk-lines i.is-done { background: var(--a); box-shadow: none; }
+.evk-lines i.is-on { width: 11px; height: 11px; background: var(--e-fill); box-shadow: none; }
+:root[data-evk-nav="lines-top-left"] .evk-lines { flex-direction: column; align-items: flex-start; justify-content: center; width: var(--hit); padding-inline: calc((var(--hit) - 26px) / 2); }
+:root[data-evk-nav="lines-top-left"] .evk-lines::before { content: none; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i { width: 12px; height: var(--lh); transform: none; background: var(--sub); box-shadow: none; opacity: .45; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-done { background: var(--a); opacity: 1; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-on { width: 26px; height: var(--lh); background: var(--e-fill); opacity: 1; }
+.evk-progress { height: 3px; }
+
+/* ---- map chrome, segmented control, search ---- */
+.evk-map-hint { background: var(--paper); color: var(--a-text); box-shadow: inset 0 0 0 1px var(--a), inset 0 0 0 3px var(--paper), inset 0 0 0 4px var(--a); }
+.evk-seg { border: 1px solid var(--a); box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--a); margin-inline: 4px; }
+.evk-seg > button { border-inline-end: 0; font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-seg > button + button { border-left: 1px solid var(--a); }
+.evk-seg > button:is([aria-selected="true"], [aria-pressed="true"]) { box-shadow: inset 0 0 0 2px var(--a), inset 0 0 0 3px var(--paper); }
+.evk-search { border-bottom: 3px double var(--a); }
+
+/* ---- the small things: panel, chips, folds, empty states, selection ---- */
+:root { --sel-bg: var(--a); --sel-fg: var(--on-a); }
+.evk-partnav-panel { border-top: 8px double var(--b); border-radius: 0; text-align: left; }
+.evk-subnav a { border-radius: 0; box-shadow: inset 0 0 0 1px var(--paper), inset 0 0 0 2px var(--rule); }
+.evk-subnav a.is-on { box-shadow: inset 0 0 0 1px var(--paper), inset 0 0 0 2px var(--a); }
+.evk-part details > summary::after, details.evk-fold > summary::after, details.evk-r-fold > summary::after { width: .5em; height: .5em; border: 0; background: currentColor; transform: rotate(calc(45deg * var(--lz))); }   /* a lozenge replaces the chevron … */
+.evk-part details[open] > summary::after, details.evk-fold[open] > summary::after, details.evk-r-fold[open] > summary::after { transform: rotate(calc(45deg * var(--lz))) scale(1.5); }                             /* … and swells when open */
+.evk-empty { border-left: 0; border-block: 3px double var(--a); text-align: center; background: transparent; }
+/* ---- reading blocks: fimbriated cards, lozenge step badges and nodes, centred double-ruled quotes ---- */
+.evk-r-cards > li { border-top: 3px double var(--e-fill); box-shadow: inset 0 0 0 1px var(--e-edge); }
+.evk-r-steps > li::before, .evk-r-timeline > li::before { clip-path: var(--lozenge); }
+.evk-r-steps > li::before { width: 32px; height: 32px; }
+.evk-r-numbers > li { border-top: 3px double var(--e-fill); text-align: center; }
+.evk-r-quote { padding: .7em 0; border: 0; border-block: 3px double var(--a); text-align: center; }
+.evk-r-note { border: 0; border-block: 1px solid var(--rule); padding: .6em 0; }
+.evk-r-table thead th { border-bottom: 3px double var(--a); }
+@media print { .evk-divider, .evk-entity-head, .evk-mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

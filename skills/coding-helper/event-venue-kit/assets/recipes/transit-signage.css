@@ -1,0 +1,156 @@
+/* =========================================================================
+   transit-signage — 线路图 "Line Diagram"
+   Idea: the venue is a metro line. Entities are stations (a ring in the entity colour on a line),
+   rooms are lines, floors are interchanges. A dark signage band over a clean cool-white page,
+   pill buttons, line-number roundels for statistics, and a route that really IS a line diagram.
+   Optional hooks on <html> (kit.py root_attrs; default = first value):
+     data-evk-divider = route-line | thick-thin | dotted-leader
+     data-evk-nav     = chapter-rail | lines-top-left
+   Props (category motifs, ON unless tokens.css sets them; directions.json lists the off values):
+     --prop-line      the line itself: the route through the entity marks, the step list, the chapter list and the nav rail   off: none
+                      (the mark's station line is clipped by the mark's own parent row, so it stays inside every list: grid, sheet list, directory row, search hit)
+     --prop-stations  station dots on the divider and the entity rule                                       scale: 1 = on, off: 0
+   Tokens only. Loaded after base.css. Modifier classes: none required.
+   ========================================================================= */
+
+:root {
+  --st: var(--prop-stations, 1);                /* station dot scale (prop: stations) */
+  --ln: var(--prop-line, "");                   /* content of every line pseudo-element (prop: line; none = gone) */
+  --r-card-radius: var(--block); --r-badge-r: 50%; --r-node-r: 50%; --r-node: 14px;
+  --pill: 999px;
+  --block: min(var(--radius), 18px);          /* pills for controls, a modest radius for panels */
+  --dim-on-a: color-mix(in srgb, var(--on-a) 72%, transparent);
+}
+
+/* ---- bar: dark signage band, white sentence-case labels, a yellow underline marks the current page ---- */
+.evk-bar { background: var(--a); color: var(--on-a); }
+.evk-brand { color: var(--on-a); font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--track-tight, -.01em); }
+.evk-bar .evk-k { color: var(--on-a); --k-2-ink: var(--on-a); }          /* the band is a fill: both lines wear its text colour (a dimmed white would take the follower under 4.5:1); the follower is told apart by size */
+@media (hover: hover) { .evk-nav a:hover { background: transparent; text-decoration: underline; text-decoration-thickness: var(--hair); text-underline-offset: .3em; } }   /* hover on the band = an underline, not a lighter fill (the label is only just above 4.5:1 on it) */
+
+/* ---- label voice: plain bold sentence case — signage does not shout ----
+   ROLE: container colour = primary line, last child = follower.  SCRIPT: Latin label face from tokens, Chinese tracking here. */
+.evk-k { color: var(--a-text); }   /* on a fill (.evk-btn, a pressed .evk-seg button, a filled .evk-tag) the pair inherits the fill's text colour: base.css, FILLS */
+.evk-k > :last-child:not(:first-child) { font-weight: 500; }
+.evk-k :is(.cn, [lang|="zh"]) { letter-spacing: .04em; }
+.evk-eyebrow { display: inline-flex; padding: .32em .9em; border-radius: var(--pill); background: var(--b); color: var(--on-b); }
+.evk-eyebrow { --k-2-ink: currentColor; }                                    /* on the pill both lines wear its text colour */
+
+/* ---- divider: a route line with station dots ---- */
+.evk-divider { height: 14px; border: 0; background:
+  linear-gradient(var(--a), var(--a)) 0 50% / 100% 4px no-repeat,
+  radial-gradient(circle at 8px 50%, var(--paper) 0 calc(3.4px * var(--st)), var(--a) calc(3.5px * var(--st)) calc(6px * var(--st)), transparent calc(6.5px * var(--st))) 0 0 / 72px 100% repeat-x; }
+:root[data-evk-divider="thick-thin"] .evk-divider { height: 8px; background: linear-gradient(var(--a), var(--a)) 0 0 / 100% 5px no-repeat, linear-gradient(var(--rule), var(--rule)) 0 100% / 100% 1px no-repeat; }
+:root[data-evk-divider="dotted-leader"] .evk-divider { height: 6px; background: radial-gradient(circle 2px at 50% 50%, var(--sub) 98%, transparent) 0 0 / 10px 6px repeat-x; }
+
+/* ---- buttons: pills; yellow is a FILL, the label on it is always dark ---- */
+.evk-btn { padding: 0 22px; border-radius: var(--pill); background: var(--a); color: var(--on-a); font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-btn--primary { background: var(--b); color: var(--on-b); }
+.evk-btn--quiet { background: transparent; color: var(--a-text); box-shadow: inset 0 0 0 2px var(--a); }
+
+/* ---- tag: a room code in a small outlined plate ---- */
+.evk-tag { padding: .12em .5em; border: 2px solid var(--a); border-radius: min(var(--radius), 8px); background: var(--paper); color: var(--a-text);
+  font-family: var(--f-num); font-weight: 800; font-size: .8rem; line-height: 1.3; letter-spacing: 0; }
+
+/* ---- welcome: bold headline, statistics as line-number roundels ---- */
+.evk-welcome :is(h1, h2), .evk-display { font-family: var(--f-display); font-weight: var(--display-weight); letter-spacing: var(--display-track);
+  line-height: var(--display-leading); color: var(--a-text); }
+.evk-welcome :is(h1, h2) em { font-style: normal; text-decoration: underline; text-decoration-color: var(--b); text-decoration-thickness: .16em; text-decoration-skip-ink: none; text-underline-offset: .08em; }   /* a yellow marker line under the word (a fill behind it would put the text on yellow in the dark scheme) */
+.evk-stats { gap: 14px 22px; }
+.evk-stat .n { display: inline-grid; place-items: center; align-self: flex-start; min-width: 2.3em; height: 2.3em; padding: 0 .5em; border-radius: var(--pill);
+  font-family: var(--f-num); font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem); line-height: 1; letter-spacing: 0; color: var(--on-a); background: var(--a); font-variant-numeric: lining-nums tabular-nums; }
+.evk-stat:nth-child(3n+2) .n { background: var(--b); color: var(--on-b); }
+.evk-stat:nth-child(3n) .n { background: var(--paper); color: var(--a-text); box-shadow: inset 0 0 0 .14em var(--a); }
+
+/* ---- grid: stations along a line — a ring in the entity colour, a 4px line running through the column ---- */
+.evk-grid { gap: 0 16px; border: 0; }
+.evk-cell { border: 0; background: transparent; column-gap: 12px; }
+.evk-cell > .evk-mark + * { font-family: var(--f-display); font-weight: var(--display-weight); line-height: 1.12; color: var(--a-text); }   /* role: the primary line, either script */
+.evk-mark { position: relative; z-index: 0; overflow: visible; width: 24px; height: 24px; justify-self: center; border: 5px solid var(--e-fill); border-radius: 50%; background: var(--paper); font-size: 0; color: transparent; }
+/* THE STATION LINE belongs to the row: the mark's own parent (a grid cell, a sheet-list row, a directory row, a search hit — whatever holds a mark
+   as a direct child) clips it, so it runs the full height of that row and never past it, in every list context and without any help from an
+   ancestor's overflow. Where :has() is missing the line is simply not drawn (the ring alone is still a station). */
+@supports selector(:has(*)) {
+  :has(> .evk-mark) { overflow: hidden; overflow: clip; }
+  .evk-mark::before { content: var(--ln); position: absolute; z-index: -1; left: 50%; top: -100vh; bottom: -100vh; width: 4px; transform: translateX(-50%); background: var(--a); }
+}
+/* a pure colour/shape mark; real logos opt in with .evk-mark--img (styled in base.css) */
+.evk-mark:not(.evk-mark--img) > img, .evk-mark:not(.evk-mark--img) > svg { display: none; }
+@media (hover: hover) { .evk-cell:hover > .evk-mark + * { text-decoration: underline; text-decoration-thickness: 3px; text-decoration-color: var(--b); text-underline-offset: .18em; } }
+
+/* ---- entity head = the station nameplate: black plate, yellow room pill, a line with station dots in the entity colour ---- */
+.evk-entity-head { display: block; margin-top: 12px; padding: 22px 20px; border-radius: var(--block); background: var(--a); color: var(--on-a); }
+.evk-entity-head .evk-eyebrow { background: var(--b); color: var(--on-b); }
+.evk-entity-name { --name-min: 2.3rem; --name-vw: 11.5vw; --name-max: 5rem; line-height: var(--lead-tight, .98); color: var(--on-a); overflow-wrap: anywhere; }
+.evk-entity-rule { max-width: none; height: 16px; margin-top: 18px; background: linear-gradient(var(--e-fill), var(--e-fill)) 0 50% / 100% 6px no-repeat,
+  radial-gradient(circle at 12px 50%, var(--on-a) 0 calc(4px * var(--st)), var(--a) calc(4.5px * var(--st)) calc(6.5px * var(--st)), transparent calc(7px * var(--st))) 0 0 / 64px 100% repeat-x; }
+.evk-entity-head :is(.evk-entity-sub, .evk-entity-line), .evk-entity-head .evk-k { color: var(--on-a); }          /* the nameplate is a fill: every line wears its text colour (the room pill below keeps its own) */
+.evk-entity-head .evk-eyebrow { color: var(--on-b); }
+.evk-entity-head .evk-tag { background: transparent; border-color: var(--on-a); color: var(--on-a); }
+.evk-entity-head { --k-2-ink: var(--on-a); }                                  /* the nameplate is a fill: followers wear its text colour */
+
+/* ---- number strip + parts ---- */
+.evk-strip { border: 0; gap: 8px; }
+.evk-num { box-shadow: none; border-radius: var(--block); background: var(--paper-2); }
+.evk-num b { font-family: var(--f-num); font-weight: 800; color: var(--a-text); font-variant-numeric: lining-nums tabular-nums; overflow-wrap: anywhere; }
+.evk-part-head { border-top: 4px solid var(--a); }
+.evk-part-head .no { display: inline-grid; place-items: center; min-width: 2.1em; height: 2.1em; padding: 0 .4em; border-radius: var(--pill); background: var(--a); color: var(--on-a);
+  font-family: var(--f-num); font-weight: 800; font-size: 1.3rem; line-height: 1; }
+
+/* ---- sheet: a rounded card; the step list is a line diagram (roundel, line, interchange colour for stairs) ---- */
+.evk-sheet { border-top: 0; border-radius: calc(var(--block) + 4px); box-shadow: 0 0 0 1px var(--rule), var(--evk-shadow); }
+.evk-grabber::before { height: 4px; border-radius: var(--pill); }
+.evk-steps { border-top: 0; }
+.evk-steps > li { padding-left: 48px; border: 0; }
+.evk-steps > li::after { content: var(--ln); position: absolute; z-index: 0; left: 17px; top: 0; bottom: 0; width: 4px; background: var(--a); }
+.evk-steps > li:first-child::after { top: 50%; }
+.evk-steps > li:last-child::after { bottom: 50%; }
+.evk-steps > li.is-climb::after { background: var(--climb); }
+.evk-steps > li::before { z-index: 1; left: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border: 3px solid var(--a); border-radius: 50%; background: var(--paper); color: var(--a-text); font-weight: 800; }
+.evk-steps > li.is-current::before { background: var(--b); border-color: var(--a); color: var(--on-b); }
+.evk-steps > li.is-climb::before { border-color: var(--climb); border-style: solid; color: var(--climb-text); }     /* ring = graphic (--climb), numeral = text (--climb-text) */
+.evk-steps > li.is-climb.is-current { border-left-color: transparent; }
+.evk-steps > li.is-climb.is-current::before { background: var(--climb-text); border-color: var(--climb); color: var(--paper); }
+
+/* ---- part navigator: a rail of station dots on the dark band ---- */
+.evk-lines { position: relative; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; width: auto; min-width: var(--hit); padding-inline: 10px; }
+.evk-lines::before { content: var(--ln); position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; background: var(--dim-on-a); }
+.evk-lines i { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--a); box-shadow: inset 0 0 0 2px var(--on-a); opacity: 1; }
+.evk-lines i.is-done { background: var(--on-a); }
+.evk-lines i.is-on { width: 13px; height: 13px; background: var(--b); box-shadow: 0 0 0 2px var(--a); }
+:root[data-evk-nav="lines-top-left"] .evk-lines { flex-direction: column; justify-content: center; align-items: flex-start; width: var(--hit); padding-inline: calc((var(--hit) - 26px) / 2); }
+:root[data-evk-nav="lines-top-left"] .evk-lines::before { content: none; }
+:root[data-evk-nav="lines-top-left"] .evk-lines i { width: 12px; height: var(--lh); border-radius: 0; box-shadow: none; background: var(--dim-on-a); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-done { background: var(--on-a); }
+:root[data-evk-nav="lines-top-left"] .evk-lines i.is-on { width: 26px; height: var(--lh); background: var(--b); box-shadow: none; }
+.evk-progress { height: 4px; }
+
+/* ---- map chrome, segmented control, search: all pills ---- */
+.evk-map-hint { background: var(--paper); color: var(--a-text); border-radius: var(--pill); box-shadow: inset 0 0 0 2px var(--a); }
+.evk-seg { border-radius: var(--pill); }   /* no overflow here: base.css scrolls a long control sideways (and clips it to the pill) */
+.evk-seg > button { border-inline-end: 0; font-family: var(--f-label); letter-spacing: var(--label-track); }
+.evk-search { padding-inline: 20px; border: 2px solid var(--a); border-radius: var(--pill); background: var(--paper); }
+.evk-search:focus { box-shadow: 0 0 0 3px var(--b); }
+
+/* ---- the small things: the chapter list as a line diagram, chips, empty states, selection ---- */
+:root { --sel-bg: var(--b); --sel-fg: var(--on-b); }
+.evk-partnav-panel { border-top: 0; border-radius: calc(var(--block) + 4px); }
+.evk-partnav-panel ol { position: relative; }
+.evk-partnav-panel ol::before { content: var(--ln); position: absolute; left: 11px; top: 22px; bottom: 22px; width: 4px; background: var(--a); }
+.evk-partnav-panel li a { position: relative; padding-left: 36px; border-left: 0; }
+.evk-partnav-panel li a::before { content: var(--ln); position: absolute; left: 5px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border: 3px solid var(--a); border-radius: 50%; background: var(--paper); }
+.evk-partnav-panel li a.is-on::before { background: var(--b); }
+.evk-subnav a { border-radius: var(--pill); border: 2px solid var(--a); }
+.evk-subnav a.is-on { background: var(--a); color: var(--on-a); border-color: var(--a); }
+.evk-empty { border-left: 0; border-radius: var(--block); }
+/* ---- reading blocks: the content is a line diagram too — 4px line, ring nodes, round badges ---- */
+.evk-r-steps > li:not(:last-child)::after { content: var(--ln); left: 13px; border-left: 4px solid var(--a); }
+.evk-r-timeline::before { content: var(--ln); left: 5px; width: 4px; background: var(--a); }
+.evk-r-timeline > li::before { background: var(--paper); box-shadow: inset 0 0 0 4px var(--e-fill); }
+.evk-r-cards > li { border-top: 0; border-left: 6px solid var(--e-fill); }
+.evk-r-numbers > li { border-top: 0; padding: 10px 12px 12px; border-radius: var(--block); background: var(--paper-2); }
+.evk-r-numbers > li > :first-child { color: var(--e-ink-t); }   /* the figure sits on --paper-2, a little off the ground: the nudged entity ink keeps 4.5:1 in both schemes */
+.evk-r-quote { --r-quote-bar: 4px; }
+.evk-r-table thead th { border-bottom: 3px solid var(--a); }
+.evk-r-note { border-inline-start-width: 4px; border-inline-start-color: var(--a); }
+@media print { .evk-entity-head, .evk-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
