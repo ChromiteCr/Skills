@@ -5,6 +5,15 @@ Library-level changes only; per-skill changes live in each `SKILL.md`.
 
 递增规则见 [VERSIONING.md](VERSIONING.md)。最新的在最上方。
 
+## 0.25.1 — 2026-11-19
+
+`keynote-deck-builder` 升到 0.10.1（0.10.0 未单独发布，两版一起提交）。Library 层只动了索引与 README 的描述，按规则记 PATCH；skill 本身的改动记在它自己的 `CHANGELOG.md`。要点：
+
+- 叙事不钉死：四条固定拍点序列换成七条原则加十五条示例路线（十三条有外部出处），大纲写参考哪条、改了什么
+- 学术片少字：证据片一行结论、一张为它重画的图、一处重点；学术报告以「贡献」收尾，参考文献进讲义
+- 注意力留在讲的人身上：静场片、三秒测试、出场顺序写卡点
+- 底色默认用和内容匹配的颜色，没有合适的就用黑色；新增 `--palette` 算色、片单 `"background"` 字段；新增学术报告示例
+
 ## 0.25.0 — 2026-10-23
 
 新增 `event-venue-kit` 0.1.0（draft），Library 按新增 skill 记 MINOR，技能数 63 → 64。
