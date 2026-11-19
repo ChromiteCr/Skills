@@ -1,10 +1,11 @@
 <!doctype html>
 <!--
-  示例：虚构产品「Cadence」的发布式演示，13 张片。
+  示例：虚构产品「Cadence」的发布式演示，14 张片，路线参考「问题先行型」。
   产品与其中所有数字都是为了演示编的，不是任何真实产品的参数，不要当真实数据复用。
-  第 11 张演示了「未确认」标记在片上的样子，以及写在数字前面的限定词（.pre）。
+  第 12 张演示了「未确认」标记在片上的样子，以及写在数字前面的限定词（.pre）；第 4 张是讲用户故事时的静场。
   产品位是占位框，真实项目里换成你有权使用的图。
   0.9.0：一张片一层字。原来垫在大字下面的那行说明都在讲者备注里（按 P 看）。
+  0.10.1：底色是和产品匹配的暖褐（--palette 算出），讲者备注在该点下一步的词前标【点】。
 -->
 <html lang="zh-CN" data-theme="dark">
 <head>
@@ -13,23 +14,69 @@
 <title>Cadence · 演示</title>
 <style>
   /* ── 色板 ──────────────────────────────────────────────
-     底色是纯色：深色纯黑，浅色 #f5f5f7（纯白投影刺眼）。不加渐变、光晕、颗粒：
-     那一套是 AI 生成的片子最常见的样子，而苹果官网深浅两种底都是纯色。
-     文字三档用苹果官网在用的实色，不用半透明白：半透明字压在别的颜色上会变色，对比度也跟着漂。
+     底色默认用和文字、讲的内容风格匹配的颜色；没有合适的匹配色才用黑色。下面第一段的值是黑色，
+     就是没有匹配色时的样子。匹配色按先后从这几处找：使用者指定的颜色；品牌或产品色；内容本身的颜色联想
+     （课堂、板书 → 黑板绿；海洋、航天、物理 → 深蓝；植物、医学、环保 → 深绿；文史、艺术 → 深红褐；
+     音乐、手作 → 暖褐；学术报告、论文讲读 → 石板蓝）。对上几条时先看讲的那样东西，再看场合，最后看学科。文字的语气定饱和度：学术约 0.35，发布会约 0.45，封顶 0.60。
+     色值不凭眼睛调，在 skill 目录下跑：
+       python3 scripts/outline_to_pptx.py --palette <颜色> [--sat 0.35] [--accent <主色>]
+     把它打出的 :root { … } 整段贴过来，换掉下面第一段 :root；--page 在另一段里，不受影响。
+     它同时打出片单的 "background" 与 "accent"：导出 pptx 用的是同一套算法，两边颜色一样。
+     例：深蓝（海洋、航天、物理），发布会的语气。跑 --palette "#5378ac" --sat 0.45 --accent "#5a8dee"，打出：
+       匹配色 #1c2f4a（色相 215°，饱和度 0.45，明度 0.20），由 #5378ac 推出
+       :root {
+         --bg-base: #1c2f4a;
+         --tile: #203655;
+         --line: #3f536e;
+         --ink: #f5f5f7;
+         --muted: #c7c7cc;
+         --faint: #728197;
+         --field: #0f1e33;
+         --ghost: #223859;
+         --fade-end: #0f1e33;
+         --accent: #6696ef;
+       }
+       "background": "#1c2f4a", "accent": "#6696ef"
+       对比度：正文 12.40:1，次要字 8.02:1，格子上的次要字 7.25:1，调暗色 3.41:1，色场正文 15.38:1，重点色 4.61:1
+       注意：重点色 #5a8dee 压在底色上只有 4.17:1，提亮成 #6696ef（4.61:1）
+     别的底（导出 pptx 时写对应的 "theme"）：
+       带色近黑 "tinted"：主色的色相、明度 8.5%，几乎是黑，屏幕、电视、录播上看得出色相。主色 #5a8dee 时
+         --bg-base #11141a、--tile #1c2026、--line #373b43、--muted #aeaeb2（8.34:1）、--faint #6e7581（3.97:1）、
+         --ghost #191e27。换了主色要重算，--field 也从这里取：
+         python3 -c "import sys; sys.path.insert(0, 'scripts'); import outline_to_pptx as o; print(o.derive_palette('<主色>'))"
+         打出的值是大写、不带 #（如 '11141A'），写进来补上 #
+       石墨 "graphite"：--bg-base #1c1c1e、--tile #2c2c2e、--line #48484a、--muted #aeaeb2（7.69:1）、
+         --faint #7c7c80（4.09:1）、--ghost #2a2a2c。LED 屏、电视、录播
+       浅色 "light"：#f5f5f7，亮教室用（纯白投影刺眼），就是下面的浅色主题；匹配色只上封面、分节、静场的色场，
+         重点色压暗，值照 --palette 打出的「亮教室」那一行填
+     章节换色：一节一个色，节内不换。这一节的每个 <section> 上写
+       style="--bg-base: …; --tile: …; --line: …; --muted: …; --faint: …; --field: …; --ghost: …; --fade-end: …; --accent: …"
+     值取另一次 --palette 的输出，九个都写：--fade-end 在 :root 上已经算成定值，只改 --field 它不会跟着变。
+     内容片的底色平涂，不加多色渐变、光晕、颗粒、玻璃卡片：那一套是 AI 生成的片子最常见的样子。
+     封面、分节、静场可以换成色场或柔和渐变，见「舞台的底」一节。
+     文字三档用实色，不用半透明白：半透明字压在别的颜色上会变色，对比度也跟着漂。
      --accent 是占位值，换成使用者给的主色或产品本身的颜色。不要填一个「系统蓝」当默认。
-     一张片上重点色最多用在一处，只给要区分的那个数字或那一项；边框、标签、箭头、引号都不用它。 */
+     一张片上重点色最多用在一处：要区分的那个数字或那一项，或者框住它的指示框 .ring；
+     别的边框、标签、箭头、引号都不用它。 */
   :root {
+    /* 示例的匹配色：暖褐。练琴、谱架、木质乐器，暖色；色相取产品色 #e0774a，发布会语气，饱和度 0.45。
+       python3 scripts/outline_to_pptx.py --palette "#e0774a" --sat 0.45 --accent "#e0774a" 打出：
+       正文 11.77:1，次要字 7.61:1，格子上的次要字 6.81:1，
+       调暗色 3.35:1，色场正文 14.89:1，重点色 4.52:1。
+       产品色 #e0774a 压在暖褐上只有 4.21:1，提亮成 #e27f55 */
+    --bg-base: #4a2a1c;
+    --tile: #553020;
+    --line: #6e4e3f;
     --ink: #f5f5f7;
-    /* 对比度（底 #000）：--muted 7.31:1、--faint 4.14:1；压在格子 --tile 上是 5.93:1 与 3.36:1。
-       --faint 只允许用在 ≥40px 的大字上，WCAG 大字门槛 3:1。 */
-    --muted: #98989d;
-    --faint: #6e6e73;
-    --line: #38383a;
-    --tile: #1c1c1e;
-    --accent: #e0774a;
-    --bg-base: #000000;
-    --page: #000000;
+    --muted: #c7c7cc;
+    --faint: #977d72;
+    --field: #331a0f;
+    --ghost: #593222;
+    --fade-end: #331a0f;
+    --accent: #e27f55;
   }
+
+  :root { --page: var(--bg-base); }
 
   :root[data-theme="light"] {
     --ink: #1d1d1f;
@@ -38,9 +85,14 @@
     --faint: #86868b;
     --line: #d2d2d7;
     --tile: #ffffff;
-    --accent: #b8501f;
+    --accent: #bb4f20;            /* 产品色在浅底上压暗（4.54:1） */
     --bg-base: #f5f5f7;
     --page: #e8e8ed;
+    /* 亮教室那一套：--palette "#e0774a" --sat 0.45 --accent "#e0774a" 打出的最后两行。
+       页面换成浅色，匹配色暖褐只上封面、分节、静场的色场；巨字与渐变浅端取暖褐的色相 */
+    --field: #4a2a1c;
+    --ghost: #eeebea;
+    --fade-end: #e4d8d2;
   }
 
   * { box-sizing: border-box; }
@@ -106,6 +158,17 @@
   }
 
   .stage > * { position: relative; z-index: 1; }
+
+  /* ── 舞台的底：内容片一律平涂底色；封面、分节、静场另有两种 ──────
+     .rest   静场，用底色。写在这里、排在 .field / .fade 前面，静场才能再叠色场或渐变
+     .field  色场：一整页同色相的深色，白字。各主题都是白字，次要字 #c7c7cc，都量过（≥ 10:1 与 ≥ 7:1）
+     .fade   柔和渐变：上端底色，下端 --fade-end（深色主题是色场，浅色主题是一层淡色）。
+             单色相、单方向、低反差，字放在暗的那一侧；用之前在现场投影上看一眼有没有色带，有就改平涂
+     写在 stage 上：<div class="stage center field">。只给标题卡、章节分隔、静场，内容片不用；
+     对应 pptx 片单里的 "ground": "field" / "fade" */
+  .stage.rest  { background: var(--bg-base); }
+  .stage.field { background: var(--field); color: #f5f5f7; --ink: #f5f5f7; --muted: #c7c7cc; }
+  .stage.fade  { background: linear-gradient(180deg, var(--bg-base), var(--fade-end)); }
 
   /* ── 字号阶梯 ──────────────────────────────────────────
      下限 40px = 30pt。这条不可破，它的作用是逼着删内容。
@@ -252,16 +315,23 @@
               padding-top: 30px; border-top: 1px solid var(--line); }
   .tradeoff .no  { font-size: 64px; font-weight: 600; line-height: 1.15; }
 
-  /* ── 全黑过场：现场切视频或实机演示时停在这一张 ────────
-     不要在这张片上放「演示视频播放位」这类占位框。占位框是给做片子的人看的，
-     投出来观众只会看到一个空框。 */
+  /* ── 静场：屏上没有要读的字，注意力回到讲的人身上 ────────
+     讲故事、举例、答问时切到这一张，用底色（.stage.rest，规则在「舞台的底」一节）。
+     可以在右下角垫一个同色调巨字 .giant：比底色略亮，对比约 1.1–1.2:1，只作氛围，不承担信息，
+     4 个字封顶（中文算 1，其余算半个）。字重照全片封顶 600。
+     巨字只垫在底色或柔和渐变上，不和色场叠：--ghost 是按底色算的，压在色场上太显眼，浅色主题里会是一个白字。
+     切视频、实机演示时用纯黑 .blackout：底色不是黑的时候，这一张也是纯黑。
+     静场片事先排进片单，不靠临场按 B 黑屏。不要在这张片上放「演示视频播放位」这类占位框：
+     占位框是给做片子的人看的，投出来观众只会看到一个空框。 */
   .stage.blackout { background: #000; }
+  .stage.rest .giant { position: absolute; right: -60px; bottom: -150px; white-space: nowrap;
+                       font-size: 760px; line-height: 1; font-weight: 600; color: var(--ghost); }
 
   /* ── 产品位占位图：居中浮着，留白四到五成，不出血 ────── */
   .hero {
     justify-self: center;
     width: 900px;
-    height: 520px;
+    height: 560px;
     border-radius: 48px;
     background: var(--tile);
     border: 1px dashed var(--line);
@@ -306,7 +376,7 @@
   /* 讲者备注：写在 <section> 里、舞台外。不上屏，按 P 在另一个窗口看 */
   .slide > .notes { display: none; }
 
-  /* 黑屏：按 B。课堂上停下来让人想的时候用 */
+  /* 黑屏：按 B，只当应急。要停下来讲故事、举例、答问，切到事先排进片单的静场片（第 17 类） */
   .blank { position: fixed; inset: 0; z-index: 20; background: #000; display: none; }
   .blank.on { display: block; }
 
@@ -316,16 +386,32 @@
 
   :root { --math-font: math, "STIX Two Math", "Cambria Math", "Latin Modern Math", serif; }
 
-  /* ── 主张与证据：左上一句主张，下面是证据 ─────────────
-     主张句 80px，版心 1520 ÷ 80 = 每行 19 字，两行封顶。
-     依据：Garner & Alley（2013）的主张句加视觉证据结构，见 references 第 12 节。 */
+  /* ── 主张与证据：左上一句结论，下面是为它重画的图 ─────────
+     主张句 80px，版心 1520 ÷ 80 = 每行 19 字：一行，19 字封顶，争取 12 字内。
+     它是这张片上唯一的整句，其余只能是标签、数字前后的限定词与单位、出处行、「未确认」标记。
+     依据：Garner & Alley（2013）的主张句加视觉证据结构，见 references 第 12 节；
+     标题长短没有被直接比较过，「一行」是本 skill 为了少字定的。 */
   .stage.evidence { align-content: stretch; grid-template-rows: auto 1fr auto; gap: 44px; }
   .claim { font-size: 80px; line-height: 1.2; font-weight: 600; letter-spacing: calc(-0.01em * var(--latin)); }
   .proof { display: grid; place-items: center; min-height: 0; }
+  /* 图的外框是定位框，下面两个标注件按它定位 */
+  .proof > * { position: relative; }
   .cite  { font-size: 40px; color: var(--muted); }
 
+  /* ── 标注件：直接标签 .tag-on 与指示框 .ring ─────────────
+     只用来指，不做装饰：要讲的那一处框起来，部件旁直接贴标签，代替图例和激光笔。
+     .ring 用重点色，它就是这张片唯一那处重点，框了就不再给别的东西上重点色；一张片一个框。
+     .tag-on 是次要色的字，2–6 字，不加边框和底色（加了就是网页上的胶囊标签）；可以有几个。
+     两个都绝对定位：放进图的外框里（.proof 的第一层、舞台的直接子元素都已是定位框），
+     用 style 写 left / top，框再写 width / height。讲到那一处才出现，挂 data-build。
+     也用在图表、满版图这类片上。 */
+  .tag-on { position: absolute; z-index: 2; white-space: nowrap;
+            font-size: 40px; line-height: 1.3; font-weight: 500; color: var(--muted); }
+  .ring   { position: absolute; z-index: 2; pointer-events: none;
+            border: 4px solid var(--accent); border-radius: 12px; background: none; }
+
   /* ── 概念：学科通行的术语和它的符号 ────────────────────
-     片上只有术语和符号；定义由讲的人说，课堂另写进讲义（冗余原则）。 */
+     片上只有术语和符号；定义由讲的人说，课堂另写进讲义（一致性原则：片上只留这一处要的东西）。 */
   .term   { font-size: 112px; line-height: 1.1; font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
   .term .sym { font-family: var(--math-font); font-style: italic; font-weight: 400;
                color: var(--muted); margin-left: 0.3em; }
@@ -390,16 +476,32 @@
   .stop.done { color: var(--faint); }
 
   /* ── 回顾：先给提示让人自己想，再揭晓要点 ─────────────
-     提取比重读更有效（Adesope 等 2017）。提示词一格 5 字以内，要点 52px。 */
-  .recap { display: grid; gap: 26px; }
+     提取比重读更有效（Adesope 等 2017）。三条封顶。每行三格：
+     提示词 64px，4 字内；缩略图 .thumb，前面讲过的那张关键图缩小了放在提示词旁，帮人想起来；
+     要点 52px，一个短语，8 字内，逐条揭晓。三列由 .recap 统一定宽：某一行没有图可缩，那一格空着，三行照样对齐 */
+  .recap { display: grid; grid-template-columns: 360px auto minmax(0, 1fr); gap: 26px 48px; }
   .recap .item {
-    display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 48px; align-items: baseline;
+    grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center;
     padding-top: 22px; border-top: 1px solid var(--line);
   }
-  .recap .q { font-size: 64px; font-weight: 600; }
-  .recap .a { font-size: 52px; line-height: 1.3; color: var(--muted); }
+  .recap .q { grid-column: 1; font-size: 64px; font-weight: 600; }
+  .recap .thumb { grid-column: 2; }
+  .recap .a { grid-column: 3; font-size: 52px; line-height: 1.3; color: var(--muted); }
 
-  /* ── 参考文献：只在学术场合的末尾出现，一张 6 条封顶 ── */
+  /* 缩略图 320×180，和舞台一样是 16:9。里面放一张内联的小图：前面那张图的 data URI，或照它重画的一小段 SVG。
+     SVG 的图形用 currentColor，跟着主题换色；里面不放字，缩到这么小的字低于 40px 下限 */
+  .thumb { width: 320px; height: 180px; border-radius: 12px; overflow: hidden;
+           background: var(--tile); color: var(--faint); }
+  .thumb > svg, .thumb > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+  /* ── 贡献：学术报告的最后一张，问答时一直停着 ─────────────
+     回顾在学术报告里的样子。两三条，每条一行 12 字内（64px × 12 = 768px），一次出齐，不逐条出；
+     不放「谢谢」，致谢在嘴上说。 */
+  .contrib { display: grid; gap: 26px; }
+  .contrib .item { font-size: 64px; line-height: 1.2; font-weight: 600;
+                   padding-top: 22px; border-top: 1px solid var(--line); }
+
+  /* ── 参考文献：备用页，排在最后一张之后；全文进讲义。一张 6 条封顶 ── */
   .refs { display: grid; gap: 22px; }
   .ref  { font-size: 40px; line-height: 1.35; color: var(--muted); padding-left: 2em; text-indent: -2em; }
   .ref b { color: var(--ink); font-weight: 600; }
@@ -500,6 +602,8 @@
     .stage { position: static; transform: none; }
     /* 颗粒在屏幕上压渐变色带，但逐页栅格化会让 PDF 大出一个数量级，打印时去掉 */
     .stage::after { display: none; }
+    /* 色场与渐变是这几张片的一部分，打印时照印，不让浏览器为省墨去掉 */
+    .stage.field, .stage.fade { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -515,29 +619,35 @@
 
   <!-- 2 现状的问题。用人话讲 -->
   <section class="slide"><div class="stage center">
-    <div class="phrase">练了多久<br>没人说得清</div>
+    <div class="phrase">练了多久<br><span data-build="1">没人说得清</span></div>
   </div>
-  <aside class="notes">手机计时要记得按，手写记录要记得写，两样都在最不想动手的时候要人动手。</aside></section>
+  <aside class="notes">手机计时要记得按，手写记录要记得写，两样都在最不想动手的时候要人动手。所以练了多久，【点】没人说得清。</aside></section>
 
   <!-- 3 让人感到这个问题：一个数字独占一片，下面不垫说明。「平均」是限定条件，跟着数字写进单位 -->
   <section class="slide"><div class="stage center">
-    <div class="num">38<span class="unit">分钟平均差距</span></div>
+    <div class="num" data-build="1">38<span class="unit">分钟平均差距</span></div>
   </div>
-  <aside class="notes">差的是自述的练琴时长和实测的。讲这个差距是怎么测出来的。</aside></section>
+  <aside class="notes">自述的练琴时长和实测的，【点】平均差了 38 分钟。讲这个差距是怎么测出来的。</aside></section>
 
-  <!-- 4 揭示 -->
+  <!-- 4 静场：讲用户故事时屏幕上没有字，注意力回到讲的人身上。巨字只作氛围 -->
+  <section class="slide"><div class="stage rest">
+    <div class="giant" aria-hidden="true">38</div>
+  </div>
+  <aside class="notes">讲一个用户故事：家长问孩子练了多久，孩子说一小时，自己也信。（示例，换成你自己的用户故事。）讲完再翻下一张。</aside></section>
+
+  <!-- 5 揭晓 -->
   <section class="slide"><div class="stage center stack">
-    <div class="hero">产品占位图 · 换成你有权使用的图</div>
-    <div class="feature">Cadence</div>
+    <div class="hero" data-build="1">产品占位图 · 换成你有权使用的图</div>
+    <div class="feature" data-build="1">Cadence</div>
   </div>
-  <aside class="notes">这就是 Cadence。停一拍。</aside></section>
+  <aside class="notes">所以我们做了【点】Cadence。停一拍。</aside></section>
 
-  <!-- 5 章节分隔 -->
+  <!-- 6 章节分隔 -->
   <section class="slide"><div class="stage center">
     <div class="feature">记录</div>
   </div></section>
 
-  <!-- 6-8 展开：这个例子有三件事值得说，所以是三点。功能名是名字，口号句由讲的人说 -->
+  <!-- 7-9 展开：这个例子有三件事值得说，所以是三点。功能名是名字，口号句由讲的人说 -->
   <section class="slide"><div class="stage center">
     <div class="feature">自动计时</div>
   </div>
@@ -553,7 +663,7 @@
   </div>
   <aside class="notes">机上存 30 天，回到网络再同步。讲琴房没信号的场景。</aside></section>
 
-  <!-- 9 bento：分层靠格子大小 -->
+  <!-- 10 bento：分层靠格子大小 -->
   <section class="slide"><div class="stage stack">
     <div class="title">规格</div>
     <div class="bento">
@@ -567,7 +677,7 @@
     </div>
   </div></section>
 
-  <!-- 10 双列对比：列头标明对比的轴 -->
+  <!-- 11 双列对比：列头标明对比的轴 -->
   <section class="slide"><div class="stage stack">
     <div class="title">节奏识别准确率</div>
     <div class="versus">
@@ -575,21 +685,22 @@
         <div class="head">纯麦克风方案</div>
         <div class="val">71%</div>
       </div>
-      <div class="col now">
+      <div class="col now" data-build="1">
         <div class="head">Cadence</div>
         <div class="val">94%</div>
       </div>
     </div>
-  </div></section>
+  </div>
+  <aside class="notes">纯麦克风方案 71%；【点】Cadence 94%。讲对比条件。</aside></section>
 
-  <!-- 11 未确认项：标记必须在片上看得见。量的名字写在数字前，对比对象写进单位，都和数字同一行 -->
+  <!-- 12 未确认项：标记必须在片上看得见。量的名字写在数字前，对比对象写进单位，都和数字同一行 -->
   <section class="slide"><div class="stage center stack">
     <div class="num"><span class="pre">记录条数</span>3<span class="unit">倍于手记</span></div>
     <div class="unverified">未确认</div>
   </div>
   <aside class="notes">每周留下的记录条数是手记的 3 倍。材料里没有出处，讲的时候说明还在验证。</aside></section>
 
-  <!-- 12 价格与上市：发售日由讲的人说 -->
+  <!-- 13 价格与上市：发售日由讲的人说 -->
   <section class="slide"><div class="stage center stack">
     <div class="title">Cadence</div>
     <div class="price">
@@ -599,11 +710,11 @@
   </div>
   <aside class="notes">报价，停。11 月 8 日发售。</aside></section>
 
-  <!-- 13 收束：回到第 2 张那句话 -->
+  <!-- 14 收束：回到第 2 张那句话 -->
   <section class="slide"><div class="stage center">
-    <div class="phrase">练了多久<br>现在说得清</div>
+    <div class="phrase">练了多久<br><span data-build="1">现在说得清</span></div>
   </div>
-  <aside class="notes">回到第 2 张那句话，只把否定改成肯定。说完就停，不加谢谢观看。</aside></section>
+  <aside class="notes">回到第 2 张那句话，只把否定改成肯定：练了多久，【点】现在说得清。说完就停，不加谢谢观看。</aside></section>
 
 </div>
 

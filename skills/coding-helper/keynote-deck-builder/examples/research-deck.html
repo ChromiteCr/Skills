@@ -1,0 +1,1079 @@
+<!doctype html>
+<!--
+  示例：讲堂（论文讲读），讲别人的一篇论文：Garner, J. K., & Alley, M. P. (2013)，
+  International Journal of Engineering Education, 29(6), 1564–1579。13 张片加 1 张备用页，路线参考「动机加一个想法」。
+  片上每个数字都对过原文（页码记在 research-outline.md 的「数字与出处」）；柱状图按数字重画，不复制论文原图。
+  第 4 张的示意图和第 7–11 张是主张与证据片：标题一行结论，正文一张图，一处重点：第 4、11 张用 .ring 框住，
+  第 7–10 张是要看的那根柱子用重点色；图讲到才出现。标题卡左下写「论文讲读 · Garner 与 Alley 2013」。
+  第 12 张是静场：讲者讲自己的看法时，屏上不放字。参考文献是最后一张之后的备用页（class="slide backup"）。
+  统计量（t、F、p、标准差）和片上删下来的说明都在讲者备注里，按 P 看。
+  0.10.1：底色是石板蓝 #213045（--palette 算出），讲者备注在该点下一步的词前标【点】。
+-->
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主张加证据 · 论文讲读</title>
+<style>
+  /* ── 色板 ──────────────────────────────────────────────
+     底色默认用和文字、讲的内容风格匹配的颜色；没有合适的匹配色才用黑色。下面第一段的值是黑色，
+     就是没有匹配色时的样子。匹配色按先后从这几处找：使用者指定的颜色；品牌或产品色；内容本身的颜色联想
+     （课堂、板书 → 黑板绿；海洋、航天、物理 → 深蓝；植物、医学、环保 → 深绿；文史、艺术 → 深红褐；
+     音乐、手作 → 暖褐；学术报告、论文讲读 → 石板蓝）。对上几条时先看讲的那样东西，再看场合，最后看学科。文字的语气定饱和度：学术约 0.35，发布会约 0.45，封顶 0.60。
+     色值不凭眼睛调，在 skill 目录下跑：
+       python3 scripts/outline_to_pptx.py --palette <颜色> [--sat 0.35] [--accent <主色>]
+     把它打出的 :root { … } 整段贴过来，换掉下面第一段 :root；--page 在另一段里，不受影响。
+     它同时打出片单的 "background" 与 "accent"：导出 pptx 用的是同一套算法，两边颜色一样。
+     例：深蓝（海洋、航天、物理），发布会的语气。跑 --palette "#5378ac" --sat 0.45 --accent "#5a8dee"，打出：
+       匹配色 #1c2f4a（色相 215°，饱和度 0.45，明度 0.20），由 #5378ac 推出
+       :root {
+         --bg-base: #1c2f4a;
+         --tile: #203655;
+         --line: #3f536e;
+         --ink: #f5f5f7;
+         --muted: #c7c7cc;
+         --faint: #728197;
+         --field: #0f1e33;
+         --ghost: #223859;
+         --fade-end: #0f1e33;
+         --accent: #6696ef;
+       }
+       "background": "#1c2f4a", "accent": "#6696ef"
+       对比度：正文 12.40:1，次要字 8.02:1，格子上的次要字 7.25:1，调暗色 3.41:1，色场正文 15.38:1，重点色 4.61:1
+       注意：重点色 #5a8dee 压在底色上只有 4.17:1，提亮成 #6696ef（4.61:1）
+     别的底（导出 pptx 时写对应的 "theme"）：
+       带色近黑 "tinted"：主色的色相、明度 8.5%，几乎是黑，屏幕、电视、录播上看得出色相。主色 #5a8dee 时
+         --bg-base #11141a、--tile #1c2026、--line #373b43、--muted #aeaeb2（8.34:1）、--faint #6e7581（3.97:1）、
+         --ghost #191e27。换了主色要重算，--field 也从这里取：
+         python3 -c "import sys; sys.path.insert(0, 'scripts'); import outline_to_pptx as o; print(o.derive_palette('<主色>'))"
+         打出的值是大写、不带 #（如 '11141A'），写进来补上 #
+       石墨 "graphite"：--bg-base #1c1c1e、--tile #2c2c2e、--line #48484a、--muted #aeaeb2（7.69:1）、
+         --faint #7c7c80（4.09:1）、--ghost #2a2a2c。LED 屏、电视、录播
+       浅色 "light"：#f5f5f7，亮教室用（纯白投影刺眼），就是下面的浅色主题；匹配色只上封面、分节、静场的色场，
+         重点色压暗，值照 --palette 打出的「亮教室」那一行填
+     章节换色：一节一个色，节内不换。这一节的每个 <section> 上写
+       style="--bg-base: …; --tile: …; --line: …; --muted: …; --faint: …; --field: …; --ghost: …; --fade-end: …; --accent: …"
+     值取另一次 --palette 的输出，九个都写：--fade-end 在 :root 上已经算成定值，只改 --field 它不会跟着变。
+     内容片的底色平涂，不加多色渐变、光晕、颗粒、玻璃卡片：那一套是 AI 生成的片子最常见的样子。
+     封面、分节、静场可以换成色场或柔和渐变，见「舞台的底」一节。
+     文字三档用实色，不用半透明白：半透明字压在别的颜色上会变色，对比度也跟着漂。
+     --accent 是占位值，换成使用者给的主色或产品本身的颜色。不要填一个「系统蓝」当默认。
+     一张片上重点色最多用在一处：要区分的那个数字或那一项，或者框住它的指示框 .ring；
+     别的边框、标签、箭头、引号都不用它。 */
+  :root {
+    /* 示例的匹配色：石板蓝。期刊论文的讲读，语气克制，取冷静的蓝灰色相；学术语气，饱和度 0.35。
+       python3 scripts/outline_to_pptx.py --palette "#5378ac" --sat 0.35 --accent "#4fae9b" 打出：
+       正文 12.26:1，次要字 7.93:1，格子上的次要字 7.16:1，
+       调暗色 3.40:1，色场正文 15.25:1，重点色 5.00:1。
+       重点色青绿和石板蓝色相差约 50°，压在上面仍然醒目 */
+    --bg-base: #213045;
+    --tile: #26374f;
+    --line: #445469;
+    --ink: #f5f5f7;
+    --muted: #c7c7cc;
+    --faint: #728297;
+    --field: #121f30;
+    --ghost: #283a53;
+    --fade-end: #121f30;
+    --accent: #4fae9b;
+  }
+
+  :root { --page: var(--bg-base); }
+
+  :root[data-theme="light"] {
+    --ink: #1d1d1f;
+    /* 对比度（底 #f5f5f7）：--muted 4.66:1、--faint 3.33:1；压在白格子上是 5.07:1 与 3.62:1 */
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #d2d2d7;
+    --tile: #ffffff;
+    --accent: #387b6d;            /* 青绿在浅底上压暗（4.57:1） */
+    --bg-base: #f5f5f7;
+    --page: #e8e8ed;
+    /* 亮教室那一套：--palette "#5378ac" --sat 0.35 --accent "#4fae9b" 打出的最后两行。
+       页面换成浅色，石板蓝只上封面的渐变与分节的色场；巨字与渐变浅端取石板蓝的色相 */
+    --field: #213045;
+    --ghost: #eaecee;
+    --fade-end: #d2dae4;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; height: 100%; }
+
+  body {
+    background: var(--page);
+    color: var(--ink);
+    /* 只走系统栈。不要写 "SF Pro Display"：本机文件名是 SFNS.ttf，按那个名字引不可靠，
+       而且 SF Pro 的授权只允许做 Apple 系统界面的 mockup，不允许随文件分发。
+       苹方是 macOS 独占，Windows 落到微软雅黑，所以后备必须显式写全。 */
+    font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+
+    /* 苹方的 700/800/900 渲染完全相同，实际上限是 Semibold。禁掉伪粗体，
+       让浏览器退到字体真有的那一档——CJK 的算法加粗很难看。 */
+    font-synthesis: none;
+    /* SF Pro 是可变字体，20pt 以上自动切 Display 光学尺寸（字距收紧） */
+    font-optical-sizing: auto;
+    /* 避头尾禁则：句号逗号不落行首，开括号不落行尾 */
+    line-break: strict;
+    /* 漏打空格时自动在中西文之间补约 1/4 em；片上仍照「片上用词」第 2 条手打空格（「30 天」），
+       pptx 没有这个属性。
+       2025 年 11 月起成为 baseline，老浏览器忽略此属性，不影响其余渲染。 */
+    text-autospace: normal;
+  }
+
+  /* ── 翻页容器 ────────────────────────────────────────── */
+  .deck {
+    position: relative;
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+
+  .slide {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    scroll-snap-align: start;
+  }
+
+  /* 舞台恒为 1920×1080，只做视觉缩放，所以字号比例在任何窗口下都不变。
+     居中必须用绝对定位 + translate：舞台比视口大，grid 的 place-items:center
+     遇到超出容器的子项会退回 start 对齐，居中会失效。 */
+  .stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1920px;
+    height: 1080px;
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+    overflow: hidden;
+    background: var(--bg-base);
+    display: grid;
+    align-content: center;
+    /* 内容离边留 10–15%：1920 宽对应 192–288px */
+    padding: 120px 200px;
+  }
+
+  .stage > * { position: relative; z-index: 1; }
+
+  /* ── 舞台的底：内容片一律平涂底色；封面、分节、静场另有两种 ──────
+     .rest   静场，用底色。写在这里、排在 .field / .fade 前面，静场才能再叠色场或渐变
+     .field  色场：一整页同色相的深色，白字。各主题都是白字，次要字 #c7c7cc，都量过（≥ 10:1 与 ≥ 7:1）
+     .fade   柔和渐变：上端底色，下端 --fade-end（深色主题是色场，浅色主题是一层淡色）。
+             单色相、单方向、低反差，字放在暗的那一侧；用之前在现场投影上看一眼有没有色带，有就改平涂
+     写在 stage 上：<div class="stage center field">。只给标题卡、章节分隔、静场，内容片不用；
+     对应 pptx 片单里的 "ground": "field" / "fade" */
+  .stage.rest  { background: var(--bg-base); }
+  .stage.field { background: var(--field); color: #f5f5f7; --ink: #f5f5f7; --muted: #c7c7cc; }
+  .stage.fade  { background: linear-gradient(180deg, var(--bg-base), var(--fade-end)); }
+
+  /* ── 字号阶梯 ──────────────────────────────────────────
+     下限 40px = 30pt。这条不可破，它的作用是逼着删内容。
+     上限同样要管：中文字身是满格的，同样字号看上去比拉丁大一圈，180px 的单句大字两行
+     就占掉近四成屏高，重得像横幅。所以顶端几档比拉丁习惯的小一号，层级靠字号比例和亮度拉开。
+     字重封顶 600：苹方 700 以上渲染相同，苹果中文官网最大的标题也只用 600。
+     字距：拉丁与数字大字收紧；中文一律 0，苹果中文官网对 :lang(zh) 全部把字距归零。
+     行高：中文比拉丁略松，苹果中文官网 80px 标题的行高是 1.0875（拉丁 1.05）。 */
+  :root { --latin: 1; }
+  :root:lang(zh) { --latin: 0; }
+  :lang(en) { --latin: 1; }
+  .num     { font-size: 280px; line-height: 1;    font-weight: 600; letter-spacing: calc(-0.02em * var(--latin));
+             font-variant-numeric: proportional-nums; }
+  /* 单位与数字分开定字号：「3 倍」的「倍」和 3 一样大，整片就重了。
+     限定条件跟着数字走，和数字同一行：数字前的限定词（「最长」「平均」，或量的名字）写进 .pre，
+     数字后的单位（「小时视频播放」）写进 .unit，前后合计 8 字内：拉丁字母与符号两个算一个，
+     空格不算；数字连正负号四位时 6 字内 */
+  .num .unit { font-size: 0.4em; margin-left: 0.06em; }
+  .num .pre  { font-size: 0.4em; margin-right: 0.06em; }
+  .phrase  { font-size: 144px; line-height: 1.1;  font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
+  .feature { font-size: 112px; line-height: 1.1;  font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
+  .title   { font-size: 80px;  line-height: 1.15; font-weight: 600; letter-spacing: calc(-0.01em * var(--latin)); }
+  .label   { font-size: 40px;  line-height: 1.3;  font-weight: 500; color: var(--muted); }
+
+  .center { text-align: center; justify-items: center; }
+  .accent { color: var(--accent); }
+  .stack  { display: grid; gap: 40px; }
+
+  /* 未确认标记：片上必须看得见，不能只写在大纲里自己知道 */
+  .unverified { display: inline-block; font-size: 40px; font-weight: 500; color: var(--muted); }
+
+  /* 出处行：来源、样本量、测试条件，24 字内（「n = 30 · 中期问卷」）。它是证据，不是说明，留在片上。
+     放左下，和「主张与证据」片的 .cite 同一位置（舞台内边距的左下角）；
+     居中的片上也不跟在数字下面，否则就是大字下面又垫了一行 */
+  .stage .source { position: absolute; left: 200px; bottom: 120px; z-index: 1;
+                   font-size: 40px; line-height: 1.3; color: var(--muted); text-align: left; }
+
+  /* ── bento 网格：分层靠格子大小，不靠列表缩进 ────────── */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 200px;
+    gap: 24px;
+  }
+
+  .tile {
+    background: var(--tile);
+    border-radius: 32px;
+    padding: 40px;
+    display: grid;
+    align-content: space-between;
+  }
+
+  .tile.big  { grid-column: span 2; grid-row: span 2; }
+  .tile.wide { grid-column: span 2; }
+
+  .tile .k { font-size: 40px; color: var(--muted); font-weight: 500; }
+  .tile .v { font-size: 72px; font-weight: 600; line-height: 1; }
+  .tile.big .v { font-size: 112px; }
+
+  /* ── 规格密排 ─────────────────────────────────────────── */
+  .specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 80px; }
+  .spec  { display: grid; gap: 8px; padding: 28px 0; border-top: 1px solid var(--line); }
+  .spec .k { font-size: 40px; color: var(--muted); }
+  .spec .v { font-size: 64px; font-weight: 600; }
+
+  /* ── 双列对比：列头必须标明对比的轴 ──────────────────── */
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 120px; align-items: start; }
+  .versus .col { display: grid; gap: 24px; }
+  .versus .head { font-size: 44px; color: var(--muted); }
+  .versus .val  { font-size: 176px; font-weight: 600; line-height: 1; letter-spacing: calc(-0.02em * var(--latin));
+                  font-variant-numeric: proportional-nums; }
+  .versus .col.now .val { color: var(--accent); }
+
+  /* ── 图表：纯 CSS 柱状 ────────────────────────────────
+     柱状图基线必须从零起。这不是审美偏好：Correll 等（CHI 2020）与 Pandey 等（2015）
+     都实测到截断纵轴造成系统性误读，而且**加断轴标记也不能缓解**。
+     另外这里只做柱状与折线：禁 3D、禁饼图、禁面积/半径编码、禁双纵轴。 */
+  .chart { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 60px; height: 520px; }
+  /* 柱子的高度是百分比，所以它所在的行必须有确定高度：.bar 撑满 .chart 的 520px，
+     中间那条 1fr 轨道因此是确定的，百分比才解析得出来。
+     直接写在 .fill 上而父级高度由内容决定的话，柱子会塌成零高。 */
+  .bar   { display: grid; grid-template-rows: auto 1fr auto; gap: 24px; height: 100%; text-align: center; }
+  .bar .col  { display: flex; align-items: flex-end; }
+  /* 柱子本身就是数据，要满足非文字内容 3:1（WCAG 1.4.11）。原来用 --tile（5% 白），
+     投出来几乎看不见。改用已量过的 --faint：深色 4.14:1、浅色 3.33:1 */
+  .bar .fill { width: 100%; background: var(--faint); border-radius: 16px 16px 0 0; }
+  .bar.on .fill { background: var(--accent); }
+  .bar .v { font-size: 56px; font-weight: 600; }
+  .bar .k { font-size: 40px; color: var(--muted); }
+  /* 纵轴说明与基线说明用 --muted 不用 --faint：这行字承担信息，
+     不能是全片最看不清的。 */
+  .zero  { border-top: 1px solid var(--line); margin-top: -1px; padding-top: 20px; font-size: 40px; color: var(--muted); }
+
+  /* ── logo 墙：只放占位框。不要放任何真实商标 ─────────── */
+  .logos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .logo-slot {
+    height: 160px;
+    border: 1px dashed var(--line);
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    color: var(--faint);
+  }
+
+  /* ── 引语：用户原话、评审意见、调研摘录 ───────────────
+     出处要跟在引语下面。没有出处的话不要做成引语片，那是把编的话当证据用。 */
+  .quote { font-size: 80px; line-height: 1.3; font-weight: 500; letter-spacing: calc(-0.01em * var(--latin)); }
+  .quote .mark { color: var(--faint); }
+
+  /* ── 流程条：有先后顺序的步骤。这是项目符号的替代品之一 ── */
+  .steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 20px; }
+  .step  { display: grid; gap: 16px; align-content: start; padding-top: 32px; border-top: 1px solid var(--line); }
+  .step .i { font-size: 40px; color: var(--faint); font-weight: 600; }
+  .step .n { font-size: 60px; font-weight: 600; line-height: 1.1; }
+  /* 每一步只放名字。那一步做什么，讲的人说 */
+
+  /* ── 双栏人物：分工、团队、职责 ──────────────────────── */
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+  /* 名字和职责在同一行、同一字号：职责写成名词短语（「硬件」「识别算法」），不写成一句话 */
+  .role  { display: flex; gap: 0.5em; align-items: baseline; font-size: 64px; font-weight: 600; }
+  .role .what { color: var(--muted); }
+
+  /* ── 时刻：一个具体到能拍成视频的场景 ─────────────────
+     比单句大字长，字号小一档。内容主导时展开的每一点配一张。片上只有这个场景，
+     这一点的名字由讲的人说。判据：拍不成十秒视频的，就是形容词，不该占这张片。 */
+  .moment { font-size: 96px; line-height: 1.25; font-weight: 600; letter-spacing: calc(-0.012em * var(--latin)); }
+
+  /* ── 信号汇入：左边几路输入，汇到右边一个结果 ──────────
+     回答"它凭什么知道"。不是技术栈清单。 */
+  .converge { display: grid; grid-template-columns: 1fr auto 1.1fr; gap: 64px; align-items: center; }
+  .converge .ins { display: grid; gap: 20px; }
+  /* 几路输入就是几行字，不做成胶囊按钮：那是网页的样子，不是片子的 */
+  .converge .in { font-size: 52px; font-weight: 500; color: var(--muted); }
+  .converge .arrow { font-size: 72px; color: var(--faint); line-height: 1; }
+  .converge .out { display: grid; gap: 20px; }
+  .converge .out .v { font-size: 88px; font-weight: 600; line-height: 1.1; color: var(--ink); }
+
+  /* ── 取舍：它故意不做什么 ─────────────────────────────
+     两三条并列，每条一个短句。为什么不做由讲的人说。不要退化成项目符号。 */
+  .tradeoffs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 72px; }
+  .tradeoff { display: grid; gap: 20px; align-content: start;
+              padding-top: 30px; border-top: 1px solid var(--line); }
+  .tradeoff .no  { font-size: 64px; font-weight: 600; line-height: 1.15; }
+
+  /* ── 静场：屏上没有要读的字，注意力回到讲的人身上 ────────
+     讲故事、举例、答问时切到这一张，用底色（.stage.rest，规则在「舞台的底」一节）。
+     可以在右下角垫一个同色调巨字 .giant：比底色略亮，对比约 1.1–1.2:1，只作氛围，不承担信息，
+     4 个字封顶（中文算 1，其余算半个）。字重照全片封顶 600。
+     巨字只垫在底色或柔和渐变上，不和色场叠：--ghost 是按底色算的，压在色场上太显眼，浅色主题里会是一个白字。
+     切视频、实机演示时用纯黑 .blackout：底色不是黑的时候，这一张也是纯黑。
+     静场片事先排进片单，不靠临场按 B 黑屏。不要在这张片上放「演示视频播放位」这类占位框：
+     占位框是给做片子的人看的，投出来观众只会看到一个空框。 */
+  .stage.blackout { background: #000; }
+  .stage.rest .giant { position: absolute; right: -60px; bottom: -150px; white-space: nowrap;
+                       font-size: 760px; line-height: 1; font-weight: 600; color: var(--ghost); }
+
+  /* ── 产品位占位图：居中浮着，留白四到五成，不出血 ────── */
+  .hero {
+    justify-self: center;
+    width: 900px;
+    height: 560px;
+    border-radius: 48px;
+    background: var(--tile);
+    border: 1px dashed var(--line);
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    color: var(--faint);
+  }
+
+  /* ── 价格片 ───────────────────────────────────────────── */
+  .price { display: flex; gap: 140px; justify-content: center; }
+  .price .item { display: grid; gap: 16px; text-align: center; }
+  .price .p { font-size: 120px; font-weight: 600; line-height: 1; font-variant-numeric: proportional-nums; }
+  .price .n { font-size: 44px; color: var(--muted); }
+
+  /* ════════════════════════════════════════════════════════
+     出场顺序：一次出一个意义单位，讲到才出现
+     ════════════════════════════════════════════════════════
+     三个属性，可以写在任何元素上，MathML 元素也可以：
+       data-build="N"    第 N 步出现；"N-M" 表示第 N 到 M 步出现，之后退场
+       data-dim="N"      第 N 步起调暗（讲过了，退到背景）；同样接受 "N-M"
+       data-mark="N"     第 N 步起换重点色；"N-M" 只在第 N 到 M 步
+     翻页键先走完本片的步数，再进下一片；退回上一片时显示它的最终状态。
+     时长 320ms 是本模板的取值，不是苹果的参数：发布会的真实动效时长没有公开实测。 */
+  [data-build] { transition: opacity .32s ease, transform .32s ease; }
+  [data-build]:not(.shown) { opacity: 0; transform: translateY(16px); }
+  /* 调暗不用 opacity 叠乘：次要字再乘一次透明度会掉到 2:1 以下，讲过的内容就读不出来了。
+     统一换成 --faint：深色 4.14:1、浅色 3.33:1，过大字 3:1 门槛，而本模板所有字都 ≥40px。 */
+  .dimmed, .dimmed * { color: var(--faint) !important; transition: color .32s ease; }
+  .dimmed img, .dimmed .photo, .dimmed .hero { opacity: .45; }
+  .marked { color: var(--accent) !important; transition: color .32s ease; }
+
+  /* 跨片连续（Magic Move 的做法）：相邻两片上 data-morph 值相同的元素，
+     翻页时从旧位置平移缩放到新位置，其余部分溶解。
+     浏览器不支持 View Transitions 或开了「减弱动效」时，退化为直接切换。
+     只在相邻两片之间配对，而且只配「是同一个东西」的元素：同一个符号、同一个词、同一张图。
+     形状差得多（一整行字配一个字母）会变成拉伸，比不做还难看。
+     data-morph 不要写在带 data-build 的元素上：变到一个还没出现的元素上会一闪而过。 */
+  ::view-transition-group(*) { animation-duration: .48s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .36s; }
+
+  /* 讲者备注：写在 <section> 里、舞台外。不上屏，按 P 在另一个窗口看 */
+  .slide > .notes { display: none; }
+
+  /* 黑屏：按 B，只当应急。要停下来讲故事、举例、答问，切到事先排进片单的静场片（第 17 类） */
+  .blank { position: fixed; inset: 0; z-index: 20; background: #000; display: none; }
+  .blank.on { display: block; }
+
+  /* ════════════════════════════════════════════════════════
+     课堂与讲堂的片型
+     ════════════════════════════════════════════════════════ */
+
+  :root { --math-font: math, "STIX Two Math", "Cambria Math", "Latin Modern Math", serif; }
+
+  /* ── 主张与证据：左上一句结论，下面是为它重画的图 ─────────
+     主张句 80px，版心 1520 ÷ 80 = 每行 19 字：一行，19 字封顶，争取 12 字内。
+     它是这张片上唯一的整句，其余只能是标签、数字前后的限定词与单位、出处行、「未确认」标记。
+     依据：Garner & Alley（2013）的主张句加视觉证据结构，见 references 第 12 节；
+     标题长短没有被直接比较过，「一行」是本 skill 为了少字定的。 */
+  .stage.evidence { align-content: stretch; grid-template-rows: auto 1fr auto; gap: 44px; }
+  .claim { font-size: 80px; line-height: 1.2; font-weight: 600; letter-spacing: calc(-0.01em * var(--latin)); }
+  .proof { display: grid; place-items: center; min-height: 0; }
+  /* 图的外框是定位框，下面两个标注件按它定位 */
+  .proof > * { position: relative; }
+  .cite  { font-size: 40px; color: var(--muted); }
+
+  /* ── 标注件：直接标签 .tag-on 与指示框 .ring ─────────────
+     只用来指，不做装饰：要讲的那一处框起来，部件旁直接贴标签，代替图例和激光笔。
+     .ring 用重点色，它就是这张片唯一那处重点，框了就不再给别的东西上重点色；一张片一个框。
+     .tag-on 是次要色的字，2–6 字，不加边框和底色（加了就是网页上的胶囊标签）；可以有几个。
+     两个都绝对定位：放进图的外框里（.proof 的第一层、舞台的直接子元素都已是定位框），
+     用 style 写 left / top，框再写 width / height。讲到那一处才出现，挂 data-build。
+     也用在图表、满版图这类片上。 */
+  .tag-on { position: absolute; z-index: 2; white-space: nowrap;
+            font-size: 40px; line-height: 1.3; font-weight: 500; color: var(--muted); }
+  .ring   { position: absolute; z-index: 2; pointer-events: none;
+            border: 4px solid var(--accent); border-radius: 12px; background: none; }
+
+  /* ── 概念：学科通行的术语和它的符号 ────────────────────
+     片上只有术语和符号；定义由讲的人说，课堂另写进讲义（一致性原则：片上只留这一处要的东西）。 */
+  .term   { font-size: 112px; line-height: 1.1; font-weight: 600; letter-spacing: calc(-0.015em * var(--latin)); }
+  .term .sym { font-family: var(--math-font); font-style: italic; font-weight: 400;
+               color: var(--muted); margin-left: 0.3em; }
+
+  /* ── 公式：原生 MathML，不引任何公式库 ────────────────
+     Chrome 109 起原生渲染 MathML Core；字体走系统自带的数学字体。
+     上下标按字体自带的缩放表缩小。本机 Chrome + STIX Two Math 实测：
+       .eq 120px    一级上下标 84px、二级 66px；顶层分式的分子分母保持 120px，嵌套分式 84px
+       .derive 72px 行内公式，分式的分子分母就已是 50.4px，再往里一层是 39.6px，低于下限
+     所以大公式最多用两级；推演行里分式内不要再套上下标或分式。 */
+  math { font-family: var(--math-font); }
+  .eq { font-size: 120px; }
+  .derive { display: grid; gap: 30px; }
+  .derive .row { display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 48px; align-items: center; }
+  .derive math { font-size: 72px; justify-self: start; }
+  .derive .why { font-size: 44px; line-height: 1.3; color: var(--muted); }
+
+  /* ── 代码：只放要讲的那几行 ───────────────────────────
+     40px 等宽字每字约 24px 宽，版心 1520 ÷ 24 ≈ 每行 60 个半角字符；
+     行高 54px，一张片 12 行封顶。字体用 ui-monospace，不点名 SF Mono（与 SF Pro 同一份授权）。 */
+  .code {
+    margin: 0;
+    font: 400 40px/1.35 ui-monospace, Menlo, Consolas, "Noto Sans Mono CJK SC", monospace;
+    background: var(--tile);
+    border-radius: 28px;
+    padding: 40px 48px;
+    overflow: hidden;
+    tab-size: 2;
+  }
+  .code .ln { display: block; white-space: pre; }
+
+  /* ── 提问：真要听众作答的题 ───────────────────────────
+     可以用问号。课堂与讲堂里问号只有两个例外：这一类，和引导问句（下一张片立刻用一句结论回答它）。
+     选项 2 到 4 个，每个 72px、8 字以内。
+     选项是几栏字，上面一条细线，不做成带底色的按钮：那是答题 App 的样子。
+     揭晓时正确选项换重点色（data-mark），其余不动。 */
+  .kicker  { font-size: 44px; font-weight: 600; color: var(--muted); }
+  .choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 48px; width: 100%; }
+  .choice  {
+    font-size: 72px; font-weight: 600; text-align: center;
+    padding-top: 32px; border-top: 1px solid var(--line);
+  }
+
+  /* ── 误解：标签先亮，改正在同一张片上揭晓 ─────────────
+     误解不能单独以大字占一张片：只看到那张的人会把它记成对的。 */
+  .myth, .fact { display: grid; gap: 18px; }
+  /* 「常见误解」标签要留：没有它，只看一眼的人会把误解当结论记住。正确说法揭晓时不再加标签 */
+  .tag { font-size: 44px; font-weight: 600; color: var(--muted); }
+  .myth .said, .fact .body { font-size: 80px; font-weight: 600; line-height: 1.2; letter-spacing: calc(-0.01em * var(--latin)); }
+  .myth .said { color: var(--muted); text-decoration-thickness: 6px; }
+  /* 揭晓时给误解划线；覆盖掉 .marked 的换色，这里要的是划线不是强调 */
+  .myth .said.marked { color: var(--muted) !important; text-decoration-line: line-through;
+                       text-decoration-color: var(--faint); }
+
+  /* ── 路线：两到四站，每站一个名词 ─────────────────────
+     开场给全貌；每个章节分隔处再出一次，当前站亮、讲过的暗。
+     两张路线片中间隔着一整节，不相邻，所以这里不用 data-morph。
+     只用亮度分层：当前站最亮，还没讲的灰，讲过的更暗。不做胶囊按钮和描边。 */
+  .roadmap { display: flex; gap: 96px; justify-content: center; align-items: baseline; flex-wrap: wrap; }
+  .stop      { font-size: 64px; font-weight: 600; color: var(--muted); }
+  .stop.now  { color: var(--ink); }
+  .stop.done { color: var(--faint); }
+
+  /* ── 回顾：先给提示让人自己想，再揭晓要点 ─────────────
+     提取比重读更有效（Adesope 等 2017）。三条封顶。每行三格：
+     提示词 64px，4 字内；缩略图 .thumb，前面讲过的那张关键图缩小了放在提示词旁，帮人想起来；
+     要点 52px，一个短语，8 字内，逐条揭晓。三列由 .recap 统一定宽：某一行没有图可缩，那一格空着，三行照样对齐 */
+  .recap { display: grid; grid-template-columns: 360px auto minmax(0, 1fr); gap: 26px 48px; }
+  .recap .item {
+    grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center;
+    padding-top: 22px; border-top: 1px solid var(--line);
+  }
+  .recap .q { grid-column: 1; font-size: 64px; font-weight: 600; }
+  .recap .thumb { grid-column: 2; }
+  .recap .a { grid-column: 3; font-size: 52px; line-height: 1.3; color: var(--muted); }
+
+  /* 缩略图 320×180，和舞台一样是 16:9。里面放一张内联的小图：前面那张图的 data URI，或照它重画的一小段 SVG。
+     SVG 的图形用 currentColor，跟着主题换色；里面不放字，缩到这么小的字低于 40px 下限 */
+  .thumb { width: 320px; height: 180px; border-radius: 12px; overflow: hidden;
+           background: var(--tile); color: var(--faint); }
+  .thumb > svg, .thumb > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+  /* ── 贡献：学术报告的最后一张，问答时一直停着 ─────────────
+     回顾在学术报告里的样子。两三条，每条一行 12 字内（64px × 12 = 768px），一次出齐，不逐条出；
+     不放「谢谢」，致谢在嘴上说。 */
+  .contrib { display: grid; gap: 26px; }
+  .contrib .item { font-size: 64px; line-height: 1.2; font-weight: 600;
+                   padding-top: 22px; border-top: 1px solid var(--line); }
+
+  /* ── 参考文献：备用页，排在最后一张之后；全文进讲义。一张 6 条封顶 ── */
+  .refs { display: grid; gap: 22px; }
+  .ref  { font-size: 40px; line-height: 1.35; color: var(--muted); padding-left: 2em; text-indent: -2em; }
+  .ref b { color: var(--ink); font-weight: 600; }
+
+  /* ── 满版图与半幅图 ───────────────────────────────────
+     两种图的处理不一样：拍的是一件东西就用「产品位」那种居中浮着的；
+     拍的是一个地方、一个现象、一个时刻，就出血铺满。
+     图片一律内联成 data URI，见 scripts/inline_images.py。 */
+  .stage.bleed, .stage.half { padding: 0; }
+  .stage.bleed { background: #000; }
+  .stage.bleed::after, .stage.half::after { display: none; }
+  .photo {
+    position: absolute; inset: 0; z-index: 0;
+    display: grid; place-items: center;
+    font-size: 40px; color: rgba(255, 255, 255, 0.45);
+    background: repeating-linear-gradient(45deg, #1b1d22 0 24px, #16181c 24px 48px);
+  }
+  /* --focus 是裁切焦点。cover 会裁掉一部分，主体偏在哪就往哪设 */
+  .photo img { position: absolute; inset: 0; width: 100%; height: 100%;
+               object-fit: cover; object-position: var(--focus, 50% 50%); }
+
+  /* 遮罩量过：底部 32% 恒为 0.72 的黑。即使遮罩下是纯白像素，
+     白字仍有 9.29:1，0.78 白的来源行 6.46:1。
+     文字不能超出这 32%（1080 × 0.32 ≈ 345px），超出去就没有这个保证。
+     这是按最坏情况定的，所以换图不用重量。 */
+  .stage.bleed::before {
+    content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.72) 32%, rgba(0,0,0,0) 64%);
+  }
+  /* 离底 96px 起，可用高度约 249px：一行 80px 的字，不再垫小字 */
+  .stage.bleed .overlay {
+    position: absolute; left: 200px; right: 200px; bottom: 96px; z-index: 2;
+    display: grid; gap: 18px; color: #fff;
+  }
+  .credit { position: absolute; z-index: 2; right: 48px; bottom: 28px;
+            font-size: 40px; color: rgba(255, 255, 255, 0.78); }
+
+  /* 半幅：图出血占右半，字在左半的舞台底色上，不压图，所以不需要遮罩 */
+  .stage.half { background: var(--bg-base); grid-template-columns: 1fr 1fr; align-content: stretch; }
+  .stage.half .photo { inset: 0 0 0 50%; }
+  .stage.half .side { grid-column: 1; align-self: center; display: grid; gap: 40px; padding: 0 96px 0 200px; }
+  /* 来源行压在图上，给它一小块同样量过的底 */
+  .stage.half .credit { right: 28px; bottom: 24px; padding: 4px 16px; border-radius: 12px; background: rgba(0, 0, 0, 0.72); }
+
+  /* ── 舞台外的操作条。投屏、截图、打印都不会带进去 ────── */
+  .chrome {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--page) 80%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 8px 6px 16px;
+    backdrop-filter: blur(12px);
+  }
+
+  :root:fullscreen .chrome { display: none; }
+  /* 鼠标不动两秒半就淡出，一动就回来：投影时角落里不留操作条 */
+  .chrome { transition: opacity .4s ease; }
+  .chrome.idle { opacity: 0; pointer-events: none; }
+
+  .chrome button {
+    font: inherit;
+    color: var(--ink);
+    background: var(--tile);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+
+  /* ── 打印：一片一页，1:1 不缩放 ──────────────────────── */
+  /* 前庭功能障碍者会被快速位移触发眩晕（WCAG 2.3.3）。
+     跟随系统的减弱动效设置，平滑滚动改成瞬时。 */
+  @media (prefers-reduced-motion: reduce) {
+    .deck { scroll-behavior: auto; }
+    [data-build] { transform: none !important; }
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  @page { size: 1920px 1080px; margin: 0; }
+
+  @media print {
+    .chrome, .blank { display: none !important; }
+    /* 无头打印时脚本不会跑到每一片，所以在这里强制显示所有步骤 */
+    [data-build] { opacity: 1 !important; transform: none !important; }
+    /* 答案也印出来：正确选项印成重点色。课前要发的 PDF，先去掉正确选项上的 data-mark 再导 */
+    .choice[data-mark] { color: var(--accent) !important; }
+    .deck { height: auto; overflow: visible; }
+    .slide { height: 1080px; width: 1920px; break-after: page; }
+    /* 打印时 1:1，回到普通流，不缩放不偏移 */
+    .stage { position: static; transform: none; }
+    /* 颗粒在屏幕上压渐变色带，但逐页栅格化会让 PDF 大出一个数量级，打印时去掉 */
+    .stage::after { display: none; }
+    /* 色场与渐变是这几张片的一部分，打印时照印，不让浏览器为省墨去掉 */
+    .stage.field, .stage.fade { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- 1 标题卡：方法的名字。讲的是别人的论文，左下写「论文讲读 · 作者 年份」，后面出自这篇的结果片不再逐张写。
+       上端底色、下端色场的两段渐变，只给封面、分节、静场 -->
+  <section class="slide"><div class="stage center fade">
+    <div class="phrase">主张加证据</div>
+    <div class="source">论文讲读 · Garner 与 Alley 2013</div>
+  </div>
+  <aside class="notes">今天读 Garner 与 Alley 2013 年的一篇论文，发在 International Journal of Engineering Education 上，讲片子怎么写：标题写一句结论，正文放证明它的图。大概 12 分钟，后面留时间讨论。</aside></section>
+
+  <!-- 2 单句大字：动机。第二行讲到才出现 -->
+  <section class="slide"><div class="stage center">
+    <div class="phrase">同一段讲解<br><span data-build="1">只换片子</span></div>
+  </div>
+  <aside class="notes">我们做的课件，多半是一个话题标题加一串要点。这篇论文做了一件很干净的事：讲稿一个字不改，【点】只换片子，看听的人懂多少。</aside></section>
+
+  <!-- 3 双列对比：两种写法的字数。「主张加证据」那一列讲到才点名，所以不用 .now -->
+  <section class="slide"><div class="stage stack">
+    <div class="title">每张平均词数</div>
+    <div class="versus">
+      <div class="col">
+        <div class="head">常见写法</div>
+        <div class="val">41.5</div>
+      </div>
+      <div class="col">
+        <div class="head">主张加证据</div>
+        <div class="val" data-mark="1">21.2</div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">两组各 11 张片，数的是英文原片的词。常见写法每张平均 41.5 个词，64% 的片配了相关的图，没有动画；主张加证据每张 21.2 个词，【点】只有一半，而且每张都有图。后面简称「常见」和「主张」。</aside></section>
+
+  <!-- 4 主张与证据：用一张示意图讲这个想法。先出示意图，再框住标题条 -->
+  <section class="slide"><div class="stage evidence">
+    <div class="claim">一句结论做标题</div>
+    <div class="proof">
+      <div style="width: 1000px; height: 560px">
+        <div data-build="1" style="position: absolute; inset: 0; border-radius: 32px; background: var(--tile)">
+          <div style="position: absolute; left: 72px; top: 64px; width: 560px; height: 56px; border-radius: 12px; background: var(--muted)"></div>
+          <div style="position: absolute; left: 72px; top: 476px; width: 560px; height: 3px; background: var(--line)"></div>
+          <div style="position: absolute; left: 112px; top: 336px; width: 120px; height: 140px; border-radius: 12px 12px 0 0; background: var(--faint)"></div>
+          <div style="position: absolute; left: 292px; top: 256px; width: 120px; height: 220px; border-radius: 12px 12px 0 0; background: var(--faint)"></div>
+          <div style="position: absolute; left: 472px; top: 176px; width: 120px; height: 300px; border-radius: 12px 12px 0 0; background: var(--faint)"></div>
+        </div>
+        <div class="ring" data-build="2" style="left: 56px; top: 48px; width: 592px; height: 88px"></div>
+        <div class="tag-on" data-build="2" style="left: 680px; top: 66px">结论</div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">主张加证据的写法有三条：标题是一句完整的结论，最多两行；正文是证明它的图，字尽量少；讲到图的哪一部分，那部分才出来。看这张示意：正文是【点】证据，一张图；上面这一条是【点】结论，一句话。先说结论：换成这种写法，听的人论述题的平均分高出一截，几天后差距还在；后面四张是证据。</aside></section>
+
+  <!-- 5 大数字：样本。限定词与单位和数字同一行，分组写进出处行 -->
+  <section class="slide"><div class="stage center">
+    <div class="num"><span class="pre">工科学生</span>110<span class="unit">人</span></div>
+    <div class="source">随机分组</div>
+  </div>
+  <aside class="notes">受试是 110 名工科学生，随机分到两组：主张 59 人，常见 51 人。两组听的是同一段 8 分钟的讲解，讲磁共振成像，讲稿 1000 词，每分钟 141 词；每组 11 张片，只有片子不同。</aside></section>
+
+  <!-- 6 章节分隔：色场，只给封面、分节、静场 -->
+  <section class="slide"><div class="stage center field">
+    <div class="feature">结果</div>
+  </div>
+  <aside class="notes">四个结果，一张一个：论述题、误解、延迟测验、选择题。</aside></section>
+
+  <!-- 7 主张与证据：柱高按满分 15 画，从零起。讲到「平均分」时出两根柱，要看的主张那根用重点色 -->
+  <section class="slide"><div class="stage evidence">
+    <div class="claim">论述题高出一截</div>
+    <div class="proof">
+      <div style="width: 900px; display: grid; gap: 8px" data-build="1">
+        <div class="chart" style="--n: 2; height: 480px">
+          <div class="bar"><div class="v">6.73</div><div class="col"><div class="fill" style="height: 44.9%"></div></div><div class="k">常见</div></div>
+          <div class="bar on"><div class="v accent">9.39</div><div class="col"><div class="fill" style="height: 62.6%"></div></div><div class="k">主张</div></div>
+        </div>
+        <div class="zero"></div>
+      </div>
+    </div>
+    <div class="cite">满分 15 · d = 0.81</div>
+  </div>
+  <aside class="notes">第一个问题：听完能不能把原理讲清楚。柱子是论述题的【点】平均分，满分 15 分：常见组 6.73，主张组 9.39，高出一截。t(93.43) = 3.67，p &lt; 0.001，效应量 d = 0.81。</aside></section>
+
+  <!-- 8 主张与证据：没有满分，柱高按 1.2 个画，从零起；主张那根用重点色 -->
+  <section class="slide"><div class="stage evidence">
+    <div class="claim">严重误解少一半</div>
+    <div class="proof">
+      <div style="width: 900px; display: grid; gap: 8px" data-build="1">
+        <div class="chart" style="--n: 2; height: 480px">
+          <div class="bar"><div class="v">1.04</div><div class="col"><div class="fill" style="height: 86.7%"></div></div><div class="k">常见</div></div>
+          <div class="bar on"><div class="v accent">0.51</div><div class="col"><div class="fill" style="height: 42.5%"></div></div><div class="k">主张</div></div>
+        </div>
+        <div class="zero"></div>
+      </div>
+    </div>
+    <div class="cite">每人平均</div>
+  </div>
+  <aside class="notes">严重误解，是给出另一套错误的解释，比如以为在磁场里排列起来的是癌细胞，而不是氢原子。柱子是【点】每人平均有几个严重误解：常见组 1.04 个，主张组 0.51 个，少了一半。误解总数的组间差异 F(1,108) = 9.84，p &lt; 0.01，d = 0.47。</aside></section>
+
+  <!-- 9 主张与证据：柱高按满分 10 画，从零起；主张那根用重点色 -->
+  <section class="slide"><div class="stage evidence">
+    <div class="claim">几天后差距还在</div>
+    <div class="proof">
+      <div style="width: 900px; display: grid; gap: 8px" data-build="1">
+        <div class="chart" style="--n: 2; height: 480px">
+          <div class="bar"><div class="v">5.52</div><div class="col"><div class="fill" style="height: 55.2%"></div></div><div class="k">常见</div></div>
+          <div class="bar on"><div class="v accent">7.77</div><div class="col"><div class="fill" style="height: 77.7%"></div></div><div class="k">主张</div></div>
+        </div>
+        <div class="zero"></div>
+      </div>
+    </div>
+    <div class="cite">延迟测验 · d = 0.89</div>
+  </div>
+  <aside class="notes">几天后又考了一次，是课后突击的【点】填空测验，满分 10 分：常见组 5.52，主张组 7.77，差距还在。t(93) = 4.34，p &lt; 0.001，d = 0.89；这次常见组 42 人、主张组 53 人。隔了多久，原文前后写法不一：方法里写一周、17 题，结果里写十天，表 3 是 10 题，所以片上只说「几天后」。</aside></section>
+
+  <!-- 10 主张与证据：三类题满分不同（5、4、2），柱高按得分率画，从零起；推理那组的主张柱用重点色；
+       每组左边常见、右边主张，和前三张一样，片上不再标 -->
+  <section class="slide"><div class="stage evidence">
+    <div class="claim">差别只在推理题</div>
+    <div class="proof">
+      <div style="width: 1320px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 120px">
+        <div style="display: grid; gap: 8px" data-build="1">
+          <div class="chart" style="--n: 2; height: 440px; gap: 32px">
+            <div class="bar"><div class="v">&nbsp;</div><div class="col"><div class="fill" style="height: 82.8%"></div></div></div>
+            <div class="bar"><div class="v">&nbsp;</div><div class="col"><div class="fill" style="height: 76%"></div></div></div>
+          </div>
+          <div class="zero">事实</div>
+        </div>
+        <div style="display: grid; gap: 8px" data-build="1">
+          <div class="chart" style="--n: 2; height: 440px; gap: 32px">
+            <div class="bar"><div class="v">&nbsp;</div><div class="col"><div class="fill" style="height: 80.8%"></div></div></div>
+            <div class="bar"><div class="v">&nbsp;</div><div class="col"><div class="fill" style="height: 86.8%"></div></div></div>
+          </div>
+          <div class="zero">过程</div>
+        </div>
+        <div style="display: grid; gap: 8px" data-build="2">
+          <div class="chart" style="--n: 2; height: 440px; gap: 32px">
+            <div class="bar"><div class="v">0.86</div><div class="col"><div class="fill" style="height: 43%"></div></div></div>
+            <div class="bar on"><div class="v accent">1.32</div><div class="col"><div class="fill" style="height: 66%"></div></div></div>
+          </div>
+          <div class="zero">推理</div>
+        </div>
+      </div>
+    </div>
+    <div class="cite">柱高为得分率</div>
+  </div>
+  <aside class="notes">学完马上考的选择题分三类，每组左边常见、右边主张，和前面一样。【点】事实题和过程题，两组差不多：事实题 4.14 对 3.80（满分 5），过程题 3.23 对 3.47（满分 4），差异都不显著。【点】推理题，主张组明显高：0.86 对 1.32，满分 2，p &lt; 0.01。三类题满分不同，所以柱高折成得分率。</aside></section>
+
+  <!-- 11 主张与证据：局限。三块一起框住，因为论文没有拆开测 -->
+  <section class="slide"><div class="stage evidence">
+    <div class="claim">效果来自一整套做法</div>
+    <div class="proof">
+      <div style="display: grid; grid-template-columns: repeat(3, 440px); gap: 40px; padding: 32px">
+        <div class="tile" style="height: 200px; align-content: center"><div class="v">结论标题</div></div>
+        <div class="tile" style="height: 200px; align-content: center"><div class="v">每张有图</div></div>
+        <div class="tile" style="height: 200px; align-content: center"><div class="v">讲到才出现</div></div>
+        <div class="ring" style="left: 0; top: 0; width: 100%; height: 100%"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">要说清楚的局限：主张组同时少了一半字、每张有图、讲到才出现，论文没有拆开测，所以不能说效果全来自标题。另外两点：主张组自评的先备知识更高（2.87 对 2.24），但和测验成绩不相关；有意思的是，两组各自给自己那套片的字量打分，主张组的分反而更低（3.87 对 4.41，7 分制）。</aside></section>
+
+  <!-- 12 静场：讲我自己的看法，屏上不放字。巨字「AE」只作氛围 -->
+  <section class="slide"><div class="stage rest">
+    <div class="giant" aria-hidden="true">AE</div>
+  </div>
+  <aside class="notes">这一段是我自己的看法，不是论文的结论。说服我的是两件事：每张都有一张为结论画的图，以及讲到才出现。标题写结论是代价最小的一步，今天就能改。</aside></section>
+
+  <!-- 13 贡献：问答时一直停着，一次出齐 -->
+  <section class="slide"><div class="stage stack">
+    <div class="label">贡献</div>
+    <div class="contrib">
+      <div class="item">标题写结论</div>
+      <div class="item">正文放证据图</div>
+      <div class="item">讲到才出现</div>
+    </div>
+  </div>
+  <aside class="notes">三句话可以带走：标题写一句结论；正文放证明它的图，字尽量少；讲到哪部分才出哪部分。问答时停在这张；被问到出处，往后翻到备用页。</aside></section>
+
+  <!-- 备用页：参考文献，排在最后一张之后，问答时被问到再翻 -->
+  <section class="slide backup"><div class="stage stack">
+    <div class="title">参考文献</div>
+    <div class="refs">
+      <div class="ref" lang="en"><b>Garner, J. K., &amp; Alley, M. P.</b> (2013). How the design of presentation slides affects audience comprehension: A case for the assertion–evidence approach. <i>International Journal of Engineering Education, 29</i>(6), 1564–1579.</div>
+    </div>
+  </div></section>
+
+</div>
+
+<div class="chrome">
+  <span id="count">1 / 1</span>
+  <span class="keys">P 讲者视图 · B 黑屏 · F 全屏</span>
+  <button id="theme">浅色</button>
+</div>
+
+<script>
+(() => {
+  const deck = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const count = document.getElementById('count');
+  const root = document.documentElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  // 舞台恒为 1920×1080，只缩放外层，所以任何窗口下字号比例都不变
+  const fit = () => {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    root.style.setProperty('--s', s);
+  };
+  fit();
+  // 刷新时不让浏览器恢复旧的滚动位置，位置由下面的脚本决定
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  // ── 步数 ──────────────────────────────────────────────
+  // "3" 表示第 3 步起一直成立；"2-4" 表示只在第 2 到 4 步成立
+  const warned = new Set();
+  const range = (el, key) => {
+    const raw = el.dataset[key];
+    const m = String(raw).trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if (!m) {
+      if (!warned.has(raw)) { warned.add(raw); console.warn(`data-${key}="${raw}" 写法不对，应为 N 或 N-M`); }
+      return null;
+    }
+    return [Number(m[1]), m[2] === undefined ? Infinity : Number(m[2])];
+  };
+  const within = (r, step) => !!r && step >= r[0] && step <= r[1];
+
+  const stepsOf = slide => {
+    let max = 0;
+    for (const key of ['build', 'dim', 'mark']) {
+      for (const el of slide.querySelectorAll(`[data-${key}]`)) {
+        const r = range(el, key);
+        if (!r) continue;
+        // 有终点的区间要多走一步，才看得到它结束
+        max = Math.max(max, r[0], Number.isFinite(r[1]) ? r[1] + 1 : 0);
+      }
+    }
+    return max;
+  };
+  const total = slides.map(stepsOf);
+
+  const apply = (slide, step) => {
+    for (const el of slide.querySelectorAll('[data-build]')) {
+      const on = within(range(el, 'build'), step);
+      el.classList.toggle('shown', on);
+      if (on) el.removeAttribute('aria-hidden'); else el.setAttribute('aria-hidden', 'true');
+    }
+    for (const el of slide.querySelectorAll('[data-dim]')) el.classList.toggle('dimmed', within(range(el, 'dim'), step));
+    for (const el of slide.querySelectorAll('[data-mark]')) el.classList.toggle('marked', within(range(el, 'mark'), step));
+  };
+
+  // ── 位置 ──────────────────────────────────────────────
+  let i = 0, step = 0, expected = -1, expectTimer = 0;
+
+  const label = () => {
+    count.textContent = `${i + 1} / ${slides.length}` + (total[i] ? ` · ${step}/${total[i]}` : '');
+    history.replaceState(null, '', `#${i + 1}`);
+    presenter.update();
+  };
+
+  const scrollToSlide = (el, smooth) => {
+    deck.style.scrollBehavior = smooth ? 'smooth' : 'auto';
+    deck.scrollTo({ top: el.offsetTop });
+  };
+
+  // 相邻两片上 data-morph 相同的元素，交给 View Transitions 做连续过渡
+  const morph = (from, to, update) => {
+    const olds = new Map();
+    for (const el of from.querySelectorAll('[data-morph]')) if (!olds.has(el.dataset.morph)) olds.set(el.dataset.morph, el);
+    const seen = new Set();
+    const pairs = [];
+    for (const el of to.querySelectorAll('[data-morph]')) {
+      const key = el.dataset.morph;
+      if (!olds.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      pairs.push([olds.get(key), el, `morph-${pairs.length}`]);
+    }
+    for (const [o, , name] of pairs) o.style.viewTransitionName = name;
+    const vt = document.startViewTransition(() => {
+      for (const [o, n, name] of pairs) { o.style.viewTransitionName = ''; n.style.viewTransitionName = name; }
+      update(false);
+    });
+    // 过渡被跳过（页面在后台、状态不对）时 ready 会被拒绝，但 DOM 更新照样执行，这里只是不让它报错
+    vt.ready.catch(() => {});
+    vt.finished.finally(() => { for (const [, n] of pairs) n.style.viewTransitionName = ''; });
+  };
+
+  const jump = (n, s, animate) => {
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    const from = slides[i], to = slides[n];
+    const update = smooth => {
+      i = n; step = s;
+      expected = n;
+      clearTimeout(expectTimer);
+      expectTimer = setTimeout(() => { expected = -1; }, 1200);
+      apply(to, step);
+      scrollToSlide(to, smooth);
+      label();
+    };
+    const canMorph = animate && n !== i && document.startViewTransition && !reduced.matches
+      && document.visibilityState === 'visible';
+    if (canMorph) morph(from, to, update);
+    else update(animate && !reduced.matches);
+  };
+
+  const next = () => {
+    if (step < total[i]) { step += 1; apply(slides[i], step); label(); }
+    else if (i < slides.length - 1) jump(i + 1, 0, true);
+  };
+  const prev = () => {
+    if (step > 0) { step -= 1; apply(slides[i], step); label(); }
+    else if (i > 0) jump(i - 1, total[i - 1], true);
+  };
+
+  // 滚轮或触控板翻到的片，按「浏览」处理：直接给最终状态
+  // 页面在后台标签或隐藏窗口里载入时，每片高度都是 0，观察器会把所有片同时报成可见，
+  // 当前片就被带到最后一张。高度为 0 的回报一律不算。
+  const io = new IntersectionObserver(entries => {
+    if (!deck.clientHeight) return;
+    for (const en of entries) {
+      if (!en.isIntersecting || !en.boundingClientRect.height) continue;
+      const k = slides.indexOf(en.target);
+      if (k === expected) { expected = -1; continue; }
+      if (k === i) continue;
+      i = k; step = total[k];
+      apply(slides[k], step);
+      label();
+    }
+  }, { root: deck, threshold: 0.6 });
+  slides.forEach(s => io.observe(s));
+
+  // ── 黑屏 ──────────────────────────────────────────────
+  const blank = document.createElement('div');
+  blank.className = 'blank';
+  document.body.append(blank);
+
+  // ── 讲者视图：另开一个窗口，只有讲的人看得到 ────────────
+  const presenter = (() => {
+    let win = null, started = 0, timer = 0;
+    const notesOf = s => {
+      const el = s && s.querySelector(':scope > .notes');
+      if (!el) return '';
+      return el.textContent.split('\n').map(l => l.trim()).join('\n').trim();
+    };
+    const headOf = s => {
+      if (!s) return '';
+      const el = s.querySelector('.stage');
+      return (el ? el.innerText : '').split('\n').map(l => l.trim()).find(Boolean) || '';
+    };
+    const alive = () => win && !win.closed;
+    const update = () => {
+      if (!alive()) return;
+      const d = win.document;
+      d.getElementById('pos').textContent =
+        `第 ${i + 1} / ${slides.length} 张` + (total[i] ? ` · 第 ${step} / ${total[i]} 步` : '');
+      d.getElementById('now').textContent = notesOf(slides[i]) || '这张片没有备注';
+      d.getElementById('next').textContent = step < total[i]
+        ? `本片还有 ${total[i] - step} 步`
+        : (slides[i + 1] ? `下一张：${headOf(slides[i + 1])}` : '这是最后一张');
+    };
+    const tick = () => {
+      if (!alive()) { clearInterval(timer); return; }
+      const sec = Math.floor((Date.now() - started) / 1000);
+      win.document.getElementById('clock').textContent =
+        `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    };
+    const open = () => {
+      if (alive()) { win.focus(); return; }
+      win = window.open('', 'keynote-deck-presenter', 'width=960,height=640');
+      if (!win) { alert('浏览器拦截了弹窗。允许弹窗后再按 P。'); return; }
+      const d = win.document;
+      d.open();
+      d.write(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>讲者视图</title>
+<style>
+  body{margin:0;padding:32px 40px;background:#111;color:#eee;
+       font:22px/1.6 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  .bar{display:flex;justify-content:space-between;color:#9a9aa0;margin-bottom:20px}
+  #clock{font-variant-numeric:tabular-nums}
+  h2{font-size:15px;color:#9a9aa0;margin:26px 0 8px;font-weight:500}
+  #now{font-size:30px;white-space:pre-wrap}
+  #next{white-space:pre-wrap}
+  .keys{margin-top:28px;font-size:14px;color:#6e6e73}
+</style>
+<div class="bar"><span id="pos"></span><span id="clock">00:00</span></div>
+<h2>备注</h2><div id="now"></div>
+<h2>接下来</h2><div id="next"></div>
+<div class="keys">→ / 空格 下一步 · ← 上一步 · B 黑屏 · 这个窗口里按键同样有效</div></html>`);
+      d.close();
+      d.addEventListener('keydown', onKey);
+      started = Date.now();
+      clearInterval(timer);
+      timer = setInterval(tick, 1000);
+      update();
+    };
+    return { open, update };
+  })();
+
+  // ── 按键 ──────────────────────────────────────────────
+  const onKey = e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (['ArrowRight', 'ArrowDown', ' ', 'PageDown', 'Enter'].includes(k) || e.code === 'Space') { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
+    else if (k === 'Home') { e.preventDefault(); jump(0, 0, false); }
+    else if (k === 'End') { e.preventDefault(); jump(slides.length - 1, total[slides.length - 1], false); }
+    else if (k === 'b' || k === 'B') { e.preventDefault(); blank.classList.toggle('on'); }
+    else if (k === 'p' || k === 'P') { e.preventDefault(); presenter.open(); }
+    else if (k === 'f' || k === 'F') {
+      e.preventDefault();
+      if (document.fullscreenElement) document.exitFullscreen();
+      else root.requestFullscreen?.();
+    }
+  };
+  addEventListener('keydown', onKey);
+
+  // ── 打印：所有步骤都显示、不调暗；打印完回到原来的状态 ──
+  const render = () => slides.forEach((s, k) => apply(s, k < i ? total[k] : k > i ? 0 : step));
+  addEventListener('beforeprint', () => {
+    for (const el of document.querySelectorAll('[data-build]')) el.classList.add('shown');
+    for (const el of document.querySelectorAll('.dimmed')) el.classList.remove('dimmed');
+  });
+  addEventListener('afterprint', render);
+
+  // ── 主题 ──────────────────────────────────────────────
+  document.getElementById('theme').onclick = e => {
+    const light = root.dataset.theme === 'light';
+    root.dataset.theme = light ? 'dark' : 'light';
+    e.target.textContent = light ? '浅色' : '深色';
+  };
+
+  // ── 操作条闲置两秒半就淡出，鼠标一动就回来 ──────────
+  const chrome = document.querySelector('.chrome');
+  let idleTimer;
+  const wake = () => {
+    chrome.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => chrome.classList.add('idle'), 2500);
+  };
+  addEventListener('mousemove', wake);
+  wake();
+
+  // ── 窗口尺寸变了（进出全屏、拖动窗口）────────────────
+  // 每片高 100vh，尺寸一变，原来的滚动位置就对不上片了，滚动吸附会把人带到别的片。
+  // 所以尺寸变化后要把当前片重新对齐，并告诉滚动同步这次移动是自己发起的。
+  addEventListener('resize', () => {
+    fit();
+    expected = i;
+    scrollToSlide(slides[i], false);
+  });
+
+  // ── 起点：地址里带 #5 就从第 5 张开始；手改地址也能跳 ──
+  const fromHash = () => {
+    const n = Number((location.hash.match(/^#(\d+)$/) || [])[1]);
+    return Number.isFinite(n) && n >= 1 ? Math.min(n, slides.length) - 1 : null;
+  };
+  addEventListener('hashchange', () => {
+    const n = fromHash();
+    if (n !== null && n !== i) jump(n, 0, false);
+  });
+  i = fromHash() ?? 0;
+  step = 0;
+  render();
+  expected = i;
+  scrollToSlide(slides[i], false);
+  label();
+})();
+</script>
+
+</body>
+</html>

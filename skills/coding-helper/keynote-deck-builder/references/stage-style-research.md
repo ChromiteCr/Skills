@@ -78,12 +78,53 @@
 | A | 苹果官网文字与分隔线的常用实色：`#1d1d1f`（浅底正文）、`#f5f5f7`（深底正文，即 rgb 245,245,247）、`#6e6e73` 与 `#86868b`（次要文字）、`#d2d2d7`（浅底分隔线）、`#424245`（深底分隔线） | 同上，及 `globalheader.css` |
 | C | 动效时长（1.0 秒溶解、0.3–0.5 秒短揭示）—— 这些是 **Keynote 应用的默认值**，不是对真实发布会的实测 | — |
 
-**结论性判断**（据 A/B 档推出，写进规则）：底色用纯色，深色纯黑、浅色 `#f5f5f7`，不加渐变、光晕与颗粒；
-文字三档用实色；重点色一支，一张片最多用在一处；产品位放占位图。
+**0.10.0 补查**（2026-10-13）：使用者要求「保持苹果发布会的简约，但可以不是纯黑底」。
+补查了苹果的舞台照片、Keynote 自带主题、HIG、Material 3、Duarte、AI 模板的样子和投影。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| B | **苹果舞台上讲述页的片底几乎都是纯黑**。美来自满版的产品微距、界面、实景照片、黑白人像；没见到渐变、光晕或颗粒底，也没见到整页的产品色底。样本有限 | Apple Newsroom 官方图集：2019-03、WWDC19、2019-09、WWDC20、WWDC23，约 31 张拍到屏幕的照片，目测（2019-03 与 2019-09 的链接见第 6c 节） |
+| B | 上面那批照片里的例子：2019-09 Tim Cook 开场，身后是三摄的巨幅特写；WWDC19 Tim Cook 身后是黑底上的深灰巨字「Mac Pro」；2019-03 Spielberg 讲创作时，身后是低亮度的蓝绿氛围图；Kumail Nanjiani 讲自己的故事时，屏幕上只留 Apple TV+ 标志 | 同上 |
+| B | WWDC19 的霓虹图形是那场活动的视觉识别，不是通用背景 | 同上 |
+| A | **Keynote 14.5 自带主题以平涂为主**：Basic Black 与 Black 都是 #000000；Minimalist Dark 是灰蓝 #4B6079 | 本机 Keynote.app 包内的主题文件 |
+| A | 色块只用在少数母版上：Basic Color 的 17 个母版里只有 2 个用海军蓝 #003462（含封面），其余是白底；Bold Color 是青、黄、粉与白交替 | 同上 |
+| A | 渐变主题：Gradient 黑 → 海军蓝 → 蓝灰（取样近似 #020204 → #262642 → #717080）；Slate 上亮下暗的石墨（约 #727272 → #2C2C2C）；Showroom 浅灰加暗角。另有会动的云与波浪背景 | 同上 |
+| A | **HIG Dark Mode**：背景更暗、前景更亮；颜色对比不低于 4.5:1，小字争取 7:1；没有要求纯黑 | Apple Human Interface Guidelines · Dark Mode |
+| A | **HIG Color**：颜色要在不同光照下测；不要只靠颜色传达信息 | Apple HIG · Color |
+| A | **HIG Materials**：Liquid Glass 只给控件与导航那一层，不进内容层 | Apple HIG · Materials |
+| A | **Material 3** 从一个种子色派生出中性色阶，表面与背景都取自中性色阶。这是「从主色派生带色的中性底」的正式先例 | Material Design 3 |
+| B | Duarte：黑底显得正式，大会场里画面上的物体像在发光；白底随意，适合小场地 | Duarte（书评转述） |
+| B | Duarte：背景是台面，不是作品 | Duarte |
+| B | 没有引导时，模型做的页面倾向 Inter 字体、白底紫色渐变 | Anthropic 2025-11 的文章 |
+| B | 玻璃拟态宜少用，最大的问题是可读性 | NN/g |
+| C | 「发光球、霓虹光晕、颗粒等于 AI 味」没有权威来源，是行业观感与使用者本人的判断 | — |
+| A | 环境光会把投影画面冲淡 | ProjectorCentral |
+| B | 细微的配色差别在投影上看不出来，要到现场实测 | Vanderbilt 2020 |
+| B | 大面积平缓的暗区最容易出色带。加噪点能打散色带，这正是「颗粒渐变」的技术来源 | Netflix CAMBI（arXiv 2102.00079）；CSS-Tricks |
+
+**结论性判断**（0.10.1，据 A/B 档推出，写进规则）：
+
+- **底色平涂**。舞台上以纯黑为主（B），Keynote 自带主题以平涂为主（A），苹果官网的底都是实色（A）
+- **不必是黑色**。Keynote 有灰蓝、海军蓝的主题，HIG 只要求背景更暗、前景更亮、对比够，Material 3 从种子色派生带色的中性底（都是 A）。
+  默认用什么颜色，是使用者 2026-11-18 定的：**底色默认用和文字、讲的内容风格匹配的颜色；没有合适的匹配色，用黑色 #000**。
+  匹配色从哪来，按先后：使用者指定的颜色；品牌或产品色；内容本身的颜色联想（课堂、板书 → 黑板绿；海洋、航天、物理 → 深蓝；
+  植物、医学、环保 → 深绿；文史、艺术 → 深红褐；音乐、手作 → 暖褐）。文字的语气定饱和度：学术约 0.35，发布会约 0.45，封顶 0.60。
+  明度交给 `--palette` 算，压到白字 ≥ 10:1、次要字 ≥ 7:1，不凭眼睛调
+- **整套一个底色，或者按章节换色**。一个章节内不换色
+- **封面、分节、静场可以换底**：色场、柔和渐变、同色调巨字，内容片不用。Basic Color 只在 17 个母版里的 2 个上用色块（A）；
+  Gradient、Slate、Showroom 都只在一个色相里变明暗（A，取样值见上表）；WWDC19 的「Mac Pro」是黑底上的深灰巨字（B）。
+  用渐变前在现场投影上看一眼有没有色带，有就改平涂（B）
+- **备选**：带色近黑（主色的色相、明度 8.5%，几乎是黑；0.10.0 曾把它定为默认，导出 pptx 写 `"theme": "tinted"`）、
+  石墨 `#1c1c1e`（LED 屏、电视、录播）、浅色 `#f5f5f7`（亮教室；这时匹配色改用在重点色与分节色场上）
+- **不加光晕、颗粒、玻璃卡片、多色渐变，也不用会动的背景**。玻璃不进内容层（HIG，A）；运动起始会抓走注意（Abrams 与 Christ 2003，B，见第 13b 节）；
+  白底紫色渐变、玻璃拟态是 AI 模板常见的样子（B），光晕加颗粒算 AI 味只是观感（C）。颗粒本来是给渐变遮色带用的，平涂用不着它
+- 文字三档用实色；重点色一支，一张片最多用在一处；产品位放占位图（这几条 0.8.0 起没变）
 
 **0.8.0 更正**：原来这里写的是「底色用近黑的多层渐变而不是纯黑」。那条结论实际只靠上表的 C 档一行，
 按本文件自己的约定不该写进规则。改成纯色的依据是苹果官网的样式表（上表 A 档两行）。
 另一个理由来自使用者的反馈：带光晕和颗粒的近黑底，恰恰是 AI 生成的片子一眼能认出来的样子。
+
+**0.10.1 放宽**：0.8.0 定的是纯色、深色纯黑；0.10.1 只放宽颜色，纯色不必是黑，默认和内容匹配，没有合适的才用黑。平涂、不加光晕与颗粒照旧。
 
 ## 4. 叙事结构 / Narrative
 
@@ -93,18 +134,86 @@
 |---|---|---|
 | A | **片子不重复讲稿的句子**。片是覆在讲话之上的一层，不是承载信息的主体；焦点是讲的人。Jobs 有过五分钟只对着 33 个字讲的段落 | [Camillieri](https://medium.com/adventures-in-consumer-technology/this-is-how-we-make-slides-at-apple-b8a84352bf6d)、[Presentation Zen](https://presentationzen.com/blog/steve-jobs-and-visual-presentation) |
 | A | **不照读片子**。讲的人重复片上文字会造成认知过载，大脑要同时读和听 | 同上 |
-| A | **问题先于产品**。先让人感到现状的挫败、"投入到问题里"，再给解法。用人话讲问题（"你不希望你的手机能……？"），不用技术约束讲 | [Gong 对 2007 iPhone 发布会的拆解](https://www.gong.io/blog/steve-jobs-iphone-keynote) |
+| A | **2007 年 iPhone 先报出名字，再讲问题**。顺序：铺垫（Macintosh、iPod 改变过行业）→ 今天发三件东西 → 揭晓其实是一台设备，叫 iPhone → 现有智能手机的问题（不聪明、不好用、塑料键盘、固定按键、触控笔）→ 多点触控 → 软件与设计 → 分块演示（iPod、电话、上网）→ 伙伴登台 → 价格 → 上市 → 收束。问题出现在揭晓之后，所以「问题必须先于产品」不成立 | [爱好者转录页](https://www.allaboutstevejobs.com/videos/keynotes/macworld_2007)、[Macworld 当天的直播文字](https://www.macworld.com/article/1054764/macworld-expo/liveupdate.html)，两处顺序一致 |
+| B | 同一场的时间码：揭晓 28:32，讲问题 29:41。转录页自己说明时间码可能偏几分钟，只作参考 | 爱好者转录页 |
 | A | Duarte 的结构：确立"现状"（对手/问题），转向"可能"，中段在两者间来回摆荡，最后收到产品带来的新常态 | [Duarte TED](https://www.ted.com/talks/nancy_duarte_the_secret_structure_of_great_talks)、[Resonate](https://www.duarte.com/resources/books/resonate/) |
 | A | **工作记忆约容纳三个块**。这支撑的是一个**上限**：并列的点超过三四个就会过载 | [Gallo](https://www.carminegallo.com/books/presentation-secrets-of-steve-jobs/) |
 | B | Gallo 由此主张「三是最优数，分段和段内分点都用三」。**这是演讲教练的处方，不是研究结论**——容量上限推不出「必须凑够三个」。本 skill 只采纳上限，不采纳处方 | [Gallo](https://www.carminegallo.com/books/presentation-secrets-of-steve-jobs/)、[Slidegenius](https://www.slidegenius.com/blog/apple-presentations-3) |
 | A | 数字出场时，**这个数字是片上唯一的文字**，随口播同时落地，留一拍让人消化再展开。一张片最多一个统计数字 | [Inc. / Gallo](https://www.inc.com/carmine-gallo/since-apples-new-product-launch-number-100-million-keeps-popping-up-its-not-accidental.html) |
 | A | 复杂概念一律用熟悉物类比落地："思维的自行车"、"一千首歌装进口袋"、从信封里抽出 MacBook Air | [Forbes / Gallo](https://www.forbes.com/sites/carminegallo/2026/04/01/the-simple-strategy-that-made-steve-jobs-so-good-at-explaining-complex-ideas/) |
-| B | 九拍结构：打破现状 → 展示收益 → 在痛与益之间反复 → 早早给出核心揭示（iPhone 在第 3 分钟）→ 每约 9 分钟换节奏（换人、换演示、换故事）→ 简化片子 → 多用人称代词 → 给路标 → 段间回顾 | [Gong](https://www.gong.io/blog/steve-jobs-iphone-keynote) |
+| B | 九拍结构：打破现状 → 展示收益 → 在痛与益之间反复 → 早早给出核心揭示（iPhone 在第 3 分钟；和上面转录页 28:32 的时间码对不上，起算点不明）→ 每约 9 分钟换节奏（换人、换演示、换故事）→ 简化片子 → 多用人称代词 → 给路标 → 段间回顾 | [Gong](https://www.gong.io/blog/steve-jobs-iphone-keynote) |
 | B | 整场约 88 分钟 | 同上 |
 | B | Cook 时代比 Jobs 时代多用约 24.9% 的统计数字，演讲者从一两人变成 90 分钟里十到十二人 | [Quantified AI 对比](https://www.quantified.ai/blog/is-tim-cook-a-better-presenter-than-steve-jobs/) |
 | B | 刻意停顿：句后的沉默与话本身一样有力，用来造张力、让概念落地 | [the power of the pause](https://bespoke-coaching.com/blog/the_power_of_the_pause_in_presentations/) |
 | B | "one more thing" 用的是 Columbo 手法：看似要结束，停顿，再抛一个 | [Wikipedia](https://en.wikipedia.org/wiki/One_More_Thing) |
 | C | 一个产品段落跨多少张片 —— 公开分析里没有计数。"约 10–20 张"是目测推断 | — |
+
+**0.10.0 更正**：这张表原来有一行「问题先于产品」，记 A 档，出处是 Gong 对 2007 年 iPhone 发布会的拆解；
+SKILL.md 据此要求问题必须先于主角出场。上面两处来源对得上的顺序是先揭晓、后讲问题，所以那一行删掉，
+规则改成「叙事路线」原则 1：开头几分钟交代听众为什么要听；发布会可以先揭晓，但「为什么要在乎」不拖过揭晓后的那一段。
+原行后半句「用人话讲问题，不用技术约束讲」没有被推翻，留作写法上的建议，不作规则依据。
+
+## 4b. 示例路线的出处（0.10.0）/ Route sources
+
+0.10.0 应使用者要求补查（2026-10-13）：叙事路线不钉死，给几条常见、做得好的示例，允许改。
+SKILL.md「叙事路线」路线表的十五条，每条在下表都有一行，路线名加粗；没有外部实例的照实写。路线是示例，不是规则：
+出处说明有人这样讲过、讲得通，不说明必须这样讲。同一个来源在本节和第 12b 节的档次可能不同（例如 Kayvon），各按各自那部分调研记的档。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| B | **问题先行型** · Duarte 的 sparkline：在「现状」与「可能」之间往返，最后到行动号召与「新的美好」。它是一种形状，不是清单 | [Duarte 博客](https://www.duarte.com/blog/move-presentation-audience-with-story-techniques-in-presentations/)、TED 演讲 |
+| 顺序 A；时间码 B | **揭晓型** · Macworld 2007 iPhone：铺垫 → 今天发三件东西 → 揭晓 → 现有智能手机的问题 → 多点触控 → 软件与设计 → 分块演示 → 伙伴登台 → 价格 → 上市 → 收束。细节与时间码见第 4 节 | [爱好者转录页](https://www.allaboutstevejobs.com/videos/keynotes/macworld_2007)、[Macworld 当天的直播文字](https://www.macworld.com/article/1054764/macworld-expo/liveupdate.html) |
+| 中段 A；其余 B | **品类空位型** · 2010 iPad：近况与数据 → 笔记本与手机之间有没有第三类设备的位置 → 新设备必须在几类任务上做得更好 → 上网本只是更便宜，不算 → 揭晓 → 演示 → 生态 → 价格与上市 → 回顾。从提问到上网本再到揭晓这一段是 A | [Macworld 直播](https://www.macworld.com/article/202171/apple_event.html)（直播墙钟时间） |
+| 收口 A；短片在价格前 B；以短片开头 C | **逐件循环型** · 九月发布会每个产品一段：（用户故事）→ 功能块 → 短片 → 价格与上市；同一家族的价格合并到家族段末尾。2024-09：Watch S10 价格 10:20，iPhone 16 价格 11:11，iPhone 16 Pro 价格 11:35。2025-09：AirPods 价格 10:13；Apple Watch 段以用户来信和跌倒检测片段开场，10:30 统一公布价格；三款 iPhone 价格合并到 11:11。Newsroom 新闻稿都有「价格与上市」小节 | [MacRumors 2024-09 直播](https://www.macrumors.com/2024/09/09/apple-event-live-blog-september-2024/)、[MacRumors 2025-09 直播](https://www.macrumors.com/2025/09/09/apple-event-live-blog-september-2025/)、Apple Newsroom |
+| 结构 A；时间 B | 逐件循环型的平台版 · WWDC 按平台逐段讲：开场 → 可选议程 → 横跨所有平台的主题 → 各平台 → 开发者工具 → 发布时间表 → 收束。横跨主题有时在前、有时在后：2024 先报议程，Apple Intelligence 放到 11:06；2025 先讲 Apple Intelligence 与新设计；2023 先讲 Mac 硬件，11:21 进入 one more thing（Vision Pro） | WWDC 2023–2025 |
+| A | one more thing，可以接在发布会路线的末尾：Apple Watch（2014）、Apple Music（2015）、iPhone X（2017）；WWDC 2023 的 Vision Pro 也是这样出场 | [Macworld 清单](https://www.macworld.com/article/674643/every-one-more-thing-apple-has-ever-announced.html) |
+| — | **内容主导型** · 没有外部实例。这是本 skill 0.4.0 起自己的路线，理由写在 SKILL.md「内容主导：没有数字的项目」 | — |
+| A | **先猜后讲** · Sinha 与 Kapur 2021 元分析：先让学生试、再讲解，总体 g = 0.36；但对小学二至五年级和通用技能，先讲后练占优 | Sinha & Kapur 2021，RER |
+| A | 先猜后讲的前提：只在给对比案例、或在学生方案上展开讲解时才有效 | Loibl, Roll & Rummel 2017 |
+| B | 预测型演示的效应偏小：只看演示，正确解释率 24%；先预测再看，30% | Crouch 等 2004 |
+| 方法 A；成绩数据 B | **同伴教学循环** · 短讲 → 概念题独立作答 → 讨论 → 再答 → 讲解。首轮正确率约 35–70% 时，讨论后的提升最明显 | Crouch & Mazur 2001，Am. J. Phys. 69:970–977，p.970、p.972 |
+| 结构 A；效果 B | MIT 8.02 TEAL：短讲、桌面实验、可视化、PRS 概念题与小组练习混合；学习增益约为对照的 2 倍，是准实验。实例：OCW 8.02 2007 春第 4 次课，开头有提纲与回顾，中间 6 道 PRS 题，以课堂习题收尾 | Belcher 2003；Dori & Belcher 2005；8.02 课件总表（链接见第 6c 节） |
+| A | **回顾—小步—例题** · 斯坦福 CS106B 2022 冬第 7 讲：提纲 → 提取式小测 → 逐步例题 → 换情境例题 → 今日小结 → 课后任务 → 下次预告。A 指这份课件本身 | CS106B 2022 冬第 7 讲课件 |
+| — | IES 实践指南按自己的分级：例题与练习交替，中等证据；用测验让学生重温，强证据；深度解释性提问，强证据；「用前测题引入新课」，低证据。这几级是 IES 自己评的，不另折成 A/B/C | IES 实践指南，Pashler 等 2007 |
+| B | Rosenshine 2012 的十条原则 | Rosenshine 2012 |
+| A | 专长逆转：例题对新手有效，对熟手优势消失，甚至反过来 | Kalyuga 等 2003 |
+| B | **动机加一个想法** · Simon Peyton Jones「How to give a great research talk」：动机约两成，一个核心想法约八成；开头不放提纲；不单列相关工作；例子是主要武器 | Peyton Jones |
+| B | **三明治** · Patrick Winston《How to Speak》：求职报告五分钟内讲出愿景与已做成的几步；最后一页写「贡献」，问答时停着；合作者放第一页；不以「谢谢」作最后一句 | MIT OCW RES.TLL-005（2018 IAP） |
+| A | MIT EECS 的求职报告建议：Randy Davis 说先想清希望别人转述的三句话；Durand 说深讲一项贡献 | [MIT EECS](https://www.eecs.mit.edu/career-opportunities-at-eecs/faculty-job-talks-tips-from-the-faculty/) |
+| B | MIT CommKit：求职报告是沙漏结构；发布结果侧重结果与意义，征求反馈侧重方法 | MIT CommKit（EECS、BE、AeroAstro） |
+| B | **框定—方案—效果—取舍** · Kayvon Fatahalian「Tips for Giving Clear Talks」（2023-11 版）：分节页给一条路线，框定问题 → 方案 → 效果 → 没选的方案 → 收尾（p.57–58）；结果部分一页一个结论，写进标题（p.48）；以积极的大图景收尾（p.60–62）；先说为什么再说是什么，叙事上的意外几乎总是坏事（p.40） | [cleartalktips.pdf](https://graphics.stanford.edu/~kayvonf/misc/cleartalktips.pdf) |
+| A | Durand 的讲演笔记：重要的节结束时设「重置点」；内容分层 | [TalkAdvice.pdf](https://people.csail.mit.edu/fredo/TalkAdvice.pdf) |
+| B | **公开讲座** · Winston：开场先给一个承诺（empowerment promise），说清听完能多知道什么 | Winston《How to Speak》 |
+| B | **路线图分章** · MIT Comm Lab 生物工程系 2026-02 的答辩复盘：路线图、每章一句结论、讲完回到路线图 | MIT CommKit（BE） |
+| B | **阶段评审** · MIT 航空航天系 CommKit 的首次委员会会议：目标与现状 → 缺口和做法 → 已完成 → 计划 → 请评审回答的具体问题 | MIT CommKit（AeroAstro） |
+| — | **课程项目答辩** · 没有外部实例。这是本 skill 0.2.0 起的答辩改法，原来是 `references/non-launch-occasions.md` 那张表的一行，0.10.0 收进路线表 | — |
+| A | 课堂总体：主动学习让考试成绩提高 0.47 个标准差，传统讲授的挂科风险约是主动学习的 1.5 倍（225 项研究） | Freeman 等 2014，PNAS，doi 10.1073/pnas.1319030111 |
+| B | 把 5E 或 Gagné 九事件当固定序列用，证据弱 | 2026-10-13 课堂调研 |
+| A | 真实课件核查：CS231n、CS106B、MIT 8.02 都是开头回顾、中途提问，结尾总结不统一。A 指这几份课件 | 这几份课件本身 |
+
+**七条原则各指回哪几行**（SKILL.md「叙事路线」）：
+
+1. 开头几分钟交代听众为什么要听（A）：Winston 的承诺开场、Peyton Jones 的动机在前、Kayvon 的先说为什么、MIT CommKit 的沙漏结构，各自是 B，四处一致。发布会可以先揭晓，见第 4 节 2007 年 iPhone 那两行
+2. 一场一个主信息，一张片一个点（A）：上表 MIT EECS 那行（Randy Davis 的三句话）；第 1 节 Camillieri；第 12b 节 Kayvon、ENGR 103、CWSEI 的「一页一个结论」
+3. 抽象的东西落到例子、演示、数字或类比上（A）：第 4 节类比那行；Peyton Jones「例子是主要武器」；第 12b 节 Kayvon「展示而不是描述」
+4. 长于十五分钟就设路标和「重新上车点」（A）：Durand 的「重置点」（A）；第 12 节 Gong 拆的路标与段间回顾（B）
+5. 收尾落在实质内容上（A）：九月发布会每段以价格与上市收口（A）；Winston 的「贡献」页、Kayvon 的大图景收尾（B）。「不说谢谢」只有 Winston 一人主张（B）
+6. 悬念只留给发布会的揭晓（A）：Kayvon p.40「叙事上的意外几乎总是坏事」；Winston 要求求职报告五分钟内讲出愿景（各 B，两处一致）
+7. 课堂每隔一段让每个人作答一次（A）：Freeman 等 2014
+
+**不写成规则的**：下面这些说法查过，证据不够或者有反例，路线表与七条原则都不写：
+
+- 固定拍数或固定顺序
+- 开场必须放议程
+- 结尾必须放总结
+- 问题必须先于揭晓：2007 年 iPhone 是反例
+- 最多三点：作为讲稿规则，没找到可核实的依据（C）
+- 先预测总有帮助：IES 把「用前测题引入新课」评为低证据
+- 先做后讲普遍更好：对低年级与通用技能正相反
+- 最后一页放参考文献：与 Winston、Peyton Jones 冲突
+- 团队页必须放在收束前
+- 绝不说谢谢：只有 Winston 一人这样主张
+- 把 20/80、75/25、35–70% 这类比例当硬阈值
 
 ## 5. 技术选型 / Tooling
 
@@ -356,13 +465,15 @@
 |---|---|---|
 | A | **主张句标题加视觉证据优于「短语标题加项目符号」**。110 名工科本科生随机分两组看同一段 MRI 讲解（同一份 1000 词旁白）：主张句组论述题总分显著更高，t(93.43) = 3.67，p < 0.001，d = 0.81；误解更少，d = 0.47。主张句组的标准是「标题不超过两行、每张配相关图、正文字数尽量少」，平均每片 21.2 词，对照组 41.5 词 | [Garner & Alley 2013, IJEE 29(6)](https://writing.engr.psu.edu/ae_comprehension.pdf) |
 | A | **上面那个效应不能单独归给标题**。主张句组同时减少了字数、每张都有图，而且 11 张里有 8 张的图是讲到才出现，对照组没有动画。是一整套做法的效应 | 同上，2.2 节 |
-| C | 「主张句标题里的要点比项目符号里的更容易被回忆」常被归到 Alley 等 2006 —— 本次只在搜索摘要里见到，没读到原文；[WUSTL 教学中心](https://ctl.wustl.edu/in-powerpoint-its-the-headline-that-makes-the-difference/)那页转述的其实是上面 2013 年那项。不作为依据 | — |
+| C | 「主张句标题里的要点比项目符号里的更容易被回忆」常被归到 Alley 等 2006 —— 本次只在搜索摘要里见到，没读到原文；[WUSTL 教学中心](https://ctl.wustl.edu/in-powerpoint-its-the-headline-that-makes-the-difference/)那页转述的其实是上面 2013 年那项。不作为依据（**0.10.0 起被第 12b 节 Alley 等 2006 那行的 A 档取代**） | — |
 | A | **课前小测在真实课堂里有效**：学期末考试中，考过的内容与没考过但相关的内容都有提升；机制可能是课上注意力更集中、课后自学更有方向。形式是短、低风险的选择题 | [Soderstrom & Bjork 2023, Educ Psychol Rev 35:88](https://link.springer.com/article/10.1007/s10648-023-09805-6) |
 | A | **在真实讲课录像里，课前提问的效果是正向但有限的**（二十分钟以上的真实课程录像，信号检测论与自传体记忆两门） | [Toftness, Carpenter, Lauber & Mickes 2018, JARMAC](https://pure.royalholloway.ac.uk/en/publications/the-limited-effects-of-prequestions-on-learning-from-authentic-le/) |
 | A | 较短的教学视频里，分段前提问能提升记忆 | [Carpenter & Toftness 2017, JARMAC 6(1)](https://www.sciencedirect.com/science/article/abs/pii/S2211368116301103) |
+| — | **先用题目引入新课，证据等级低**（0.10.0 补）：IES 实践指南把「用前测题引入新课」评为低证据。这是 IES 自己的分级，不另折成 A/B/C。所以预测题是一个选项，不保证有效 | IES 实践指南，Pashler 等 2007 |
+| A | **先试后讲有反转条件**（0.10.0 补）：Sinha 与 Kapur 2021 的元分析里，先让学生试、再讲解，总体 g = 0.36；但对小学二至五年级和通用技能，先讲后练占优。更多的前提与预测型演示的数据见第 4b 节 | Sinha & Kapur 2021，RER |
 | A | **练习测验优于重读与其他对照**（217 项研究的元分析）。所以回顾片要先让人提取，再揭晓 | [Adesope, Trevisan & Sundararajan 2017, RER 87(3)](https://journals.sagepub.com/doi/abs/10.3102/0034654316689306) |
 | A | **先学部件的名称与状态，再学系统怎么运作**，三个实验的迁移测验都更好（预训练原则） | [Mayer, Mathias & Wetzell 2002](https://pubmed.ncbi.nlm.nih.gov/12240927/) |
-| A | 冗余原则：图加旁白优于图加旁白加同样的屏幕文字；信号原则：给要点加提示有益；分段原则：分段呈现有益（原文指学习者自控节奏的分段） | [Mayer《多媒体学习》](https://assets.cambridge.org/97805217/35353/frontmatter/9780521735353_frontmatter.pdf) |
+| A | 冗余原则：图加旁白优于图加旁白加同样的屏幕文字；信号原则：给要点加提示有益；分段原则：分段呈现有益（原文指学习者自控节奏的分段）。冗余原则在 2021 汇总里变弱，0.10.0 起只作旁证，见第 12b 节 | [Mayer《多媒体学习》](https://assets.cambridge.org/97805217/35353/frontmatter/9780521735353_frontmatter.pdf) |
 | A | **信号原则的元分析**：27 项研究、2464 人，理解与迁移的效应 r = 0.17，先验知识少的学习者受益更明显 | [Richter, Scheiter & Eitel 2016](https://www.sciencedirect.com/science/article/abs/pii/S1747938X15000664) |
 | A | **诱惑性细节效应**：有趣但与内容无关的图和细节会拖累学习，68 项研究的元分析 | [Sundararajan & Adesope 2020](https://link.springer.com/article/10.1007/s10648-020-09522-4) |
 | A | 纠正误解时，「指出误解 + 标明它不对 + 给出正确解释」三段式比只讲正确解释更有效 | [Tippett 2010 综述](https://eric.ed.gov/?id=EJ905216) |
@@ -376,6 +487,76 @@
 **结论性判断**：课堂与讲堂的证据片用主张句；允许真要作答、当场揭晓的提问片，少而准；
 回顾先提取后揭晓；名字先于机制；图必须是证据；讲义与投影分开。
 主张句那条的效应量大，但要记住它是一整套做法的效应。
+
+0.10.0 补：预测题的效果有限，IES 把「用前测题引入新课」评为低证据；先试后讲对低年级与通用技能会反过来。
+所以「先猜后讲」只是课堂路线里的一条，不是默认。主张句压到一行，学术片少字的依据见第 12b 节。
+
+## 12b. 学术片少字（0.10.0）/ Fewer words on academic slides
+
+0.10.0 应使用者要求补查（2026-10-13）：学术讲座的片子借发布会少字的做法，结合斯坦福、MIT 的课件，减少片上的字，突出主体和重点。
+规则写在 `references/classroom.md`「学术片怎么少字」，SKILL.md「场合」里是摘要。
+分四块：讲演与课件指南、实验与研究、实例页、不采纳的做法。同一个来源在这里和第 4b 节的档次可能不同，各按各自那部分调研记的档。
+
+**讲演与课件指南**
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | Winston 说过的：页总是太多，字总是太多（25:12）；不要念片子，片子是佐料，不是主菜（约 26:26）；改稿顺序是删背景装饰 → 删字 → 删 logo（27:08）→ 删标题（27:17）；人只有一个语言处理器；不用激光笔，改在图上画箭头（约 29:43–31:38）；打印出来铺开，看哪张太重（约 31:52）；一场只许一张故意复杂的片，即 hapax legomenon（约 33:25） | Winston《How to Speak》逐字稿 p.6–8，MIT OCW RES.TLL-005（2018 IAP） |
+| B | 上面这些做法有没有效果，是 Winston 自己的判断 | 同上 |
+| C | Winston 提到的学生小实验没有发表 | 同上 |
+| A | MIT Comm Lab 生物工程系（BE）：标题写成说出要点的整句；理想情况下，全页唯一的完整句就是标题；字越多，越控制不住观众看哪里；把此刻不讲的数据调灰；用颜色、箭头、标签强调；分步揭示 | [BE Slideshow](http://mitcommlab.mit.edu/be/commkit/slideshow/) |
+| A | MIT Comm Lab 核科学与工程系（NSE）：标题含主要结论；用注释把观众引到图或公式的关键处；公式里暂时无关的部分调灰；一个基础色加一个强调色 | MIT Comm Lab NSE「Slide design」 |
+| A | MIT Comm Lab 机械系（MechE）：标题是一行讲清重要性的短语；设计类报告偏好短标题 | MIT Comm Lab MechE |
+| A | MIT Comm Lab 土木与环境系（CEE）三篇：只留支撑论点的那个面板，用箭头标出原本只写在图注里的发现；结论页放前文图的缩略版 | [CEE：结论页用缩略图](https://mitcommlab.mit.edu/cee/2024/02/01/using-miniature-figures-to-enhance-your-conclusion-slides/) 等三篇 |
+| A | MIT 20.020（2009 春）：话题式标题只交代「是什么」，不说「所以呢」；观众要么读，要么听 | MIT 20.020 课程材料 |
+| A | Kayvon Fatahalian：展示而不是描述（p.28）；观众不想自己解读图（p.38）；解释图里每个元素，并说明高亮色的含义（p.44）；讲结果图的顺序是要回答的问题 → 坐标轴 → 唯一的结论（p.46–47）；结果页一页一个结论，写进标题（p.48–49）；结果页不放无关数据，往往要把论文里的图重画（p.52）；标题连起来读就是摘要（p.54） | [cleartalktips.pdf](https://graphics.stanford.edu/~kayvonf/misc/cleartalktips.pdf)（2023-11 版） |
+| A | 斯坦福 ENGR 103《Visual Aids》：按冗余与信号原则大幅减字，标题用一句说出主旨（p.4）；一页一个观点（p.5）；字号不小于 24 磅（p.8）；图例直接标在图上（p.12–13）；可以按 B 黑屏（p.16）。它也建议每页放机构 logo，这条不采纳 | [ENGR 103 讲义](https://web.stanford.edu/~mvassar/handouts/Week%203%20-%203%20-%20Visual%20Aids%20Lecture%20Notes.pdf) |
+| B | 斯坦福 OCP：文字少用，一页一个概念，细节进讲义 | 斯坦福 OCP |
+| A | CWSEI 汇编（Wieman 在斯坦福开的课的学生汇编）：一页一个信息，由标题概括；装饰性背景有认知成本；不需要画面时放空白页；讲课用的片子与复习笔记分成两套 | [CWSEI Cognitive Load](https://cwsei.ubc.ca/files/resources/instructor/Cognitive-Load_CWSEI.pdf) |
+
+**实验与研究**
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | **Garner 与 Alley 2013**（对原文核过）：主张句组的设计标准是句子标题不超过两行、配相关图、正文尽量少（p.9）；110 人随机分组（59 对 51）；主张句组每页 21.2 词、每页都有相关图、8 张讲到才出现，对照组 41.5 词、64% 有相关图、没有动画 | [Garner & Alley 2013, IJEE 29(6)](https://writing.engr.psu.edu/ae_comprehension.pdf) |
+| A | 同上，结果：论述题 d = 0.81；误解 d = 0.47；延迟测验 d = 0.89；心理负荷 d = −0.50。即时选择题只有推理题是主张句组占优 | 同上 |
+| A | 同上，要说准的地方：主张句组自评先备知识更高，但与成绩不相关；两组各给自己那套片的字量打分，主张句组反而更低（3.87 对 4.41，7 分制，d = −0.60；两组没看过对方的片）；论文讨论部分写明五条多媒体原则同时用上，是一整套做法 | 同上 |
+| B | Wolfe、Alley 与 Garner 2012 复验：对照组也用了同样设计的图后，主张句组只剩不显著的正向趋势。这次 ASEE 页面返回 403，没能复核，转述自 2026-10-13 的调研；只写在 references 里，不进示例片 | Wolfe, Alley & Garner 2012，ASEE |
+| A | Alley 等 2006（弗吉尼亚理工的地学大课，非随机）：句子标题组 15 题回忆 79% 对 69%；示例标题 7–16 词 | Alley 等 2006，ASEE |
+| A | **Yue、Bjork 与 Bjork 2013**：屏幕文字与旁白逐字相同，学得最差；稍作改写的缩写句比逐字版好（d = 0.95），迁移比不放字好（d ≈ 0.6）；学习者自己偏好逐字版 | J. Educ. Psych. 105(2):266–277 |
+| A | Mayer 的原则：一致性原则（删无关内容）23/23，中位 d = 0.86；空间邻近 22/22，中位 d = 1.10；信号原则 24/28，中位 d = 0.41（2021：15/16，0.69）；多媒体原则 13/13，d = 1.35 | Mayer 与 Fiorella 2014 汇总；2021 汇总 |
+| A | **冗余原则变弱**：2021 汇总里只剩 8/12，中位 d = 0.10。所以 0.10.0 起「一张片一层字」改以一致性原则、信号原则与 Yue 2013 为主，冗余原则只作旁证 | 2021 汇总 |
+| B | Schneider 等 2018 信号元分析：保持 g = 0.53、迁移 g = 0.33；在图上做颜色高亮对迁移有效，闪烁有害。只读了摘要 | Schneider 等 2018 |
+| B | Schroeder 与 Cenkci 2018 空间邻近元分析：g = 0.63 | Schroeder & Cenkci 2018 |
+| C | 主张标题能多短：没有研究直接比较过长短不同的主张标题 | — |
+| A | 「两行」是 Alley 体系的上限，不是目标 | 见上面 Garner 与 Alley 2013、Alley 等 2006 两行 |
+| A | 斯坦福、MIT 真实页面上的主张标题有 3–13 个英文词 | 下面的实例页 |
+
+**实例页**
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| A | 斯坦福 CS149 2025 秋第 1 讲（Kayvon 与 Olukotun）第 50 页：一张借来的趋势图，两个红框框住曲线变平的区段，框外各配一条约 5 词的短标签 | 课件截图，目视 |
+| A | 同上第 56 页：产品名加一行大字「64 核、4.3 GHz」，加一个红箭头与一个短标签 | 同上 |
+| A | 同上第 48 页：一条红色折线，没有图例 | 同上 |
+| B | MIT 6.S191 2026 第 1 讲第 75–77 页：每次点击换一句结论 | 课件，OCR |
+| B | 斯坦福 CS231n 2026 第 2 讲第 25–27 页：红框加红字标签 | 课件 |
+| B | MIT 8.02 2007 第 1 次课第 38 页：两幅可视化，各配一个词的标签 | 课件 |
+| C | 页脚、页码和机构标识对学习有什么影响，没有直接研究。上面这几套课件（CS231n、6.S191、CS149、8.02）普遍保留它们，和 Winston「删 logo」相反 | — |
+
+**不采纳**：
+
+- Winston「证据片也删标题」：与 Kayvon、MIT Comm Lab、Garner 与 Alley 冲突。删标题只用于纯图片片、分节片、提问片
+- 苹果式「证据页只放一个词或一张图，没有判断句」：Yue 2013 显示一句短结论比不放字好；Durand 也要求关键观点上片
+- 把冗余原则当减字的主要依据
+- 把 d = 0.81 记在句子标题一项上
+- 把每页 21.2 词当指标
+- 每页放 logo
+- 用 Winston 学生的小实验当数字依据
+- 问句标题当默认：Alley 2006 里问句改成句子后，有升有降
+
+**字号备查**：斯坦福 OCP、ENGR 103 与 Durand 的 24 磅下限，约合本模板 1920×1080 画布的 48px（本 skill 的 40px 约合 20 磅）。
+本轮不改下限，记作备查。
 
 ## 13. 出场顺序与跨片连续 / Builds and continuity
 
@@ -395,6 +576,38 @@
 - 缩放比例来自字体的 MATH 表（约 70% 与 55%），换字体会变，换了要重测
 - 调暗用透明度叠乘时，深色主题下次要字从 0.62 乘到约 0.28，对比度掉到 1.7:1；
   改成统一换到 `--faint`，最坏底色下深色 3.99:1、浅色 3.40:1
+
+## 13b. 让注意力留在讲的人身上（0.10.0）/ Attention on the speaker
+
+0.10.0 应使用者要求补查（2026-10-13）：片子要和讲的内容结合在一起，让注意力在讲的人身上，不在 PPT 上。
+SKILL.md「让注意力留在讲的人身上」六条的依据都在这里。
+
+| 档 | 事实 | 来源 |
+|---|---|---|
+| B | 字多的片，注视更多 | LeFebvre 等 2022 |
+| B | 真实课堂里，文字区获得显著更多的注意 | Yang 等 2013 |
+| B | 学生大部分时间看新出现的片上内容，不看讲者。样本小 | Rosengrant 等 2011 |
+| B | 209 人：常规片子压低了对只靠口述的信息的记忆，精简片子没有 | Wecker 2012 |
+| A | 57 项研究：只显示关键词，比显示全文好 | Adesope 与 Nesbit 2012 |
+| B | 运动起始会抓走注意。推论：每个 build 都把视线拉走一次 | Abrams 与 Christ 2003 |
+| A | 综合上面几行：「字多就把视线拉到屏幕、压低听讲」，多个来源方向一致 | 同上几项 |
+| C | 字少了，观众多看讲者多少：没有定量数据 | — |
+| A | **时间邻近原则**：图和对应的话同时出现，比先后出现学得好 | Fiorella 与 Mayer 2021 |
+| A | **Glance Test**：每页三秒内看懂 | [Duarte](https://www.duarte.com/resources/guides-tools/the-glance-test/) |
+| A | Winston 的逐字稿里没有「切黑屏」的论述（否定性核查） | Winston《How to Speak》逐字稿 |
+| B | 乔布斯会让屏幕短暂变空 | Garr Reynolds 的描述 |
+| B | 在片里预置纯黑页，不靠临场按 B；临场按 B 再恢复，会把观众拉回上一页 | Bert Decker |
+| A | Keynote 与 PowerPoint 都有 B 黑屏、W 白屏 | 两家的官方支持文档 |
+| B | 2007 年 iPhone 发布时，乔布斯每说出一个产品名，屏幕上对应的图标就出现，动画按台词编排 | Ravi Agrawal《India Connected》 |
+
+**六条各指回哪几行**：
+
+1. 三秒测试：Glance Test（A）
+2. 屏上不放讲稿原句：上表眼动与实验那几行，综合 A；其中 Adesope 与 Nesbit 2012 是 A，Wecker 2012 是 B；再加第 12b 节 Yue 2013（A）
+3. 静场片预置在片单里：Reynolds、Decker（B）；B 键黑屏只当应急，恢复时会拉回上一张（Decker，B）。Winston 的逐字稿里没有这条（A，否定性核查）
+4. 每一步对着一个卡点出现：时间邻近原则（A）；2007 年 iPhone 的动画按台词编排（B）。每个 build 都拉走一次视线（Abrams 与 Christ 2003，B），所以对不上一句话的 build 不要加
+5. 不用激光笔：Winston 约 29:43–31:38，见第 12b 节（说过什么 A，效果判断 B）
+6. 一场最多一张故意复杂的片：Winston 的 hapax legomenon，约 33:25，见第 12b 节（说过什么 A，效果判断 B）
 
 ## 14. 照片与叠字 / Photographs and overlays
 

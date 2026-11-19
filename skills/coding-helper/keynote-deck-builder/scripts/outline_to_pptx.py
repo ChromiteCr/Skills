@@ -4,6 +4,8 @@
     python3 outline_to_pptx.py deck.json [out.pptx]
     python3 outline_to_pptx.py deck.json --static     不写任何动画
     python3 outline_to_pptx.py --help                 看这份说明与片单格式
+    python3 outline_to_pptx.py --palette <颜色> [--sat 0.35] [--accent <主色>]
+                                                      算一套和内容匹配的底色，HTML 与片单都用它
     python3 outline_to_pptx.py --selftest
 
 依赖 python-pptx（`pip3 install python-pptx`）；image / claim 带图时还要 Pillow（`pip3 install pillow`）。
@@ -18,7 +20,7 @@
 
 **仍然会丢东西，要如实告诉使用者**：
 
-  - 底色只能是纯色，做不到 HTML 模板里那种多层渐变
+  - 内容片的底色是纯色；封面、分节、静场可以用色场或两段的柔和渐变（"ground"），和 HTML 一样
   - 公式退成纯文本，要在 PowerPoint 或 Keynote 的公式编辑器里重排
   - 颗粒、圆角容器、bento 的大小分层都被简化
   - 图表不做，在 PowerPoint 里手工摆更快
@@ -31,7 +33,22 @@
 所以版面上 px ÷ 2 = pt：大数字 280px 对应 140pt，标题 80px 对应 40pt。
 小字这里用 30pt，比 HTML 的 40px（对应 20pt）相对更大，是有意偏严。塞不下就删字，不要调低。
 
-每张片都可以带 "notes"，写进 pptx 的演讲者备注。
+每张片都可以带 "notes"，写进 pptx 的演讲者备注。讲者备注里在该点下一步的词前标【点】。
+
+底色（0.10.1）：默认用和文字、讲的内容风格匹配的颜色，没有合适的匹配色才用黑色。
+  "background": "#RRGGBB"  匹配色，写在最外层管整套，写在单张片上管这一张（章节换色）。
+                           色值用 --palette 算：色相取品牌色或内容联想的颜色，饱和度按语气
+                           （学术约 0.35，发布会约 0.45），明度压到白字 ≥ 10:1、次要字 ≥ 7:1。
+                           重点色压在匹配色上要 ≥ 4.5:1，不够会报；--palette --accent 会给出提亮的值
+  "theme": "dark"          没写 background 时是纯黑（"black" 同义）；0.9.0 的旧片单因此照旧是黑底
+  "theme": "tinted"        带色近黑：主色的色相、明度 8.5%，几乎是黑
+  "theme": "graphite"      石墨 #1c1c1e，LED 屏、电视、录播
+  "theme": "light"         浅色 #f5f5f7，亮教室。加 "background" 时页面照旧浅色，匹配色只上色场；
+                           重点色要压暗到浅底上过 4.5:1，--palette 打出的「亮教室」那两行就是这一套
+  "tinted"、"graphite"、"black" 和整套的 "background" 同时写会报，按 background 出。
+  切视频要纯黑的静场：在那张片上写 "background": "#000000"（浅色主题里再加 "ground": "field"）。
+  封面、分节、静场可以加 "ground": "field"（色场，白字）或 "fade"（底色 → 色场的柔和渐变）；
+  别的片型写了会报。静场是 {"type": "rest"}，可加 "value": "T" 在右下角画一个同色调巨字，最多 4 个字。
 
 一张片一层字（0.9.0 起）：说明是讲的人说的。旧片单里标题卡、大数字、功能名、价格、提问、
 满版图、概念、公式的 "caption"，流程条每一步的第二项，公式下面的 "items"，导出时不上片，
@@ -41,7 +58,8 @@
 出处行（来源、样本量、测试条件，放左下）、「未确认」标记、引语的出处、图片来源行、误解片的正确说法；
 各片型自带的项名与标签（规格与 bento 的项名、双列对比的列头、价格的配置名、推演右栏的依据、
 回顾的提示词与要点、提问片的标签与选项、误解片的标签、图表的项名）是内容本身。
-在片单里，出处行是 num、versus 与 formula 的 "source"、claim 与 derive 的 "caption"；引语的出处是
+在片单里，出处行是 title、num、versus 与 formula 的 "source"（论文讲读的标题卡写「论文讲读 · 作者 年份」）、
+claim 与 derive 的 "caption"；引语的出处是
 quote 的 "caption"；图片来源行是 image 的 "credit"；误解片的正确说法是 myth 的 "caption"。
 公式写不短的适用条件（「不计空气阻力」）也写进 formula 的 "source"。
 
@@ -58,8 +76,8 @@ quote 的 "caption"；图片来源行是 image 的 "credit"；误解片的正确
 片单格式（type 决定版式，其余字段按类型取用）：
 
     {
-      "accent": "#5a8dee",
-      "theme": "dark",
+      "accent": "#e27f55",
+      "background": "#4a2a1c",
       "font": "Helvetica Neue",
       "slides": [
         {"type": "title",   "value": "产品名"},
@@ -67,7 +85,8 @@ quote 的 "caption"；图片来源行是 image 的 "credit"；误解片的正确
         {"type": "num",     "value": "最长 22 小时视频播放",
                             "unverified": false, "accent": false},
         {"type": "num",     "value": "满意度 4.2 分", "source": "n = 30 · 中期问卷"},
-        {"type": "section", "value": "章节名"},
+        {"type": "section", "value": "章节名", "ground": "field"},
+        {"type": "rest",    "value": "T"},          静场：讲故事、举例、答问时用，value 可省
         {"type": "feature", "value": "功能名"},
         {"type": "quote",   "value": "用户原话", "caption": "出处，必填"},
         {"type": "steps",   "value": "这套流程产出什么",
@@ -95,8 +114,10 @@ quote 的 "caption"；图片来源行是 image 的 "credit"；误解片的正确
                                "caption": "出处", "caption_at": 2},
         {"type": "formula",    "value": "T ≈ 2π √(L / g)"},
         {"type": "myth",       "value": "误解原话", "caption": "正确说法"},
-        {"type": "recap",      "items": [["提示词", "一句要点"]]},
-        {"type": "refs",       "items": ["作者（年份）. 题名. 出处."]},
+        {"type": "recap",      "items": [["提示词", "一个短语"]]},          三条封顶；HTML 的缩略图在 pptx 里没有
+        {"type": "recap",      "value": "贡献", "build": false,
+                               "items": [["1", "一行，12 字内"]]},          学术报告的最后一张，问答时停着
+        {"type": "refs",       "items": ["作者（年份）. 题名. 出处."]},     备用页：放在最后一张之后
 
         每张都可以加 "notes": "讲者备注"
         每张都可以加 "build": false 让这张片一次出完；分步走的片型还认 "dim": false
@@ -112,6 +133,7 @@ quote 的 "caption"；图片来源行是 image 的 "credit"；误解片的正确
 都会报出来（只报不改，生成的文件照旧）。片单里不认识的字段也会报，格式不对的片直接报错、不写文件。
 """
 
+import colorsys
 import io
 import json
 import re
@@ -149,10 +171,10 @@ BODY_W = W - PAD_X * 2
 SIZE = {"num": 140, "phrase": 72, "feature": 56, "title": 40,
         "sub": 30, "label": 30}
 
-THEME = {
-    "dark":  {"bg": "000000", "ink": "F5F5F7", "muted": "98989D", "faint": 0.45},
-    "light": {"bg": "F5F5F7", "ink": "1D1D1F", "muted": "6E6E73", "faint": 0.52},
-}
+# 底色（0.10.1）：默认用和文字、讲的内容风格匹配的颜色，片单里写 "background"；没写就是纯黑。
+# "tinted" 是 0.10.0 的带色近黑，"graphite" 是石墨，"light" 是亮教室用的浅色，"black" 是 "dark" 的别名
+THEMES = ("dark", "black", "tinted", "graphite", "light")
+INK_DARK, MUTED_ON_COLOR = "#f5f5f7", "#c7c7cc"
 
 # 哪些片型默认逐个出现。片单里可以用 "build": false 关掉
 BUILD = {"steps": True, "derive": True, "recap": True,
@@ -169,12 +191,6 @@ def rgb(hex_str: str) -> RGBColor:
     return RGBColor.from_string(hex_str.lstrip("#").upper())
 
 
-def blend(fg: RGBColor, bg: RGBColor, alpha: float) -> RGBColor:
-    """把带透明度的前景色合成成实色。HTML 模板的 --muted / --faint 是透明度，
-    pptx 的底色是纯色，所以这里按同样的透明度算出实色，不靠眼睛调。"""
-    return RGBColor(*(round(f * alpha + b * (1 - alpha)) for f, b in zip(fg, bg)))
-
-
 def luminance(color: RGBColor) -> float:
     def channel(v):
         v /= 255
@@ -187,6 +203,154 @@ def contrast(a: RGBColor, b: RGBColor) -> float:
     la, lb = luminance(a), luminance(b)
     hi, lo = max(la, lb), min(la, lb)
     return (hi + 0.05) / (lo + 0.05)
+
+
+# ── 配色：模板与导出共用这一套算法，HTML 与 pptx 出来的颜色一样 ─────────────
+def _hls_hex(h: float, l: float, s: float) -> str:
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+
+
+def _hex_hls(color: str):
+    c = color.strip().lstrip("#")
+    if not re.fullmatch(r"[0-9a-fA-F]{6}", c):
+        raise ValueError(f"颜色要写成 #RRGGBB，收到 {color!r}")
+    return colorsys.rgb_to_hls(*(int(c[i:i + 2], 16) / 255 for i in (0, 2, 4)))
+
+
+def _cr(a: str, b: str) -> float:
+    return contrast(rgb(a), rgb(b))
+
+
+def palette_for_bg(bg: str, accent: str = None) -> dict:
+    """给定一个底色（原样保留，不改），推出格子、分隔线、巨字、色场、调暗色，并核对比度。
+    重点色压在底色上不到 4.5:1 时，按明度每次 +0.03 提亮，给出能用的值。"""
+    bg = "#" + bg.strip().lstrip("#").lower()
+    h, L, s = _hex_hls(bg)
+    if s < 0.10:
+        s = 0.0                          # 灰色底不带色相，免得推出一个随机的色相
+    tile = _hls_hex(h, L + 0.03, s)
+    line = _hls_hex(h, L + 0.14, s * 0.6)
+    ghost = _hls_hex(h, L + 0.04, s)
+    field = _hls_hex(h, max(L - 0.07, 0.03), 0.0 if s == 0 else min(s + 0.10, 0.70))
+    fs, fl = min(s, 0.15), 0.40
+    while not (_cr(bg, _hls_hex(h, fl, fs)) >= 3.2 and _cr(tile, _hls_hex(h, fl, fs)) >= 3.0) and fl < 0.95:
+        fl = round(fl + 0.01, 2)
+    out = {"bg": bg, "tile": tile, "line": line, "ghost": ghost, "field": field,
+           "faint": _hls_hex(h, fl, fs), "ink": INK_DARK, "muted": MUTED_ON_COLOR,
+           "fade_end": field, "accent": None, "notes": []}
+    if accent:
+        given = "#" + accent.strip().lstrip("#").lower()
+        ah, al, as_ = _hex_hls(given)
+        a = given
+        while _cr(bg, a) < 4.5 and al < 0.9:
+            al = round(al + 0.03, 2)
+            a = _hls_hex(ah, al, as_)
+        if a != given:
+            out["notes"].append(f"重点色 {given} 压在底色上只有 {_cr(bg, given):.2f}:1，"
+                                f"提亮成 {a}（{_cr(bg, a):.2f}:1）")
+        out["accent"] = a
+    out["checks"] = {"正文": _cr(bg, INK_DARK), "次要字": _cr(bg, MUTED_ON_COLOR),
+                     "格子上的次要字": _cr(tile, MUTED_ON_COLOR), "调暗色": _cr(bg, out["faint"]),
+                     "色场正文": _cr(field, INK_DARK)}
+    if out["accent"]:
+        out["checks"]["重点色"] = _cr(bg, out["accent"])
+    return out
+
+
+def matched_palette(color: str, sat: float = None, accent: str = None) -> dict:
+    """匹配色（0.10.1）：色相取输入色，饱和度取 sat（没给就取输入色的，上限 0.60；
+    灰色输入且没给 sat 时为 0），明度从 min(输入明度, 0.20) 起每次降 0.01，
+    直到白字 ≥ 10:1、次要字 #c7c7cc ≥ 7:1。其余颜色由 palette_for_bg 从这个底色推出。"""
+    if sat is not None and not 0 <= sat <= 1:
+        raise ValueError(f"--sat 要在 0 到 1 之间（学术约 0.35，发布会约 0.45），收到 {sat}")
+    h, l0, s0 = _hex_hls(color)
+    # 灰色输入没有色相（colorsys 给灰色的色相是 0），这时给 --sat 只会长出一个随机的红色，所以照旧是中性灰
+    s = 0.0 if s0 < 0.10 else min(sat if sat is not None else s0, 0.60)
+    L = round(min(l0, 0.20), 2)
+    while not (_cr(_hls_hex(h, L, s), INK_DARK) >= 10 and _cr(_hls_hex(h, L, s), MUTED_ON_COLOR) >= 7) and L > 0:
+        L = round(L - 0.01, 2)
+    return palette_for_bg(_hls_hex(h, L, s), accent)
+
+
+def light_room(bg: str, accent: str = None) -> dict:
+    """亮教室用浅色主题时（0.10.1）：页面是 #f5f5f7，匹配色只上封面、分节、静场的色场；
+    重点色按明度每次降 0.01，压到 #f5f5f7 上过 4.5:1；巨字与渐变的浅端取匹配色的色相。"""
+    bg = "#" + bg.strip().lstrip("#").lower()
+    t = derive_palette(bg, "light")
+    out = {"field": bg, "ghost": "#" + t["ghost"].lower(), "fade_end": "#" + t["fade_end"].lower(),
+           "accent": None, "ratio": None}
+    if accent:
+        ah, al, as_ = _hex_hls(accent)
+        a = "#" + accent.strip().lstrip("#").lower()
+        while _cr(a, "#f5f5f7") < 4.5 and al > 0.05:
+            al = round(al - 0.01, 2)
+            a = _hls_hex(ah, al, as_)
+        out["accent"], out["ratio"] = a, _cr(a, "#f5f5f7")
+    return out
+
+
+def derive_palette(accent: str, theme: str = "tinted") -> dict:
+    """0.10.0 的带色近黑（theme "tinted"）与各主题的色场、巨字：HLS 取主色的色相。
+    返回不带 # 的大写十六进制。主色接近灰色（饱和度 < 0.10）时用中性的一套。"""
+    h, _, s = _hex_hls(accent)
+    if s < 0.10:
+        pal = {"bg": "161617", "tile": "1F1F21", "line": "3A3A3C", "faint": "6E6E73",
+               "field": "2C2C2E", "ghost": "202022"}
+        light_ghost, mist = _hls_hex(0, 0.925, 0), _hls_hex(0, 0.86, 0)
+    else:
+        L = 0.20
+        while not (_cr(_hls_hex(h, L, 0.60), INK_DARK) >= 10 and _cr(_hls_hex(h, L, 0.60), "#c7c7cc") >= 7):
+            L = round(L - 0.01, 2)
+        pal = {"bg": _hls_hex(h, 0.085, 0.22), "tile": _hls_hex(h, 0.13, 0.16),
+               "line": _hls_hex(h, 0.24, 0.10), "faint": _hls_hex(h, 0.47, 0.08),
+               "field": _hls_hex(h, L, 0.60), "ghost": _hls_hex(h, 0.125, 0.22)}
+        light_ghost, mist = _hls_hex(h, 0.925, 0.10), _hls_hex(h, 0.86, 0.25)
+    pal = {k: v.lstrip("#").upper() for k, v in pal.items()}
+    if theme == "light":
+        pal["ghost"], pal["fade_end"] = light_ghost.lstrip("#").upper(), mist.lstrip("#").upper()
+    else:
+        pal["fade_end"] = pal["field"]
+    return pal
+
+
+def theme_palette(theme: str, accent: str, background: str = None) -> dict:
+    """片单的 theme / background 落成一整套颜色（不带 # 的大写十六进制）与一句说明。"""
+    if theme not in THEMES:
+        raise ValueError(f"theme 只认 {'、'.join(THEMES)}，收到 {theme!r}")
+    up = lambda c: c.lstrip("#").upper()
+    tinted = derive_palette(accent, "light" if theme == "light" else "tinted")
+    if background and theme == "light":
+        # 亮教室：页面照旧浅色，匹配色只上色场（封面、分节、静场），巨字与渐变浅端取匹配色的色相
+        room = light_room(background)
+        pal = {"bg": "F5F5F7", "ink": "1D1D1F", "muted": "6E6E73", "faint": "86868B",
+               "tile": "FFFFFF", "line": "D2D2D7", "ghost": up(room["ghost"]),
+               "field": up(room["field"]), "fade_end": up(room["fade_end"])}
+        pal["name"] = f"浅色 #F5F5F7，色场用匹配色 #{pal['field']}"
+        return pal
+    if background:
+        m = palette_for_bg(background)
+        pal = {k: up(m[k]) for k in ("bg", "ink", "muted", "faint", "field", "ghost", "fade_end", "tile", "line")}
+        pal["name"] = f"匹配色 #{pal['bg']}"
+        return pal
+    if theme in ("dark", "black"):
+        pal = {"bg": "000000", "ink": "F5F5F7", "muted": "98989D", "faint": "6E6E73",
+               "tile": "1C1C1E", "line": "38383A", "ghost": "1C1C1E"}
+        name = "黑色 #000000"
+    elif theme == "tinted":
+        pal = {k: tinted[k] for k in ("bg", "faint", "tile", "line", "ghost")}
+        pal.update(ink="F5F5F7", muted="AEAEB2")
+        name = f"带色近黑 #{pal['bg']}"
+    elif theme == "graphite":
+        pal = {"bg": "1C1C1E", "ink": "F5F5F7", "muted": "AEAEB2", "faint": "7C7C80",
+               "tile": "2C2C2E", "line": "48484A", "ghost": "2A2A2C"}
+        name = "石墨 #1C1C1E"
+    else:
+        pal = {"bg": "F5F5F7", "ink": "1D1D1F", "muted": "6E6E73", "faint": "86868B",
+               "tile": "FFFFFF", "line": "D2D2D7", "ghost": tinted["ghost"]}
+        name = "浅色 #F5F5F7"
+    pal.update(field=tinted["field"], fade_end=tinted["fade_end"], name=name)
+    return pal
 
 
 # 各类字符占多少 em，按 Helvetica Neue 的字宽取的近似值。中日韩字是全宽，恒为 1 em
@@ -223,26 +387,81 @@ class Deck:
         self.prs = Presentation()
         self.prs.slide_width, self.prs.slide_height = W, H
         self.blank = self.prs.slide_layouts[6]
-        pal = THEME[spec.get("theme", "dark")]
-        self.bg = rgb(pal["bg"])
-        self.ink = rgb(pal["ink"])
-        self.muted = rgb(pal["muted"])
-        self.faint = blend(self.ink, self.bg, pal["faint"])
-        self.accent = rgb(spec.get("accent", "#5A8DEE"))
+        self.accent_hex = spec.get("accent", "#5A8DEE")
+        self.accent = rgb(self.accent_hex)
+        self.theme = spec.get("theme", "dark")
+        self.warnings = []
+        self.use_palette(theme_palette(self.theme, self.accent_hex, spec.get("background")),
+                         spec.get("background"), "片单最外层")
+        if spec.get("background") and self.theme in ("black", "tinted", "graphite"):
+            self.warnings.append(
+                f"theme「{self.theme}」和 background 都写了：整套按 background 的匹配色出，theme 没用上。"
+                f"要{ {'black': '纯黑', 'tinted': '带色近黑', 'graphite': '石墨'}[self.theme] }就删掉 background")
         self.font = spec.get("font", "Helvetica Neue")
         self.base = Path(spec.get("_base", "."))
         self.animate = animate
         self.motions = []
         self.m = None            # 当前这张片的出场顺序
         self.anchor = None       # 当前这张片参与 Morph 的对象
-        self.warnings = []
-        # 调暗色与重点色的对比度按 WCAG 大字下限 3:1 核一遍，改配色后这里会报
-        for name, color in (("调暗色", self.faint), ("重点色", self.accent)):
-            ratio = contrast(color, self.bg)
-            if ratio < 3.0:
+
+    def use_palette(self, pal, background=None, where="片单", check=True):
+        """换一整套颜色：片单最外层用一次，单张片写了 "background" 时只在那一张换。
+        匹配色过不了线、重点色太近都报出来，但不偷偷改使用者写的颜色。"""
+        self.palette = pal
+        self.bg, self.ink, self.muted = rgb(pal["bg"]), rgb(pal["ink"]), rgb(pal["muted"])
+        self.faint, self.field, self.ghost = rgb(pal["faint"]), rgb(pal["field"]), rgb(pal["ghost"])
+        self.fade_end = rgb(pal["fade_end"])
+        if not check:
+            return
+        if background and getattr(self, "theme", "dark") == "light":
+            text = contrast(self.field, rgb(INK_DARK))
+            if text < 7:
                 self.warnings.append(
-                    f"{name} #{color} 在底色 #{self.bg} 上只有 {ratio:.2f}:1，"
-                    f"大字下限是 3:1（WCAG 1.4.3），换一个")
+                    f"{where}的色场 #{self.field} 上白字只有 {text:.2f}:1（要 7:1 以上）。用 --palette {background} 算一个压暗的")
+            ratio = contrast(self.accent, self.bg)
+            if ratio < 4.5:
+                self.warnings.append(
+                    f"{where}的重点色 #{self.accent} 压在浅色底上只有 {ratio:.2f}:1，要 4.5:1 以上。"
+                    f"用 --palette {background} --accent #{self.accent} 打出的「亮教室」那一行")
+        elif background:
+            text, sub = contrast(self.bg, rgb(INK_DARK)), contrast(self.bg, rgb(MUTED_ON_COLOR))
+            if text < 10 or sub < 7:
+                self.warnings.append(
+                    f"{where}的底色太亮：#{self.bg} 上白字只有 {text:.2f}:1、次要字 {sub:.2f}:1"
+                    f"（要 10:1 与 7:1）。用 --palette {background} 算一个压暗的底色")
+            ratio = contrast(self.accent, self.bg)
+            if ratio < 4.5:
+                self.warnings.append(
+                    f"{where}的重点色 #{self.accent} 压在底色 #{self.bg} 上只有 {ratio:.2f}:1，"
+                    f"要 4.5:1 以上。用 --palette {background} --accent #{self.accent} 算一个提亮的")
+        else:
+            # 调暗色与重点色的对比度按 WCAG 大字下限 3:1 核一遍，改配色后这里会报
+            for name, color in (("调暗色", self.faint), ("重点色", self.accent)):
+                ratio = contrast(color, self.bg)
+                if ratio < 3.0:
+                    self.warnings.append(
+                        f"{name} #{color} 在底色 #{self.bg} 上只有 {ratio:.2f}:1，"
+                        f"大字下限是 3:1（WCAG 1.4.3），换一个")
+
+    def _ground(self, slide, d):
+        """封面、分节、静场可以换底：色场（纯色、白字）或柔和渐变（底色 → 色场，上暗下亮）。
+        返回这张片上的字该用的颜色；None 表示照常。"""
+        ground = d.get("ground")
+        if not ground:
+            return None
+        fill = slide.background.fill
+        if ground == "field":
+            fill.solid()
+            fill.fore_color.rgb = self.field
+            return rgb(INK_DARK)
+        if ground == "fade":
+            fill.gradient()
+            # python-pptx 的角度写进 XML 时是反的：270 → a:lin ang=5400000，即 PowerPoint 的「线性向下」
+            fill.gradient_angle = 270
+            stops = fill.gradient_stops
+            stops[0].color.rgb, stops[0].position = self.bg, 0.0
+            stops[1].color.rgb, stops[1].position = self.fade_end, 1.0
+        return None
 
     def slide(self):
         s = self.prs.slides.add_slide(self.blank)
@@ -345,8 +564,11 @@ class Deck:
     # ── 各片型 ────────────────────────────────────────────
     def title(self, d):
         s = self.slide()
+        color = self._ground(s, d)
         self.anchor = self.text(s, d["value"], top=Inches(2.4), height=Inches(1.9),
-                                size=SIZE["phrase"], bold=True)
+                                size=SIZE["phrase"], bold=True, color=color)
+        # 论文讲读的标题卡写「论文讲读 · 作者 年份」，不让人以为是作者本人在讲
+        self._source(s, d)
 
     def phrase(self, d):
         s = self.slide()
@@ -420,8 +642,39 @@ class Deck:
 
     def section(self, d):
         s = self.slide()
+        color = self._ground(s, d)
+        # 分节标题用正文色，和 HTML 的 .feature 一样；色场上 _ground 给的是白字
         self.anchor = self.text(s, d["value"], top=Inches(3.1), height=Inches(1.3),
-                                size=SIZE["title"], color=self.muted)
+                                size=SIZE["title"], color=color)
+
+    def rest(self, d):
+        """静场：讲故事、举例、答问时切到这一张，屏幕上没有要读的字，注意力回到讲的人身上。
+        给了 value 就在右下角画一个同色调巨字（比底色略亮），只作氛围，最多 4 个字。"""
+        s = self.slide()
+        self._ground(s, d)
+        value = str(d.get("value") or "").strip()
+        if not value:
+            return
+        if d.get("ground") == "field":
+            self.warnings.append(f"静场「{value}」在色场上不画巨字：巨字是比底色略亮的氛围，压在色场上会刺眼；"
+                                 f"要巨字就用底色或 \"fade\"")
+            return
+        weight = sum(1 if ord(c) > 0x2E80 else 0.5 for c in value if not c.isspace())
+        if weight > 4:
+            self.warnings.append(f"静场的巨字「{value}」最多 4 个字（中文算 1，其余算半个），"
+                                 f"它只作氛围，不是要读的字")
+        box = s.shapes.add_textbox(W - Inches(7.6), H - Inches(5.6), Inches(7.6), Inches(5.6))
+        tf = box.text_frame
+        tf.word_wrap = False
+        tf.vertical_anchor = MSO_ANCHOR.BOTTOM
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.RIGHT
+        run = p.add_run()
+        run.text = value
+        run.font.size = Pt(380)
+        run.font.bold = True
+        run.font.name = self.font
+        run.font.color.rgb = self.ghost
 
     def feature(self, d):
         s = self.slide()
@@ -671,8 +924,9 @@ class Deck:
 
     def claim(self, d):
         s = self.slide()
+        # 主张句一行（0.10.0）：一行放不下就是还没想清楚，删字或者拆片
         claim = self.text(s, d["value"], top=PAD_Y, height=Inches(1.4), size=40,
-                          bold=True, align=PP_ALIGN.LEFT)
+                          bold=True, align=PP_ALIGN.LEFT, lines=1, what="主张句")
         self.anchor = claim
         if d.get("src"):
             try:
@@ -701,8 +955,8 @@ class Deck:
                   bold=True, align=PP_ALIGN.LEFT)
         rows = self._cap(d.get("items", []), 4, "推演")
         build, dim = self._build(d, "derive"), self._dim(d, "derive")
-        # 右栏先按「30pt 下每行 9 个中文字、两行封顶」定宽，式子列拿剩下的。
-        # HTML 那边右栏是 44px / 每行 11 字，pptx 的 30pt 下限相对更大，所以一行放得少
+        # 右栏先按「30pt 下每行 9 个中文字」定宽，式子列拿剩下的；依据的名字一行、8 字内（0.10.0），
+        # 宽出来的一个字是余量
         gap, why_w = int(Pt(18)), int(Pt(9 * SIZE["label"]) + Inches(0.2))
         expr_w = BODY_W - why_w - gap
         why_left = PAD_X + expr_w + gap
@@ -714,11 +968,11 @@ class Deck:
                                align=PP_ALIGN.LEFT, left=PAD_X, width=expr_w,
                                what="推演的式子", lines=1)]
             if why:
-                # 右栏 30pt 比 HTML 的 44px 相对更大，所以一行放得少，两行封顶
+                # 右栏一行：写依据的名字，8 字内（0.10.0 起，不再两行）
                 group.append(self.text(s, why, top=y, height=Inches(1.0),
                                        size=SIZE["label"], color=self.muted,
                                        align=PP_ALIGN.LEFT, left=why_left, width=why_w,
-                                       what="推演右栏", lines=2))
+                                       what="推演右栏", lines=1))
             if build:
                 self._step(group, n + 1, n + 2 if dim and n + 1 < len(rows) else None)
         if d.get("caption"):
@@ -772,7 +1026,13 @@ class Deck:
         self.text(s, d.get("value", "回顾"), top=PAD_Y, height=Inches(1.0),
                   size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT)
         build = self._build(d, "recap")
-        for n, (cue, point) in enumerate(self._cap(d.get("items", []), 4, "回顾")):
+        if d.get("value") == "贡献":
+            # 贡献：带走的那几句就是这张片的主体，正文色、大字、一次出齐，问答时一直停着
+            for n, (_, point) in enumerate(self._cap(d.get("items", []), 3, "贡献")):
+                self.text(s, point, top=Inches(2.3) + Inches(1.15) * n, height=Inches(1.0),
+                          size=SIZE["title"], bold=True, align=PP_ALIGN.LEFT, lines=1, what="贡献")
+            return
+        for n, (cue, point) in enumerate(self._cap(d.get("items", []), 3, "回顾")):
             y = Inches(2.3) + Inches(1.15) * n
             self.text(s, cue, top=y, height=Inches(0.9), size=32, bold=True,
                       align=PP_ALIGN.LEFT, left=PAD_X, width=Inches(2.6))
@@ -791,8 +1051,11 @@ class Deck:
             title = d.get("value", "参考文献") + ("（续）" if start else "")
             self.text(s, title, top=PAD_Y, height=Inches(1.0), size=SIZE["title"],
                       bold=True, align=PP_ALIGN.LEFT)
-            for n, ref in enumerate(items[start:start + 4]):
-                self.text(s, ref, top=Inches(2.2) + Inches(1.2) * n, height=Inches(1.1),
+            page = items[start:start + 4]
+            # 这一页有几条就把 4.8 英寸分几份：一条长英文文献要四行，只给两行的高度会被截
+            slot = Inches(4.8) / max(len(page), 1)
+            for n, ref in enumerate(page):
+                self.text(s, ref, top=Inches(2.2) + int(slot * n), height=int(slot - Inches(0.1)),
                           size=SIZE["label"], color=self.muted, align=PP_ALIGN.LEFT)
 
 
@@ -846,14 +1109,16 @@ def fold_into_notes(spec):
 KINDS = ("title", "phrase", "num", "section", "feature",
          "specs", "versus", "price", "close", "quote", "steps",
          "roadmap", "question", "image", "claim", "definition",
-         "derive", "formula", "myth", "recap", "refs")
+         "derive", "formula", "myth", "recap", "refs", "rest")
 # 片单里认的字段。以 _ 开头的是注释（如 "_note"），不查
-TOP_KEYS = {"accent", "theme", "font", "slides"}
+TOP_KEYS = {"accent", "theme", "font", "slides", "background"}
 SLIDE_KEYS = {"type", "value", "caption", "items", "notes", "build", "dim", "morph",
               "unverified", "kicker", "answer", "current", "src", "credit", "focus",
-              "symbol", "caption_at", "source"}
+              "symbol", "caption_at", "source", "ground", "background"}
+# 换底（"ground"）只给封面、分节、静场；内容片一律平涂
+GROUND_KINDS = {"title", "section", "rest"}
 # 出处行（"source"）只有大数字、双列对比与公式画，别的片型的出处各有字段
-SOURCE_KINDS = {"num", "versus", "formula"}
+SOURCE_KINDS = {"num", "versus", "formula", "title"}
 
 
 class SpecError(Exception):
@@ -870,8 +1135,11 @@ def unknown_keys(spec):
         extra = sorted(k for k in d if k not in SLIDE_KEYS and not str(k).startswith("_"))
         if extra:
             notes.append(f"片单第 {n} 张（{d.get('type')}）有不认识的字段 {', '.join(extra)}，没用上")
+        if d.get("ground") and (d.get("type") not in GROUND_KINDS or d.get("ground") not in ("field", "fade")):
+            notes.append(f"片单第 {n} 张（{d.get('type')}）的 ground「{d.get('ground')}」没用上："
+                         f"只有 title、section、rest 认，值只能是 \"field\" 或 \"fade\"")
         if d.get("source") and d.get("type") not in SOURCE_KINDS:
-            notes.append(f"片单第 {n} 张（{d.get('type')}）的 \"source\" 只有 num、versus 与 formula 认，没上片："
+            notes.append(f"片单第 {n} 张（{d.get('type')}）的 \"source\" 只有 title、num、versus 与 formula 认，没上片："
                          f"主张与推演的出处写进 \"caption\"，满版图的来源写进 \"credit\"")
     return notes
 
@@ -882,12 +1150,13 @@ def build(spec, animate=True):
     slides = spec.get("slides")
     if not isinstance(slides, list) or not all(isinstance(d, dict) for d in slides):
         raise SpecError("slides 要是一个列表，每张片是一个 {...}")
-    if spec.get("theme", "dark") not in THEME:
-        raise SpecError(f"theme 只认 {' 或 '.join(THEME)}，收到 {spec.get('theme')!r}")
+    if spec.get("theme", "dark") not in THEMES:
+        raise SpecError(f"theme 只认 {'、'.join(THEMES)}，收到 {spec.get('theme')!r}")
     try:
         deck = Deck(spec, animate=animate)
     except ValueError as exc:
-        raise SpecError(f"accent 要写成 #RRGGBB，收到 {spec.get('accent')!r}（{exc}）") from exc
+        raise SpecError(f"accent 与 background 要写成 #RRGGBB，收到 accent {spec.get('accent')!r}、"
+                        f"background {spec.get('background')!r}（{exc}）") from exc
     deck.warnings.extend(unknown_keys(spec))
     spec, folded = fold_into_notes(spec)
     slides = spec["slides"]
@@ -902,12 +1171,21 @@ def build(spec, animate=True):
             unknown.add(str(kind))
             continue
         before = len(deck.prs.slides)
+        saved = None
         try:
+            if d.get("background"):
+                # 章节换色：这一张换一套颜色，做完换回来
+                saved = deck.palette
+                deck.use_palette(theme_palette(deck.theme, deck.accent_hex, d["background"]),
+                                 d["background"], f"片单第 {n} 张")
             fn(d)
         except (KeyError, ValueError, TypeError, IndexError, AttributeError) as exc:
             what = f"缺字段 {exc}" if isinstance(exc, KeyError) else f"{type(exc).__name__}: {exc}"
             raise SpecError(f"片单第 {n} 张（{kind}）格式不对：{what}。"
                             f"对照 --help 里的片单格式改") from exc
+        finally:
+            if saved is not None:
+                deck.use_palette(saved, check=False)
         made = [deck.prs.slides[k] for k in range(before, len(deck.prs.slides))]
         # 一张片单可能生成多张（提问、参考文献续页），备注每张都写
         for i, s in enumerate(made):
@@ -1143,6 +1421,168 @@ def selftest() -> int:
                        (morphs, stepped, clicks) == (1, 2, 3) and not unknown and morph_obj == ["T"]))
         checks.append(("正常片单没有误报放不下或孤行", not fit_notes(deck)))
 
+        # 0.10.1 底色：默认匹配色，没有匹配色就黑；带色近黑留作 "tinted"
+        def bg_of(slide):
+            fill = slide.background.fill
+            return str(fill.fore_color.rgb) if fill.type == 1 else None
+
+        def grad_of(slide):
+            fill = slide.background.fill
+            return [str(st.color.rgb) for st in fill.gradient_stops] if fill.type == 3 else None
+
+        def run_colors(slide):
+            return [str(r.font.color.rgb) for sh in slide.shapes if sh.has_text_frame
+                    for p in sh.text_frame.paragraphs for r in p.runs]
+
+        pinned = {
+            ("#e0774a", 0.45, "#e0774a"): ("#4a2a1c", "#553020", "#6e4e3f", "#593222", "#331a0f", "#977d72", "#e27f55"),
+            ("#53ac80", 0.35, "#e0913a"): ("#1c3b2c", "#214534", "#3e6050", "#234936", "#0e251a", "#6a907e", "#e0913a"),
+            ("#5378ac", 0.35, "#4fae9b"): ("#213045", "#26374f", "#445469", "#283a53", "#121f30", "#728297", "#4fae9b"),
+            ("#8e8e93", None, "#5a8dee"): ("#333333", "#3b3b3b", "#575757", "#3d3d3d", "#212121", "#858585", "#749ff1"),
+        }
+        got = {k: tuple(matched_palette(*k)[f] for f in ("bg", "tile", "line", "ghost", "field", "faint", "accent"))
+               for k in pinned}
+        checks.append(("matched_pinned_values：四组匹配色与钉住的值一致", got == pinned))
+        neutral = matched_palette("#8e8e93", None, "#5a8dee")
+        checks.append(("matched_neutral_stays_neutral：灰色输入不带色相",
+                       (neutral["bg"], neutral["field"]) == ("#333333", "#212121")))
+        cli = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--palette", "#e0774a",
+                              "--sat", "0.45", "--accent", "#e0774a"], capture_output=True, text=True)
+        checks.append(("palette_cli_prints_variables：--palette 打出 CSS 变量、JSON 与提亮后的重点色",
+                       cli.returncode == 0 and "--bg-base: #4a2a1c" in cli.stdout
+                       and '"background": "#4a2a1c"' in cli.stdout and "#e27f55" in cli.stdout))
+        checks.append(("tinted_pinned_values：带色近黑照 0.10.0 的算法",
+                       derive_palette("#5a8dee") == {"bg": "11141A", "tile": "1C2026", "line": "373B43",
+                                                     "faint": "6E7581", "field": "142952", "ghost": "191E27",
+                                                     "fade_end": "142952"}
+                       and derive_palette("#e0774a")["bg"] == "1A1411"
+                       and derive_palette("#8e8e93")["bg"] == "161617"))
+        deck = deck_of({"type": "phrase", "value": "一句"}, accent="#5a8dee")[0]
+        checks.append(("theme_dark_default_black：没写 background 的旧片单照旧纯黑",
+                       bg_of(deck.prs.slides[0]) == "000000"))
+        deck = deck_of({"type": "specs", "value": "规格", "items": [["续航", "30 天"]]},
+                       background="#4a2a1c", accent="#e0774a")[0]
+        checks.append(("background_matched_deck：整套匹配色，次要字换成 #c7c7cc",
+                       bg_of(deck.prs.slides[0]) == "4A2A1C" and "C7C7CC" in run_colors(deck.prs.slides[0])))
+        deck = deck_of({"type": "phrase", "value": "第一章"},
+                       {"type": "specs", "value": "规格", "items": [["续航", "30 天"]], "background": "#213045"},
+                       {"type": "phrase", "value": "第三张"})[0]
+        s1, s2, s3 = list(deck.prs.slides)
+        checks.append(("background_per_slide：单张片换章节色，配色只管这一张",
+                       (bg_of(s1), bg_of(s2), bg_of(s3)) == ("000000", "213045", "000000")
+                       and "C7C7CC" in run_colors(s2) and "C7C7CC" not in run_colors(s1)))
+        light = deck_of({"type": "phrase", "value": "一句"}, background="#87a6d6")[0]
+        close = deck_of({"type": "phrase", "value": "一句"}, background="#4a2a1c", accent="#4a2a1c")[0]
+        checks.append(("background_too_light_warns：底色太亮或重点色太近都会报，不偷偷改色",
+                       any("底色太亮" in w for w in light.warnings)
+                       and bg_of(light.prs.slides[0]) == "87A6D6"
+                       and any("重点色" in w for w in close.warnings)))
+        deck = deck_of({"type": "phrase", "value": "一句"}, theme="tinted", accent="#5a8dee")[0]
+        checks.append(("theme_tinted_stays：tinted 是带色近黑", bg_of(deck.prs.slides[0]) == "11141A"))
+        deck = deck_of({"type": "section", "value": "原理", "ground": "field"},
+                       {"type": "section", "value": "检验", "ground": "fade"},
+                       theme="tinted", accent="#5a8dee")[0]
+        f1, f2 = list(deck.prs.slides)
+        matched_field = deck_of({"type": "section", "value": "原理", "ground": "field"},
+                                background="#213045")[0]
+        checks.append(("ground_field_and_fade：色场纯色白字、渐变两段；匹配色片用匹配色场",
+                       bg_of(f1) == "142952" and "F5F5F7" in run_colors(f1)
+                       and grad_of(f2) == ["11141A", "142952"]
+                       and f2.background._cSld.bg.xpath(".//a:lin")[0].get("ang") == "5400000"
+                       and bg_of(matched_field.prs.slides[0]) == "121F30"))
+        deck = deck_of({"type": "num", "value": "3 倍", "ground": "field"})[0]
+        checks.append(("ground_on_wrong_type_warns：大数字片写 ground 会报，底色不变",
+                       any("片单第 1 张（num）" in w and "ground" in w for w in deck.warnings)
+                       and bg_of(deck.prs.slides[0]) == "000000"))
+        deck = deck_of({"type": "section", "value": "原理", "ground": "fade"}, theme="light", accent="#2b5fd0")[0]
+        stops = grad_of(deck.prs.slides[0])
+        checks.append(("light_theme_grounds_keep_contrast：浅色主题的渐变压得住正文",
+                       stops is not None and stops[0] == "F5F5F7"
+                       and contrast(rgb("1D1D1F"), rgb(stops[1])) >= 7))
+        # 终审第 1 条：灰色输入加了 --sat 也不能长出色相（colorsys 给灰色的色相是 0，原来会变成酱红）
+        grey_sat = [matched_palette(c, 0.35)["bg"] for c in ("#808080", "#8e8e93")]
+        try:
+            matched_palette("#e0774a", -0.3)
+            neg_ok = False
+        except ValueError:
+            neg_ok = True
+        bad_cli = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--palette", "#e0774a",
+                                  "--sat", "1.5"], capture_output=True, text=True)
+        checks.append(("matched_neutral_with_sat_stays_neutral：灰色输入写了 --sat 照样是中性灰；--sat 出了 0–1 报错",
+                       grey_sat == ["#333333", "#333333"] and neg_ok and bad_cli.returncode != 0))
+        # 终审第 2、3 条：浅色主题写 background，匹配色上色场，页面照旧浅色；别的主题被 background 盖掉要报
+        light_bg = deck_of({"type": "section", "value": "原理", "ground": "field"},
+                           {"type": "phrase", "value": "一句"},
+                           theme="light", background="#1c3b2c", accent="#a35a12")[0]
+        sl = list(light_bg.prs.slides)
+        over = deck_of({"type": "phrase", "value": "一句"}, theme="graphite", background="#213045")[0]
+        checks.append(("light_theme_background_goes_to_field：浅色主题的 background 只上色场；graphite 被盖掉会报",
+                       bg_of(sl[0]) == "1C3B2C" and bg_of(sl[1]) == "F5F5F7"
+                       and not any("太亮" in w for w in light_bg.warnings)
+                       and bg_of(over.prs.slides[0]) == "213045"
+                       and any("graphite" in w and "background" in w for w in over.warnings)))
+        light_cli = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--palette", "#53ac80",
+                                    "--sat", "0.35", "--accent", "#e0913a"], capture_output=True, text=True)
+        la = re.search(r'"theme": "light", "background": "#1c3b2c", "accent": "(#[0-9a-f]{6})"', light_cli.stdout)
+        checks.append(("palette_cli_prints_light_line：--palette 也打出亮教室那一套，重点色压在 #f5f5f7 上过 4.5:1",
+                       la is not None and contrast(rgb(la.group(1)), rgb("F5F5F7")) >= 4.5
+                       and "--field: #1c3b2c" in light_cli.stdout))
+        # 终审第 4 条：分节标题用正文色（HTML 的 .feature 也是），浅色渐变上不再是 3.5:1 的次要字
+        lsec = deck_of({"type": "section", "value": "原理", "ground": "fade"}, theme="light", accent="#2b5fd0")[0]
+        dsec = deck_of({"type": "section", "value": "原理"})[0]
+        checks.append(("section_title_is_ink：分节标题用正文色",
+                       run_colors(lsec.prs.slides[0]) == ["1D1D1F"] and run_colors(dsec.prs.slides[0]) == ["F5F5F7"]))
+        # 论文讲读的标题卡要写原作者与年份（Case 34），标题卡认 "source"
+        tsrc = deck_of({"type": "title", "value": "主张加证据", "source": "论文讲读 · Garner 与 Alley 2013"})[0]
+        ttext = [sh.text_frame.text for sh in tsrc.prs.slides[0].shapes if sh.has_text_frame]
+        checks.append(("title_source_line：标题卡的出处行画在左下，不报不认识",
+                       "论文讲读 · Garner 与 Alley 2013" in ttext and not unknown_keys(
+                           {"slides": [{"type": "title", "value": "x", "source": "y"}]})))
+        # 贡献：带走的那几句是这张片的主体，用正文色、大字，不是次要色的小字
+        contrib = deck_of({"type": "recap", "value": "贡献", "build": False,
+                           "items": [["1", "标题写结论"], ["2", "正文放证据图"]]})[0]
+        cruns = [r for sh in contrib.prs.slides[0].shapes if sh.has_text_frame
+                 for para in sh.text_frame.paragraphs for r in para.runs if r.text == "标题写结论"]
+        checks.append(("contrib_takeaways_large_ink：贡献的几句用正文色、40pt 以上",
+                       len(cruns) == 1 and str(cruns[0].font.color.rgb) == "F5F5F7"
+                       and cruns[0].font.size >= Pt(40)))
+        empty = deck_of({"type": "rest"})[0]
+        glyph = deck_of({"type": "rest", "value": "T"}, theme="tinted", accent="#5a8dee")[0]
+        long_rest = deck_of({"type": "rest", "value": "练琴计时器"})[0]
+        gshapes = [sh for sh in glyph.prs.slides[0].shapes if sh.has_text_frame]
+        grun = gshapes[0].text_frame.paragraphs[0].runs[0] if gshapes else None
+        checks.append(("rest_value_limits：静场不给字就空着，给字画同色调巨字，超过 4 个字报",
+                       not [sh for sh in empty.prs.slides[0].shapes if sh.has_text_frame]
+                       and grun is not None and str(grun.font.color.rgb) == "191E27"
+                       and grun.font.size.pt >= 300
+                       and any("最多 4 个字" in w for w in long_rest.warnings)))
+        on_field = deck_of({"type": "rest", "value": "T", "ground": "field"}, theme="light", accent="#2b5fd0")[0]
+        checks.append(("rest_on_field_skips_glyph：色场上的静场不画巨字（会刺眼），报出来",
+                       not [sh for sh in on_field.prs.slides[0].shapes if sh.has_text_frame]
+                       and any("色场" in w and "巨字" in w for w in on_field.warnings)))
+        deck = deck_of({"type": "recap", "items": [["质量", "不影响周期"], ["摆长", "T ∝ √L"],
+                                                    ["条件", "小角度"], ["周期", "来回一次"]]})[0]
+        checks.append(("recap_caps_at_three：回顾三条封顶，多的报出来",
+                       any("回顾最多放 3 项" in w for w in deck.warnings)))
+        # 参考文献备用页：一条长英文文献（APA 约 190 字符）要四行，原来每条只给两行的高度
+        ref = ("Garner, J. K., & Alley, M. P. (2013). How the design of presentation slides affects audience "
+               "comprehension: A case for the assertion–evidence approach. International Journal of "
+               "Engineering Education, 29(6), 1564–1579.")
+        one = deck_of({"type": "refs", "items": [ref]})[0]
+        five = deck_of({"type": "refs", "items": ["Author, A. (2020). Title. Journal."] * 5})[0]
+        checks.append(("refs_long_entry_fits：一条长文献在备用页上放得下，五条照旧续页",
+                       not fit_notes(one) and len(five.prs.slides) == 2 and not fit_notes(five)))
+        deck = deck_of({"type": "claim", "value": "摆长变成原来的四倍以后周期只会变成原来的两倍而已"})[0]
+        short = deck_of({"type": "claim", "value": "摆长 4 倍，周期 2 倍"})[0]
+        checks.append(("claim_title_one_line：主张句一行放不下就报",
+                       any("要占 2 行" in w for w in deck.warnings) and not fit_notes(short)))
+        deck = deck_of({"type": "derive", "value": "例",
+                        "items": [["T ≈ 2π √(L / g)", "这一步用的是小角度近似"]]})[0]
+        ok8 = deck_of({"type": "derive", "value": "例", "items": [["T ≈ 2π √(L / g)", "小角度近似"]]})[0]
+        checks.append(("derive_basis_one_line：推演右栏一行放不下就报",
+                       any("推演右栏" in w and "要占" in w for w in deck.warnings)
+                       and not [w for w in ok8.warnings if "推演右栏" in w]))
+
         # 拼错的字段不静默；格式不对的片报出第几张
         deck = deck_of({"type": "specs", "value": "规格", "bulid": True,
                         "items": [["续航", "30 天"]]})[0]
@@ -1167,6 +1607,47 @@ def selftest() -> int:
     return 0 if ok else 1
 
 
+def print_palette(argv) -> int:
+    """--palette <颜色> [--sat S] [--accent <主色>]：算出和这个颜色匹配的一整套底色，
+    打印可以直接贴进 deck.html 的 CSS 变量、片单的 JSON 字段和对比度。"""
+    def value(flag):
+        i = argv.index(flag)
+        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
+            sys.exit(f"{flag} 后面要跟一个值。用法：--palette <颜色> [--sat 0.35] [--accent <主色>]")
+        return argv[i + 1]
+    try:
+        color = value("--palette")
+        sat = float(value("--sat")) if "--sat" in argv else None
+        accent = value("--accent") if "--accent" in argv else None
+        pal = matched_palette(color, sat, accent)
+    except ValueError as exc:
+        sys.exit(f"{exc}。用法：--palette <颜色> [--sat 0.35] [--accent <主色>]")
+    h, L, s = _hex_hls(pal["bg"])
+    print(f"匹配色 {pal['bg']}（色相 {h * 360:.0f}°，饱和度 {s:.2f}，明度 {L:.2f}），由 {color} 推出")
+    print(":root {")
+    for name, key in (("--bg-base", "bg"), ("--tile", "tile"), ("--line", "line"), ("--ink", "ink"),
+                      ("--muted", "muted"), ("--faint", "faint"), ("--field", "field"),
+                      ("--ghost", "ghost"), ("--fade-end", "fade_end"), ("--accent", "accent")):
+        if pal.get(key):
+            print(f"  {name}: {pal[key]};")
+    print("}")
+    pairs = [f'"background": "{pal["bg"]}"'] + ([f'"accent": "{pal["accent"]}"'] if pal["accent"] else [])
+    print(", ".join(pairs))
+    print("对比度：" + "，".join(f"{k} {v:.2f}:1" for k, v in pal["checks"].items()))
+    for note in pal["notes"]:
+        print(f"注意：{note}")
+    # 亮教室：页面换成 #f5f5f7，匹配色只上色场，重点色压暗；HTML 的浅色主题与片单都照这一套写
+    room = light_room(pal["bg"], accent)
+    print('亮教室用浅色（"theme": "light"）：页面 #f5f5f7，匹配色只上封面、分节、静场的色场')
+    css = ([f"--accent: {room['accent']}"] if room["accent"] else []) + [
+        f"--field: {room['field']}", f"--ghost: {room['ghost']}", f"--fade-end: {room['fade_end']}"]
+    print("  " + "; ".join(css) + ";")
+    light = ['"theme": "light"', f'"background": "{pal["bg"]}"'] + (
+        [f'"accent": "{room["accent"]}"'] if room["accent"] else [])
+    print(", ".join(light) + (f"（重点色压在 #f5f5f7 上 {room['ratio']:.2f}:1）" if room["accent"] else ""))
+    return 0
+
+
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else list(argv)
     if "-h" in argv or "--help" in argv:
@@ -1174,6 +1655,8 @@ def main(argv=None) -> int:
         return 0
     if "--selftest" in argv:
         return selftest()
+    if "--palette" in argv:
+        return print_palette(argv)
     args = [a for a in argv if not a.startswith("--")]
     flags = {a for a in argv if a.startswith("--")}
     unknown_flags = flags - {"--static"}
@@ -1218,7 +1701,10 @@ def main(argv=None) -> int:
         print(f"跳过了不认识的片型: {', '.join(sorted(map(str, unknown)))}")
     for w in deck.warnings:
         print(f"注意：{w}")
-    print("pptx 仍然丢的东西：底色只能纯色、公式是纯文本、图表要手工摆、bento 的大小分层被简化。")
+    name = deck.palette["name"]
+    print(f"底色：{name}" + ("（没写 background；要匹配色写 \"background\"，色值用 --palette 算）"
+                           if name.startswith("黑色") else ""))
+    print("pptx 仍然丢的东西：公式是纯文本、图表要手工摆、bento 的大小分层被简化。")
     print("要那个层次的视觉就用 templates/deck.html。")
     return 0
 
